@@ -2,6 +2,7 @@ from django.db import models
 
 class GitTicket(models.Model):
     number = models.IntegerField()
+    title = models.CharField(max_length=100)
     gitType = models.CharField(max_length=20)
     desc = models.TextField()
 
