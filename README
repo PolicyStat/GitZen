@@ -1,0 +1,3 @@
+This is a web application built using Django that links Zendesk and Github for
+easier developer management. Currently, the project is in the initial framing
+stage and has little to no functionality.
