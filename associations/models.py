@@ -1,7 +1,7 @@
 from django.db import models
 
 class GitTicket(models.Model):
-    number = models.IntegerField(primary_key=True)
+    number = models.IntegerField()
     gitType = models.CharField(max_length=20)
     desc = models.TextField()
 
@@ -10,7 +10,7 @@ class GitTicket(models.Model):
 
 
 class ZenTicket(models.Model):
-    incident = models.IntegerField(primary_key=True)
+    incident = models.IntegerField()
     name = models.CharField(max_length=40)
     email = models.EmailField()
     zenType = models.CharField(max_length=20)
