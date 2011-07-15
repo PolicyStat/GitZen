@@ -5,6 +5,10 @@ class GitTicket(models.Model):
     gitType = models.CharField(max_length=20)
     desc = models.TextField()
 
+    def __unicode__(self):
+        return self.number
+
+
 class ZenTicket(models.Model):
     incident = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=40)
@@ -13,9 +17,16 @@ class ZenTicket(models.Model):
     priority = models.CharField(max_length=20)
     desc = models.TextField()
 
+    def __unicode__(self):
+        return self.incident
+
+
 class Association(models.Model):
     git = models.ForeignKey(GitTicket)
     zen = models.ForeignKey(ZenTicket)
     notes = models.CharField(max_length=200)
     date = models.DateField(auto_now_add=True)
     status = models.BooleanField()
+
+    def __unicode__(self):
+        return self.id
