@@ -6,7 +6,7 @@ class GitTicket(models.Model):
     desc = models.TextField()
 
     def __unicode__(self):
-        return self.number
+        return str(self.number)
 
 
 class ZenTicket(models.Model):
@@ -18,7 +18,7 @@ class ZenTicket(models.Model):
     desc = models.TextField()
 
     def __unicode__(self):
-        return self.incident
+        return str(self.incident)
 
 
 class Association(models.Model):
@@ -29,4 +29,4 @@ class Association(models.Model):
     status = models.BooleanField()
 
     def __unicode__(self):
-        return self.id
+        return 'Z' + str(self.zen.incident) + '->G' + str(self.git.number)
