@@ -1,18 +1,19 @@
 from django.db import models
 
 class Association(models.Model):
-    git = models.CharField(max_length=25)
-    zen = models.CharField(max_length=50)
     notes = models.CharField(max_length=200)
     date = models.DateField(auto_now_add=True)
     status = models.BooleanField()
-    info = models.TextField()
 
 class GitTicket(models.Model):
-    name = models.CharField(max_length=25)
-    gitInfo = models.TextField()
+    number = models.IntegerField(primary_key=True)
+    gitType = models.CharField(max_length=20)
+    desc = models.TextField()
 
 class ZenTicket(models.Model):
+    incident = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=40)
     email = models.EmailField()
-    zenInfo = models.TextField()
-    
+    zenType = models.CharField(max_length=20)
+    priority = models.CharField(max_length=20)
+    desc = models.TextField()
