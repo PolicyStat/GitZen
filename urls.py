@@ -5,13 +5,8 @@ from django.conf.urls.defaults import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'GitZen.views.home', name='home'),
-    # url(r'^GitZen/', include('GitZen.foo.urls')),
-
-    # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
-)
+    (r'^as/$', 'associations.views.home'),
+    (r'^as/new/$', 'associations.views.new'),
+    (r'^as/git/(?P<git_num>\d+)/$', 'associations.views.git'),
+    (r'^as/zen/(?P<zen_num>\d+)/$', 'associations.views.zen'),
+) 
