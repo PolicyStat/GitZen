@@ -8,4 +8,4 @@ class Association(models.Model):
     status = models.BooleanField()
 
     def __unicode__(self):
-        return 'Z' + str(self.zen.incident) + '->G' + str(self.git.number)
+        return 'Z%s->G%s' % (self.zen, self.git)
