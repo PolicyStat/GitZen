@@ -13,7 +13,7 @@
 <strong>Associations<br/></strong>
 {% if assocs %}
     {% for a in assocs %}
-        <a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a>-&gt;<a href="/as/git/{{ a.git }}/"
+        <a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a> --&gt; <a href="/as/git/{{ a.git }}/"
             >G{{ a.git }}</a> | Created: {{ a.date }} | Status: 
         {% if a.git in opentickets%}
             <span style="color:green">Open</span>
@@ -27,7 +27,7 @@
 {% endif %}
 </p>
 
-<form action="/as/" method="post">
+<form action="/as/" method="post">{% csrf_token %}
     <p><strong>Create New Association</strong>
     {{ form.non_field_errors }}
     <div class="fieldWrapper">
@@ -45,6 +45,6 @@
         <label for="id_notes">Notes:</label>
         {{ form.notes }}
     </div>
-    <p><input type="submit" value="Send message" /></p>
+    <p><input type="submit" value="Submit" /></p>
 </form>
 

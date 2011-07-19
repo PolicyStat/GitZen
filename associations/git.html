@@ -1,10 +1,11 @@
 <p>
+<strong>Data<br/></strong>
 {% for k, v in issue %}
     {{ k }}: {{ v }}<br/>
 {% endfor %}
-<br/>Comments: <br/><br/>
+<br/><strong>Comments</strong>
 {% for c in comments %}
-    {{ c.user }} at {{ c.created_at }}:<br/>{{ c.body }}
+    <br/>{{ c.user }} at {{ c.created_at }}:<br/>{{ c.body }}<br/>
 {% endfor %}
 </p>
 

@@ -1,4 +1,5 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django import forms
 from github2.client import Github
@@ -23,8 +24,7 @@ def home(request):
         form = AssocForm(request.POST)
         if form.is_valid():
             a = Association(git=form.cleaned_data['gnum'],
-            zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'],
-            status=True)
+            zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'])
             a.save()
 
             return HttpResponseRedirect('/as/')
@@ -33,7 +33,8 @@ def home(request):
 
     return render_to_response('associations/home.html', {'issues': issues,
                                 'assocs': assocs, 'opentickets': opentickets, 
-                                'form':form,})
+                                'form':form,}, context_instance=
+                                RequestContext(request))
 
 def git(request, git_num):
     issue = github.issues.show(repo, git_num)
