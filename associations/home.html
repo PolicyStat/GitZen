@@ -1,0 +1,5 @@
+<p>
+{% for i in issues %}
+    <a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> {{ i.title }}
+{% endfor %}
+</p>

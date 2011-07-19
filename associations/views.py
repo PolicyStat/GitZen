@@ -11,9 +11,7 @@ zendesk = Zendesk('https://policystat.zendesk.com', '', '')
 
 def home(request):
     issues = github.issues.list(repo, state='open')
-    output = '<br/>'.join(['<a href="/as/git/%s/">%s.</a> %s' % (i.number, 
-                        i.number, i.title) for i in issues])
-    return HttpResponse(output)
+    return render_to_response('associations/home.html', {'issues': issues})
 
 def git(request, git_num):
     issue = github.issues.show(repo, git_num)
