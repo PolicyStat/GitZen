@@ -1,5 +1,50 @@
 <p>
-{% for i in issues %}
-    <a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> {{ i.title }}
-{% endfor %}
+<strong>Open GitHub Tickets<br/></strong>
+{% if issues %}
+    {% for i in issues %}
+        <a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> {{ i.title }}<br/>
+    {% endfor %}
+{% else %}
+    There are currently no open tickets in GitHub.
+{% endif %}
 </p>
+
+<p>
+<strong>Associations<br/></strong>
+{% if assocs %}
+    {% for a in assocs %}
+        <a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a>-&gt;<a href="/as/git/{{ a.git }}/"
+            >G{{ a.git }}</a> | Created: {{ a.date }} | Status: 
+        {% if a.git in opentickets%}
+            <span style="color:green">Open</span>
+        {% else %}
+            <span style="color:red">Closed</span>
+        {% endif %}
+        <br/>{{ a.notes }}<br/><br/>
+    {% endfor %}
+{% else %}
+    There are currently no active Associations.
+{% endif %}
+</p>
+
+<form action="/as/" method="post">
+    <p><strong>Create New Association</strong>
+    {{ form.non_field_errors }}
+    <div class="fieldWrapper">
+        {{ form.gnum.errors }}
+        <label for="id_gnum">GitHub Issue Ticket Number:</label>
+        {{ form.gnum }}
+    </div>
+    <div class="fieldWrapper">
+        {{ form.znum.errors }}
+        <label for="id_znum">Zendesk Incident Number:</label>
+        {{ form.znum }}
+    </div>
+    <div class="fieldWrapper">
+        {{ form.notes.errors }}
+        <label for="id_notes">Notes:</label>
+        {{ form.notes }}
+    </div>
+    <p><input type="submit" value="Send message" /></p>
+</form>
+
