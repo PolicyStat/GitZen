@@ -1,4 +1,6 @@
 from django.http import HttpResponse
+from django.template import Context, loader
+from django.shortcuts import render_to_response
 from github2.client import Github
 from github2.issues import *
 from zendesk import Zendesk
@@ -15,12 +17,9 @@ def home(request):
 
 def git(request, git_num):
     issue = github.issues.show(repo, git_num)
-    comments = github.issues.comments(repo, git_num)
-    output = '%s<br/><br/>Comments:<br/><br/>%s' % ('<br/>'.join(['%s: %s' % 
-                (k, v) for k, v in issue]), '<br/><br/>'.join(['%s at %s:<br/>%s' % 
-                (c.user, c.created_at, c.body) for c in comments]))
-    
-    return HttpResponse(output)
+    comments = github.issues.comments(repo, git_num) 
+    return render_to_response('associations/git.html', {'issue':issue,
+                                'comments': comments})
 
 def zen(request, zen_num):
    pass 
