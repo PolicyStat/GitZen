@@ -1,29 +1,26 @@
+<html>
+<head>
+<style type="text/css">
+table, td, th
+{
+border:1px solid black;
+}
+td
+{
+padding:5px;
+}
+</style>
+</head>
+
+<body>
+<h1>Open GitHub Tickets<br/></h1>
 <p>
-<strong>Open GitHub Tickets<br/></strong>
 {% if issues %}
     {% for i in issues %}
         <a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> {{ i.title }}<br/>
     {% endfor %}
 {% else %}
     There are currently no open tickets in GitHub.
-{% endif %}
-</p>
-
-<p>
-<strong>Associations<br/></strong>
-{% if assocs %}
-    {% for a in assocs %}
-        <a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a> --&gt; <a href="/as/git/{{ a.git }}/"
-            >G{{ a.git }}</a> | Created: {{ a.date }} | Status: 
-        {% if a.git in opentickets%}
-            <span style="color:green">Open</span>
-        {% else %}
-            <span style="color:red">Closed</span>
-        {% endif %}
-        <br/>{{ a.notes }}<br/><br/>
-    {% endfor %}
-{% else %}
-    There are currently no active Associations.
 {% endif %}
 </p>
 
@@ -48,3 +45,58 @@
     <p><input type="submit" value="Submit" /></p>
 </form>
 
+<h1>Associations<br/></h1>
+{% if assocs %}
+    <table>
+    <tr>
+    <th>Association</th>
+    <th>Date Created</th>
+    <th>Git Labels</th>
+    <th>Git Status</th>
+    <th>Additional Notes</th>
+    </tr>
+    {% for a in assocs %}
+        <tr>
+        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a> --&gt; 
+        <a href="/as/git/{{ a.git }}/">G{{ a.git }}</a></td> 
+        <td align="center">{{ a.date }}</td>
+        <td align="center">
+        {% for num, labs in gitLabels.items %}
+            {% if num == a.git %}
+                {% if labs %}
+                    {% for lab in labs %}
+                        {{ lab }}, 
+                    {% endfor %}
+                {% else %}
+                    None
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        </td>
+        <td> 
+        {% if a.git in opentickets%}
+            <span style="color:green">Open (
+            {% for num, date in dates.items %}
+                {% if num == a.git %}
+                    {{ date }})
+                {% endif %}
+            {% endfor %}
+            </span>
+        {% else %}
+            <span style="color:red">Closed (
+            {% for num, date in dates.items %}
+                {% if num == a.git %}
+                    {{ date }})
+                {% endif %}
+            {% endfor %}
+            </span>
+        {% endif %}</td>
+        <td>{{ a.notes }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>There are currently no active Associations.</p>
+{% endif %}
+</body>
+</html>
