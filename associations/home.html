@@ -35,13 +35,22 @@ padding:5px;
 
 <table class="top" style="margin-left:33%;">
 <tr>
-<th>Zendesk Groups</th>
+<th colspan="3">Zendesk End Users</th>
+</tr>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Organization</th>
 </tr>
 
 {% if zenTic %}
     {% for i in zenTic %}
-        <tr><td align="center"><a href="/as/zen/u{{ i.id }}/"
-        >{{ i.name }}</a></td></tr>
+        <tr>
+        <td align="center"><a href="/as/zen/u{{ i.id }}/"
+        >{{ i.name }}</a></td>
+        <td>{{ i.email }}</td>
+        <td>{{ i.org_name }}</td>
+        </tr>
     {% endfor %}
 {% else %}
     <tr><td>There are currently no Zendesk groups.</td></tr>

@@ -32,10 +32,21 @@ def home(request):
         gitLabels[i.number] = i.labels
 
     zenTic = []
-    for i in minidom.parseString(zendesk.list_organizations()). \
-    getElementsByTagName('organization'):
+    for i in minidom.parseString(zendesk.list_users()). \
+    getElementsByTagName('user'):
+        for o in minidom.parseString(zendesk.list_organizations()). \
+        getElementsByTagName('organization'):
+            org_name = 'None'
+            org_id = i.getElementsByTagName('organization-id')[0].firstChild               
+            if org_id is not None and o.getElementsByTagName \
+            ('id')[0].firstChild.data == org_id.data:
+                org_name = o.getElementsByTagName('name')[0].firstChild.data
+                break
+
         zenTic.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
-                        'id': i.getElementsByTagName('id')[0].firstChild.data,})
+                    'email': i.getElementsByTagName('email')[0].firstChild.data,
+                    'id': i.getElementsByTagName('id')[0].firstChild.data,
+                    'org_name': org_name})
         
     if request.method == 'POST':
         form = AssocForm(request.POST)
