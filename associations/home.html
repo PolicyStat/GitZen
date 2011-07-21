@@ -5,6 +5,11 @@ table, td, th
 {
 border:1px solid black;
 }
+table.top
+{
+width:30%;
+border:0px
+}
 td
 {
 padding:5px;
@@ -13,16 +18,35 @@ padding:5px;
 </head>
 
 <body>
-<h1>Open GitHub Tickets<br/></h1>
-<p>
-{% if issues %}
-    {% for i in issues %}
-        <a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> {{ i.title }}<br/>
+<table class="top">
+<tr>
+<th>Open GitHub Tickets</th>
+</tr>
+
+{% if gitTic %}
+    {% for i in gitTic %}
+        <tr><td><a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> 
+        {{ i.title }}</td></tr>
     {% endfor %}
 {% else %}
-    There are currently no open tickets in GitHub.
+    <tr><td>There are currently no open GitHub Tickets.</td></tr>
 {% endif %}
-</p>
+</table>
+
+<table class="top" style="margin-left:33%;">
+<tr>
+<th>Zendesk Groups</th>
+</tr>
+
+{% if zenTic %}
+    {% for i in zenTic %}
+        <tr><td align="center"><a href="/as/zen/u{{ i.id }}/"
+        >{{ i.name }}</a></td></tr>
+    {% endfor %}
+{% else %}
+    <tr><td>There are currently no Zendesk groups.</td></tr>
+{% endif %}
+</table>
 
 <form action="/as/" method="post">{% csrf_token %}
     <p><strong>Create New Association</strong>

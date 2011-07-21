@@ -5,12 +5,12 @@ from django import forms
 from github2.client import Github
 from github2.issues import *
 from zendesk import Zendesk
+from xml.dom import minidom
 from associations.models import Association
 
 github = Github(username='FriedRice', api_token='68c7180e60ad2354b9bc84792c6ba7ab')
 repo = 'PolicyStat/PolicyStat'
-zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com',
-                    'l2us3apitokens')
+zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com', 'l2us3apitokens')
 
 class AssocForm(forms.Form):
     gnum = forms.IntegerField()
@@ -18,9 +18,10 @@ class AssocForm(forms.Form):
     notes = forms.CharField(max_length=200)
 
 def home(request):
-    issues = github.issues.list(repo, state='open')
+    gitTic = github.issues.list(repo, state='open')
     assocs = Association.objects.all().order_by('git')
     opentickets = [i.number for i in github.issues.list(repo, state='open')]
+
     dates = {}
     gitLabels = {}
     for i in github.issues.list(repo, state='open'):
@@ -29,6 +30,12 @@ def home(request):
     for i in github.issues.list(repo, state='closed'):
         dates[i.number] = i.closed_at
         gitLabels[i.number] = i.labels
+
+    zenTic = []
+    for i in minidom.parseString(zendesk.list_organizations()). \
+    getElementsByTagName('organization'):
+        zenTic.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
+                        'id': i.getElementsByTagName('id')[0].firstChild.data,})
         
     if request.method == 'POST':
         form = AssocForm(request.POST)
@@ -41,11 +48,11 @@ def home(request):
     else:
         form = AssocForm()
 
-    return render_to_response('associations/home.html', {'issues': issues,
-                                'assocs': assocs, 'opentickets': opentickets,
-                                'dates': dates, 'gitLabels': gitLabels, 
-                                'form':form,}, context_instance=
-                                RequestContext(request))
+    return render_to_response('associations/home.html', {'gitTic': gitTic,
+                                'zenTic': zenTic, 'assocs': assocs, 
+                                'opentickets': opentickets, 'dates': dates, 
+                                'gitLabels': gitLabels, 'form':form,}, 
+                                context_instance=RequestContext(request))
 
 def git(request, git_num):
     issue = github.issues.show(repo, git_num)
