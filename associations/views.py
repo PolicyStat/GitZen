@@ -71,5 +71,21 @@ def git(request, git_num):
     return render_to_response('associations/git.html', {'issue':issue,
                                 'comments': comments})
 
-def zen(request, zen_num):
-   pass 
+def zenU(request, user_num):
+    cntr = 0
+    user_list =  minidom.parseString(zendesk.list_users()). \
+    getElementsByTagName('user')
+    for i in user_list:
+        user_id = i.getElementsByTagName('id')[0].firstChild
+        if user_id is not None and user_id.data == user_num:
+            break
+        cntr += 1
+
+    user_data = {}
+    for i in user_list[cntr].childNodes:
+        if i.firstChild is not None:
+            user_data[i.nodeName] = i.firstChild.data
+
+    return render_to_response('associations/zenU.html', 
+                                {'user_data': user_data,})
+    

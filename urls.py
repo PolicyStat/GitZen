@@ -4,9 +4,10 @@ from django.conf.urls.defaults import patterns, include, url
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('',
-    (r'^as/$', 'associations.views.home'),
-    (r'^as/new/$', 'associations.views.new'),
-    (r'^as/git/(?P<git_num>\d+)/$', 'associations.views.git'),
-    (r'^as/zen/(?P<zen_num>\d+)/$', 'associations.views.zen'),
+urlpatterns = patterns('associations.views',
+    (r'^as/$', 'home'),
+    (r'^as/new/$', 'new'),
+    (r'^as/git/(?P<git_num>\d+)/$', 'git'),
+    (r'^as/zen/t(?P<zen_num>\d+)/$', 'zenT'),
+    (r'^as/zen/u(?P<user_num>\d+)/$', 'zenU'),
 ) 
