@@ -173,6 +173,7 @@ color:blue;
     <table align="center">
     <tr>
     <th>Association</th>
+    <th>User</th>
     <th>Date Created</th>
     <th>Git Labels</th>
     <th>Git Status</th>
@@ -181,7 +182,8 @@ color:blue;
     {% for a in assocs %}
         <tr>
         <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a> --&gt; 
-        <a href="/as/git/{{ a.git }}/">G{{ a.git }}</a></td> 
+        <a href="/as/git/{{ a.git }}/">G{{ a.git }}</a></td>
+        <td align="center">{{ a.user }}</td>
         <td align="center">{{ a.date }}</td>
         <td align="center">
         {% for num, labs in gitLabels.items %}
@@ -219,7 +221,7 @@ color:blue;
     {% endfor %}
     </table>
 {% else %}
-    <p>There are currently no active Associations.</p>
+    <p align="center">There are currently no active Associations.</p>
 {% endif %}
 </body>
 </html>

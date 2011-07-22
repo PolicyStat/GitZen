@@ -10,7 +10,12 @@ from associations.models import Association
 
 github = Github(username='FriedRice', api_token='68c7180e60ad2354b9bc84792c6ba7ab')
 repo = 'PolicyStat/PolicyStat'
-zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com', 'l2us3apitokens')
+zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com',
+                    'l2us3apitokens')
+zticket_list = minidom.parseString(zendesk.list_tickets \
+                (view_id=22796456)).getElementsByTagName('ticket') 
+zuser_list = minidom.parseString(zendesk.list_users()). \
+    getElementsByTagName('user')
 
 class AssocTicketForm(forms.Form):
     gnum = forms.IntegerField()
@@ -41,8 +46,7 @@ def home(request):
         gitLabels[i.number] = i.labels
 
     zenTics = []
-    for t in minidom.parseString(zendesk.list_tickets(view_id=22796456)). \
-    getElementsByTagName('ticket'):
+    for t in zticket_list:
         zenTics.append({
             'id': t.getElementsByTagName('nice-id')[0].firstChild.data,
             'req_name':
@@ -51,8 +55,7 @@ def home(request):
         })
 
     zenUsers = []
-    for i in minidom.parseString(zendesk.list_users()). \
-    getElementsByTagName('user'):
+    for i in zuser_list:
         for o in minidom.parseString(zendesk.list_organizations()). \
         getElementsByTagName('organization'):
             org_name = 'None'
@@ -74,13 +77,21 @@ def home(request):
                 query = []
                 for s in cform.cleaned_data['query'].split(')'):
                     query.append(s[1:].split("|"))
-                    Association
 
         elif 'ticket' in request.POST:
             tform = AssocTicketForm(request.POST)
             if tform.is_valid():
-                a = Association(git=form.cleaned_data['gnum'],
-                zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'],
+                cntr = 0
+                for t in zticket_list:
+                    if t.getElementsByTagName('nice-id')[0].firstChild.data \
+                    == str(tform.cleaned_data['znum']):
+                        break
+                    cntr += 1
+
+                a = Association(git=tform.cleaned_data['gnum'],
+                zen=tform.cleaned_data['znum'], user=zticket_list[cntr]. \
+                getElementsByTagName('req-name')[0].firstChild.data, 
+                notes=tform.cleaned_data['notes'],
                 status=True)
                 a.save()
 
@@ -111,16 +122,14 @@ def git(request, git_num):
 
 def zenT(request, zen_num):
     cntr = 0
-    ticket_list = minidom.parseString( \
-    zendesk.list_tickets(view_id=22796456)).getElementsByTagName('ticket')
 
-    for t in ticket_list:
+    for t in zticket_list:
         if t.getElementsByTagName('nice-id')[0].firstChild.data == zen_num:
             break
         cntr += 1
 
     ticket_data = {}
-    for i in ticket_list[cntr].childNodes:
+    for i in zticket_list[cntr].childNodes:
         if i.firstChild is not None:
             if i.nodeName == 'nice-id':
                 ticket_data['nice_id'] = i.firstChild.data
@@ -132,17 +141,15 @@ def zenT(request, zen_num):
 
 def zenU(request, user_num):
     cntr = 0
-    user_list =  minidom.parseString(zendesk.list_users()). \
-    getElementsByTagName('user')
-
-    for u in user_list:
+    
+    for u in zuser_list:
         user_id = u.getElementsByTagName('id')[0].firstChild
         if user_id is not None and user_id.data == user_num:
             break
         cntr += 1
 
     user_data = {}
-    for i in user_list[cntr].childNodes:
+    for i in zuser_list[cntr].childNodes:
         if i.firstChild is not None:
             user_data[i.nodeName] = i.firstChild.data
 
