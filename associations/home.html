@@ -104,7 +104,7 @@ color:blue;
 <td align="center">
 <form action"/as/" method="post">{% csrf_token %}
     {{ cform.non_field_errors }}
-    <p>Close Format: (ZUser, ZTicket)<p>
+    <p>Close Format: (ZUser1|ZTicket1) (ZUser2|ZTicket2)<p>
     <div class="fieldWrapper">
         {{ cform.query.errors }}
         <label for="id_query">Close Query: </label>
@@ -166,9 +166,11 @@ color:blue;
 </tr>
 </table>
 
-<h1>Associations<br/></h1>
+<br/>
+
+<h2 align="center">Associations</h2>
 {% if assocs %}
-    <table>
+    <table align="center">
     <tr>
     <th>Association</th>
     <th>Date Created</th>

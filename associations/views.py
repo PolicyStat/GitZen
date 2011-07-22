@@ -71,7 +71,11 @@ def home(request):
         if 'close' in request.POST:
             cform = CloseForm(request.POST)
             if cform.is_valid():
-               pass 
+                query = []
+                for s in cform.cleaned_data['query'].split(')'):
+                    query.append(s[1:].split("|"))
+                    Association
+
         elif 'ticket' in request.POST:
             tform = AssocTicketForm(request.POST)
             if tform.is_valid():
