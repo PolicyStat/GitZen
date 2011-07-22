@@ -12,10 +12,19 @@ github = Github(username='FriedRice', api_token='68c7180e60ad2354b9bc84792c6ba7a
 repo = 'PolicyStat/PolicyStat'
 zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com', 'l2us3apitokens')
 
-class AssocForm(forms.Form):
+class AssocTicketForm(forms.Form):
     gnum = forms.IntegerField()
     znum = forms.IntegerField()
     notes = forms.CharField(max_length=200)
+
+class AssocUserForm(forms.Form):
+    gnum = forms.IntegerField()
+    zuser = forms.CharField(max_length=200)
+    notes = forms.CharField(max_length=200)
+
+class CloseForm(forms.Form):
+    query = forms.CharField(max_length=1000)
+    comment = forms.CharField(max_length=1000)
 
 def home(request):
     gitTic = github.issues.list(repo, state='open')
@@ -59,22 +68,35 @@ def home(request):
                     'org_name': org_name})
         
     if request.method == 'POST':
-        form = AssocForm(request.POST)
-        if form.is_valid():
-            a = Association(git=form.cleaned_data['gnum'],
-            zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'],
-            status=True)
-            a.save()
+        if 'close' in request.POST:
+            cform = CloseForm(request.POST)
+            if cform.is_valid():
+               pass 
+        elif 'ticket' in request.POST:
+            tform = AssocTicketForm(request.POST)
+            if tform.is_valid():
+                a = Association(git=form.cleaned_data['gnum'],
+                zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'],
+                status=True)
+                a.save()
 
-            return HttpResponseRedirect('/as/')
+                return HttpResponseRedirect('/as/')
+
+        elif 'user' in request.POST:
+            uform = AssocUserForm(request.POST)
+            if uform.is_valid():
+                pass
     else:
-        form = AssocForm()
+        cform = CloseForm()
+        tform = AssocTicketForm()
+        uform = AssocUserForm()
 
     return render_to_response('associations/home.html', {'gitTic': gitTic,
                                 'zenTics':zenTics, 'zenUsers': zenUsers, 
                                 'assocs': assocs, 'opentickets': opentickets, 
                                 'dates': dates, 'gitLabels': gitLabels, 
-                                'form':form,}, 
+                                'cform': cform, 'tform': tform, 
+                                'uform': uform}, 
                                 context_instance=RequestContext(request))
 
 def git(request, git_num):

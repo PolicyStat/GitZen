@@ -91,26 +91,80 @@ color:blue;
 </tr>
 </table>
 
-<form action="/as/" method="post">{% csrf_token %}
-    <h2>Create New Association</h2>
-    {{ form.non_field_errors }}
+<br/><br/>
+
+<table class="noborder" style="width:100%">
+<tr>
+<th class="noborder"><h2>Close Associations</h2></th>
+<th class="noborder"><h2>Create By Ticket</h2></th>
+<th class="noborder"><h2>Create By User</h2></th>
+</tr>
+
+<tr>
+<td align="center">
+<form action"/as/" method="post">{% csrf_token %}
+    {{ cform.non_field_errors }}
+    <p>Close Format: (ZUser, ZTicket)<p>
     <div class="fieldWrapper">
-        {{ form.gnum.errors }}
-        <label for="id_gnum">GitHub Issue Ticket Number:</label>
-        {{ form.gnum }}
+        {{ cform.query.errors }}
+        <label for="id_query">Close Query: </label>
+        {{ cform.query }}
     </div>
     <div class="fieldWrapper">
-        {{ form.znum.errors }}
-        <label for="id_znum">Zendesk Incident Number:</label>
-        {{ form.znum }}
+        {{ cform.comment.errors }}
+        <label for="id_comment">Closing Comment:</label>
+        {{ cform.comment }}
     </div>
-    <div class="fieldWrapper">
-        {{ form.notes.errors }}
-        <label for="id_notes">Notes:</label>
-        {{ form.notes }}
-    </div>
-    <p><input type="submit" value="Submit" /></p>
+    <p><input name="close" type="submit" value="Close" /></p>
 </form>
+</td>
+
+<td align="center">
+<form action="/as/" method="post">{% csrf_token %}
+    {{ tform.non_field_errors }}
+    <div class="fieldWrapper">
+        {{ tform.gnum.errors }}
+        <label for="id_gnum">GitHub Issue Ticket Number:</label>
+        {{ tform.gnum }}
+    </div>
+    <div class="fieldWrapper">
+        {{ tform.znum.errors }}
+        <label for="id_znum">Zendesk Incident Number:</label>
+        {{ tform.znum }}
+    </div>
+    <div class="fieldWrapper">
+        {{ tform.notes.errors }}
+        <label for="id_notes">Notes:</label>
+        {{ tform.notes }}
+    </div>
+    <p><input name="ticket" type="submit" value="Create" /></p>
+</form>
+</td>
+
+<td align="center">
+    <form action="/as/" method="post">{% csrf_token %}
+    {{ uform.non_field_errors }}
+    <div class="fieldWrapper">
+        {{ uform.gnum.errors }}
+        <label for="id_gnum">GitHub Issue Ticket Number:</label>
+        {{ uform.gnum }}
+    </div>
+    <div class="fieldWrapper">
+        {{ uform.zuser.errors }}
+        <label for="id_zuser">Zendesk User:</label>
+        {{ uform.zuser }}
+    </div>
+    <div class="fieldWrapper">
+        {{ uform.notes.errors }}
+        <label for="id_notes">Notes:</label>
+        {{ uform.notes }}
+    </div>
+    <p><input name="user" type="submit" value="Create" /></p>
+</form>
+
+</td>
+</tr>
+</table>
 
 <h1>Associations<br/></h1>
 {% if assocs %}
