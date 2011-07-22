@@ -83,12 +83,34 @@ def git(request, git_num):
     return render_to_response('associations/git.html', {'issue':issue,
                                 'comments': comments})
 
+def zenT(request, zen_num):
+    cntr = 0
+    ticket_list = minidom.parseString( \
+    zendesk.list_tickets(view_id=22796456)).getElementsByTagName('ticket')
+
+    for t in ticket_list:
+        if t.getElementsByTagName('nice-id')[0].firstChild.data == zen_num:
+            break
+        cntr += 1
+
+    ticket_data = {}
+    for i in ticket_list[cntr].childNodes:
+        if i.firstChild is not None:
+            if i.nodeName == 'nice-id':
+                ticket_data['nice_id'] = i.firstChild.data
+            else:
+                ticket_data[i.nodeName] = i.firstChild.data
+
+    return render_to_response('associations/zenT.html', 
+                                {'ticket_data': ticket_data,})
+
 def zenU(request, user_num):
     cntr = 0
     user_list =  minidom.parseString(zendesk.list_users()). \
     getElementsByTagName('user')
-    for i in user_list:
-        user_id = i.getElementsByTagName('id')[0].firstChild
+
+    for u in user_list:
+        user_id = u.getElementsByTagName('id')[0].firstChild
         if user_id is not None and user_id.data == user_num:
             break
         cntr += 1
