@@ -19,10 +19,10 @@ color:blue;
 </head>
 
 <body>
-<table class="noborder" style="width:66%;">
+<table class="noborder" style="width:100%;">
 <tr>
 <td class="noborder">
-    <table class="noborder">
+    <table>
     <tr>
     <th>Open GitHub Tickets</th>
     </tr>
@@ -39,7 +39,31 @@ color:blue;
 </td>
 
 <td class="noborder">
-    <table class="noborder">
+    <table>
+    <tr>
+    <th colspan="2">Zendesk Tickets</th>
+    </tr>
+    <tr>
+    <th>Subject</th>
+    <th>Requester</th>
+    </tr>
+
+    {% if zenTics %}
+        {% for t in zenTics %}
+            <tr>
+            <td><a href="/as/zen/t{{ t.id }}/">{{ t.id }}.</a> 
+            {{ t.subject }}</td>
+            <td>{{ t.req_name }}</td>
+            </tr>
+        {% endfor %}
+    {% else %}
+        <tr><td>There are currently no Zendesk Tickets.</td></tr>
+    {% endif %}
+    </table>
+</td>
+
+<td class="noborder">
+    <table>
     <tr>
     <th colspan="3">Zendesk Users</th>
     </tr>
@@ -49,17 +73,17 @@ color:blue;
     <th>Organization</th>
     </tr>
 
-    {% if zenTic %}
-        {% for i in zenTic %}
+    {% if zenUsers %}
+        {% for u in zenUsers %}
             <tr>
-            <td align="center"><a href="/as/zen/u{{ i.id }}/"
-            >{{ i.name }}</a></td>
-            <td>{{ i.email }}</td>
-            <td>{{ i.org_name }}</td>
+            <td align="center"><a href="/as/zen/u{{ u.id }}/"
+            >{{ u.name }}</a></td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.org_name }}</td>
             </tr>
         {% endfor %}
     {% else %}
-        <tr><td>There are currently no Zendesk groups.</td></tr>
+        <tr><td>There are currently no Zendesk users.</td></tr>
     {% endif %}
     </table>
 </td>

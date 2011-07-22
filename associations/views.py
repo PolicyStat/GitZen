@@ -31,7 +31,17 @@ def home(request):
         dates[i.number] = i.closed_at
         gitLabels[i.number] = i.labels
 
-    zenTic = []
+    zenTics = []
+    for t in minidom.parseString(zendesk.list_tickets(view_id=22796456)). \
+    getElementsByTagName('ticket'):
+        zenTics.append({
+            'id': t.getElementsByTagName('nice-id')[0].firstChild.data,
+            'req_name':
+            t.getElementsByTagName('req-name')[0].firstChild.data,
+            'subject': t.getElementsByTagName('subject')[0].firstChild.data,
+        })
+
+    zenUsers = []
     for i in minidom.parseString(zendesk.list_users()). \
     getElementsByTagName('user'):
         for o in minidom.parseString(zendesk.list_organizations()). \
@@ -43,7 +53,7 @@ def home(request):
                 org_name = o.getElementsByTagName('name')[0].firstChild.data
                 break
 
-        zenTic.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
+        zenUsers.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
                     'email': i.getElementsByTagName('email')[0].firstChild.data,
                     'id': i.getElementsByTagName('id')[0].firstChild.data,
                     'org_name': org_name})
@@ -52,7 +62,8 @@ def home(request):
         form = AssocForm(request.POST)
         if form.is_valid():
             a = Association(git=form.cleaned_data['gnum'],
-            zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'])
+            zen=form.cleaned_data['znum'], notes=form.cleaned_data['notes'],
+            status=True)
             a.save()
 
             return HttpResponseRedirect('/as/')
@@ -60,9 +71,10 @@ def home(request):
         form = AssocForm()
 
     return render_to_response('associations/home.html', {'gitTic': gitTic,
-                                'zenTic': zenTic, 'assocs': assocs, 
-                                'opentickets': opentickets, 'dates': dates, 
-                                'gitLabels': gitLabels, 'form':form,}, 
+                                'zenTics':zenTics, 'zenUsers': zenUsers, 
+                                'assocs': assocs, 'opentickets': opentickets, 
+                                'dates': dates, 'gitLabels': gitLabels, 
+                                'form':form,}, 
                                 context_instance=RequestContext(request))
 
 def git(request, git_num):
