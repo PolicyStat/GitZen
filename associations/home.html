@@ -96,70 +96,50 @@ color:blue;
 <table class="noborder" style="width:100%">
 <tr>
 <th class="noborder"><h2>Close Associations</h2></th>
-<th class="noborder"><h2>Create By Ticket</h2></th>
-<th class="noborder"><h2>Create By User</h2></th>
+<th class="noborder"><h2>Add User to Issue</h2></th>
 </tr>
 
 <tr>
 <td align="center">
 <form action"/as/" method="post">{% csrf_token %}
     {{ cform.non_field_errors }}
-    <p>Close Format: (ZUser1|ZTicket1) (ZUser2|ZTicket2)<p>
+    <p>Close Format: (ZUser1|ZTicket1) (ZUser2|ZTicket2)</p>
+    <p>Close Query:</p>
     <div class="fieldWrapper">
         {{ cform.query.errors }}
-        <label for="id_query">Close Query: </label>
+        <label for="id_query"></label>
         {{ cform.query }}
-    </div>
-    <div class="fieldWrapper">
-        {{ cform.comment.errors }}
-        <label for="id_comment">Closing Comment:</label>
-        {{ cform.comment }}
     </div>
     <p><input name="close" type="submit" value="Close" /></p>
 </form>
 </td>
 
 <td align="center">
-<form action="/as/" method="post">{% csrf_token %}
-    {{ tform.non_field_errors }}
-    <div class="fieldWrapper">
-        {{ tform.gnum.errors }}
-        <label for="id_gnum">GitHub Issue Ticket Number:</label>
-        {{ tform.gnum }}
-    </div>
-    <div class="fieldWrapper">
-        {{ tform.znum.errors }}
-        <label for="id_znum">Zendesk Incident Number:</label>
-        {{ tform.znum }}
-    </div>
-    <div class="fieldWrapper">
-        {{ tform.notes.errors }}
-        <label for="id_notes">Notes:</label>
-        {{ tform.notes }}
-    </div>
-    <p><input name="ticket" type="submit" value="Create" /></p>
-</form>
-</td>
-
-<td align="center">
     <form action="/as/" method="post">{% csrf_token %}
-    {{ uform.non_field_errors }}
+    {{ aform.non_field_errors }}
     <div class="fieldWrapper">
-        {{ uform.gnum.errors }}
+        {{ aform.gnum.errors }}
         <label for="id_gnum">GitHub Issue Ticket Number:</label>
-        {{ uform.gnum }}
+        {{ aform.gnum }}
     </div>
     <div class="fieldWrapper">
-        {{ uform.zuser.errors }}
+        {{ aform.zuser.errors }}
         <label for="id_zuser">Zendesk User:</label>
-        {{ uform.zuser }}
+        {{ aform.zuser }}
     </div>
+    <p>Subject:</p>
     <div class="fieldWrapper">
-        {{ uform.notes.errors }}
-        <label for="id_notes">Notes:</label>
-        {{ uform.notes }}
+        {{ aform.subject.errors }}
+        <label for="id_subject"></label>
+        {{ aform.subject }}
     </div>
-    <p><input name="user" type="submit" value="Create" /></p>
+    <p>Description:</p>
+    <div class="fieldWrapper">
+        {{ aform.desc.errors }}
+        <label for="id_desc"></label>
+        {{ aform.desc }}
+    </div>
+    <p><input name="add" type="submit" value="Add" /></p>
 </form>
 
 </td>
@@ -169,59 +149,104 @@ color:blue;
 <br/>
 
 <h2 align="center">Associations</h2>
-{% if assocs %}
+<h3 align="center">Closed Associations</h3>
+{% if c_assocs %}
     <table align="center" style="width:75%">
     <tr>
     <th>Association</th>
-    <th>User</th>
-    <th>Date Created</th>
-    <th>Git Labels</th>
+    <th>Zendesk User</th>
+    <th>Last Zen Ticket Update</th>
+    <th>GitHub User</th>
+    <th>Git Issue Labels</th>
     <th>Git Status</th>
-    <th>Additional Notes</th>
     </tr>
-    {% for a in assocs %}
+    {% for a in c_assocs %}
         <tr>
-        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.zen }}</a> --&gt; 
-        <a href="/as/git/{{ a.git }}/">G{{ a.git }}</a></td>
-        <td align="center">{{ a.user }}</td>
-        <td align="center">{{ a.date }}</td>
+        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
+        <a href="/as/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
+        <td align="center">{{ a.zuser }}</td>
+        <td align="center">{{ a.zdate }}</td>
+        <td align="center">{{ a.guser }}</td>
         <td align="center">
-        {% for num, labs in gitLabels.items %}
-            {% if num == a.git %}
-                {% if labs %}
-                    {% for lab in labs %}
-                        {{ lab }}, 
-                    {% endfor %}
-                {% else %}
-                    None
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        </td>
-        <td> 
-        {% if a.git in opentickets%}
-            <span style="color:green">Open (
-            {% for num, date in dates.items %}
-                {% if num == a.git %}
-                    {{ date }})
-                {% endif %}
+        {% if a.glabels %}
+            {% for b in a.glabels %}
+                {{ b }},
             {% endfor %}
-            </span>
         {% else %}
-            <span style="color:red">Closed (
-            {% for num, date in dates.items %}
-                {% if num == a.git %}
-                    {{ date }})
-                {% endif %}
-            {% endfor %}
-            </span>
-        {% endif %}</td>
-        <td>{{ a.notes }}</td>
+            None
+        {% endif %}
+        </td>
+        <td align="center">
+            <span style="color:red">Closed ({{ a.gdate }})</span>
+        </td>
         </tr>
     {% endfor %}
     </table>
 {% else %}
-    <p align="center">There are currently no active Associations.</p>
+    <p align="center">There are currently no Associations ready to be closed.</p>
 {% endif %}
+<br/>
+
+<h3 align="center">Open Associations</h3>
+{% if o_assocs %}
+    <table align="center" style="width:75%">
+    <tr>
+    <th>Association</th>
+    <th>Zendesk User</th>
+    <th>Last Zen Ticket Update</th>
+    <th>GitHub User</th>
+    <th>Git Issue Labels</th>
+    <th>Git Status</th>
+    </tr>
+    {% for a in o_assocs %}
+        <tr>
+        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
+        <a href="/as/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
+        <td align="center">{{ a.zuser }}</td>
+        <td align="center">{{ a.zdate }}</td>
+        <td align="center">{{ a.guser }}</td>
+        <td align="center">
+        {% if a.glabels %}
+            {% for b in a.glabels %}
+                {{ b }},
+            {% endfor %}
+        {% else %}
+            None
+        {% endif %}
+        </td>
+        <td align="center"> 
+            <span style="color:green">Open ({{ a.gdate }})</span>
+        </td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p align="center">There are currently no open Associations.</p>
+{% endif %}
+<br/>
+
+<h3 align="center">Not Associated with GitHub</h3>
+{% if no_assocs %}
+    <table align="center" style="width:50%">
+    <tr>
+    <th>Zendesk Ticket</th>
+    <th>Zendesk User</th>
+    <th>Last Updated</th>
+    <th>Displayed Association</th>
+    </tr>
+    {% for a in no_assocs %}
+        <tr>
+        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.znum }}</a></td>
+        <td align="center">{{ a.zuser }}</td>
+        <td align="center">{{ a.zdate }}</td>
+        <td align="center">{{ a.dassoc }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p align="center">There are currently no Zendesk Tickets without Git
+    Associations.</p>
+{% endif %}
+<br/>
 </body>
 </html>

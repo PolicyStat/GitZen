@@ -13,37 +13,23 @@ repo = 'PolicyStat/PolicyStat'
 zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com',
                     'l2us3apitokens')
 zticket_list = minidom.parseString(zendesk.list_tickets \
-                (view_id=22796456)).getElementsByTagName('ticket') 
+                (view_id=22796456)).getElementsByTagName('ticket')
 zuser_list = minidom.parseString(zendesk.list_users()). \
     getElementsByTagName('user')
 
-class AssocTicketForm(forms.Form):
+class AddUserForm(forms.Form):
     gnum = forms.IntegerField()
-    znum = forms.IntegerField()
-    notes = forms.CharField(max_length=200)
-
-class AssocUserForm(forms.Form):
-    gnum = forms.IntegerField()
-    zuser = forms.CharField(max_length=200)
-    notes = forms.CharField(max_length=200)
+    zuser = forms.CharField(max_length=100)
+    subject = forms.CharField(max_length=200)
+    desc = forms.CharField(max_length=1000, widget=forms.Textarea)
 
 class CloseForm(forms.Form):
-    query = forms.CharField(max_length=1000)
-    comment = forms.CharField(max_length=1000)
+    query = forms.CharField(max_length=1000, widget=forms.Textarea)
 
 def home(request):
     gitTic = github.issues.list(repo, state='open')
-    assocs = Association.objects.all().order_by('git')
-    opentickets = [i.number for i in github.issues.list(repo, state='open')]
-
-    dates = {}
-    gitLabels = {}
-    for i in github.issues.list(repo, state='open'):
-        dates[i.number] = i.updated_at
-        gitLabels[i.number] = i.labels
-    for i in github.issues.list(repo, state='closed'):
-        dates[i.number] = i.closed_at
-        gitLabels[i.number] = i.labels
+    ticket_nums = [i.number for i in github.issues.list(repo, state='open')] \
+                + [i.number for i in github.issues.list(repo, state='closed')]
 
     zenTics = []
     for t in zticket_list:
@@ -69,6 +55,40 @@ def home(request):
                     'email': i.getElementsByTagName('email')[0].firstChild.data,
                     'id': i.getElementsByTagName('id')[0].firstChild.data,
                     'org_name': org_name})
+
+    c_assocs = []
+    o_assocs = []
+    no_assocs = []
+    for i in zticket_list:
+        anum = i.getElementsByTagName('field-143159')[0].firstChild
+        a_data = {}
+        a_data['znum'] = \
+                i.getElementsByTagName('nice-id')[0].firstChild.data
+        a_data['zuser'] = \
+                i.getElementsByTagName('req-name')[0].firstChild.data
+        a_data['zdate'] = \
+                i.getElementsByTagName('updated-at')[0].firstChild.data
+
+        if anum is None or not anum.data.split('-')[0] == 'gh' or not \
+        int(anum.data.split('-')[1]) in ticket_nums:
+            if anum is None:
+                a_data['dassoc'] = 'None'
+            else:
+                a_data['dassoc'] = anum.data
+            no_assocs.append(a_data)
+            
+        elif anum.data.split('-')[0] == 'gh':
+            git_issue = github.issues.show(repo, anum.data.split('-')[1])
+            a_data['gnum'] = git_issue.number
+            a_data['guser'] = git_issue.user
+            a_data['glabels'] = git_issue.labels
+            a_data['gstate'] = git_issue.state
+            if git_issue.state == 'open':
+                a_data['gdate'] = git_issue.updated_at
+                o_assocs.append(a_data)
+            else:
+                a_data['gdate'] = git_issue.closed_at
+                c_assocs.append(a_data)
         
     if request.method == 'POST':
         if 'close' in request.POST:
@@ -78,40 +98,30 @@ def home(request):
                 for s in cform.cleaned_data['query'].split(')'):
                     query.append(s[1:].split("|"))
 
-        elif 'ticket' in request.POST:
-            tform = AssocTicketForm(request.POST)
-            if tform.is_valid():
-                cntr = 0
-                for t in zticket_list:
-                    if t.getElementsByTagName('nice-id')[0].firstChild.data \
-                    == str(tform.cleaned_data['znum']):
-                        break
-                    cntr += 1
-
-                a = Association(git=tform.cleaned_data['gnum'],
-                zen=tform.cleaned_data['znum'], user=zticket_list[cntr]. \
-                getElementsByTagName('req-name')[0].firstChild.data, 
-                notes=tform.cleaned_data['notes'],
-                status=True)
-                a.save()
+        elif 'add' in request.POST:
+            aform = AddUserForm(request.POST)
+            if aform.is_valid():
+                new_ticket = {
+                    'ticket': {
+                        'req-name': aform.cleaned_data['zuser'],
+                        'field-143159': 'gh-%s' % (aform.cleaned_data['gnum']),
+                        'subject': aform.cleaned_data['subject'],
+                        'description': aform.cleaned_data['desc'],
+                    }
+                }
+                post_data = Zendesk.dict2xml(new_ticket)
 
                 return HttpResponseRedirect('/as/')
 
-        elif 'user' in request.POST:
-            uform = AssocUserForm(request.POST)
-            if uform.is_valid():
-                pass
     else:
         cform = CloseForm()
-        tform = AssocTicketForm()
-        uform = AssocUserForm()
+        aform = AddUserForm()
 
     return render_to_response('associations/home.html', {'gitTic': gitTic,
                                 'zenTics':zenTics, 'zenUsers': zenUsers, 
-                                'assocs': assocs, 'opentickets': opentickets, 
-                                'dates': dates, 'gitLabels': gitLabels, 
-                                'cform': cform, 'tform': tform, 
-                                'uform': uform}, 
+                                'c_assocs': c_assocs, 'o_assocs': o_assocs,
+                                'no_assocs': no_assocs, 'cform': cform, 
+                                'aform': aform,}, 
                                 context_instance=RequestContext(request))
 
 def git(request, git_num):
