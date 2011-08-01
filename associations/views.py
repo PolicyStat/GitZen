@@ -6,7 +6,6 @@ from github2.client import Github
 from github2.issues import *
 from zendesk import Zendesk
 from xml.dom import minidom
-from associations.models import Association
 
 github = Github(username='FriedRice', api_token='68c7180e60ad2354b9bc84792c6ba7ab')
 repo = 'PolicyStat/PolicyStat'

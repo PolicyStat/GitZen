@@ -93,61 +93,6 @@ color:blue;
 
 <br/><br/>
 
-<table class="noborder" style="width:100%">
-<tr>
-<th class="noborder"><h2>Close Associations</h2></th>
-<th class="noborder"><h2>Add User to Issue</h2></th>
-</tr>
-
-<tr>
-<td align="center">
-<form action"/as/" method="post">{% csrf_token %}
-    {{ cform.non_field_errors }}
-    <p>Close Format: (ZUser1|ZTicket1) (ZUser2|ZTicket2)</p>
-    <p>Close Query:</p>
-    <div class="fieldWrapper">
-        {{ cform.query.errors }}
-        <label for="id_query"></label>
-        {{ cform.query }}
-    </div>
-    <p><input name="close" type="submit" value="Close" /></p>
-</form>
-</td>
-
-<td align="center">
-    <form action="/as/" method="post">{% csrf_token %}
-    {{ aform.non_field_errors }}
-    <div class="fieldWrapper">
-        {{ aform.gnum.errors }}
-        <label for="id_gnum">GitHub Issue Ticket Number:</label>
-        {{ aform.gnum }}
-    </div>
-    <div class="fieldWrapper">
-        {{ aform.zuser.errors }}
-        <label for="id_zuser">Zendesk User:</label>
-        {{ aform.zuser }}
-    </div>
-    <p>Subject:</p>
-    <div class="fieldWrapper">
-        {{ aform.subject.errors }}
-        <label for="id_subject"></label>
-        {{ aform.subject }}
-    </div>
-    <p>Description:</p>
-    <div class="fieldWrapper">
-        {{ aform.desc.errors }}
-        <label for="id_desc"></label>
-        {{ aform.desc }}
-    </div>
-    <p><input name="add" type="submit" value="Add" /></p>
-</form>
-
-</td>
-</tr>
-</table>
-
-<br/>
-
 <h2 align="center">Associations</h2>
 <h3 align="center">Closed Associations</h3>
 {% if c_assocs %}
@@ -159,6 +104,7 @@ color:blue;
     <th>GitHub User</th>
     <th>Git Issue Labels</th>
     <th>Git Status</th>
+    <th class="noborder"></th>
     </tr>
     {% for a in c_assocs %}
         <tr>
@@ -179,6 +125,10 @@ color:blue;
         <td align="center">
             <span style="color:red">Closed ({{ a.gdate }})</span>
         </td>
+        <td class="noborder" style="text-align:center;">
+            <form action="/as/close/">­
+                <input type="Submit" value="Close">
+            </form>
         </tr>
     {% endfor %}
     </table>
