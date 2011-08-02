@@ -30,11 +30,11 @@ color:blue;
 
     {% if gitTic %}
         {% for i in gitTic %}
-            <tr><td><a href='/as/git/{{ i.number }}/'>{{ i.number }}.</a> 
+            <tr><td><a href='/git/{{ i.number }}/'>{{ i.number }}.</a> 
             {{ i.title }}</td></tr>
         {% endfor %}
     {% else %}
-        <tr><td>There are currently no open GitHub Tickets.</td></tr>
+        <tr><td colspan="3">There are currently no open GitHub Tickets.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -52,13 +52,13 @@ color:blue;
     {% if zenTics %}
         {% for t in zenTics %}
             <tr>
-            <td><a href="/as/zen/t{{ t.id }}/">{{ t.id }}.</a> 
+            <td><a href="/zen/t{{ t.id }}/">{{ t.id }}.</a> 
             {{ t.subject }}</td>
             <td>{{ t.req_name }}</td>
             </tr>
         {% endfor %}
     {% else %}
-        <tr><td>There are currently no Zendesk Tickets.</td></tr>
+        <tr><td colspan="3">There are currently no Zendesk Tickets.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -77,14 +77,14 @@ color:blue;
     {% if zenUsers %}
         {% for u in zenUsers %}
             <tr>
-            <td align="center"><a href="/as/zen/u{{ u.id }}/"
+            <td align="center"><a href="/zen/u{{ u.id }}/"
             >{{ u.name }}</a></td>
             <td>{{ u.email }}</td>
             <td>{{ u.org_name }}</td>
             </tr>
         {% endfor %}
     {% else %}
-        <tr><td>There are currently no Zendesk users.</td></tr>
+        <tr><td colspan="3">There are currently no Zendesk users.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -108,8 +108,8 @@ color:blue;
     </tr>
     {% for a in c_assocs %}
         <tr>
-        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
-        <a href="/as/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
+        <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
+        <a href="/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
         <td align="center">{{ a.zuser }}</td>
         <td align="center">{{ a.zdate }}</td>
         <td align="center">{{ a.guser }}</td>
@@ -125,8 +125,8 @@ color:blue;
         <td align="center">
             <span style="color:red">Closed ({{ a.gdate }})</span>
         </td>
-        <td class="noborder" style="text-align:center;">
-            <form action="/as/close/">­
+        <td class="noborder" align="center">
+            <form action="/close/">­
                 <input type="Submit" value="Close">
             </form>
         </tr>
@@ -150,8 +150,8 @@ color:blue;
     </tr>
     {% for a in o_assocs %}
         <tr>
-        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
-        <a href="/as/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
+        <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
+        <a href="/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
         <td align="center">{{ a.zuser }}</td>
         <td align="center">{{ a.zdate }}</td>
         <td align="center">{{ a.guser }}</td>
@@ -186,7 +186,7 @@ color:blue;
     </tr>
     {% for a in no_assocs %}
         <tr>
-        <td align="center"><a href="/as/zen/{{ a.zen }}/">Z{{ a.znum }}</a></td>
+        <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a></td>
         <td align="center">{{ a.zuser }}</td>
         <td align="center">{{ a.zdate }}</td>
         <td align="center">{{ a.dassoc }}</td>

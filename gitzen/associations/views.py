@@ -16,15 +16,6 @@ zticket_list = minidom.parseString(zendesk.list_tickets \
 zuser_list = minidom.parseString(zendesk.list_users()). \
     getElementsByTagName('user')
 
-class AddUserForm(forms.Form):
-    gnum = forms.IntegerField()
-    zuser = forms.CharField(max_length=100)
-    subject = forms.CharField(max_length=200)
-    desc = forms.CharField(max_length=1000, widget=forms.Textarea)
-
-class CloseForm(forms.Form):
-    query = forms.CharField(max_length=1000, widget=forms.Textarea)
-
 def home(request):
     gitTic = github.issues.list(repo, state='open')
     ticket_nums = [i.number for i in github.issues.list(repo, state='open')] \
@@ -89,38 +80,10 @@ def home(request):
                 a_data['gdate'] = git_issue.closed_at
                 c_assocs.append(a_data)
         
-    if request.method == 'POST':
-        if 'close' in request.POST:
-            cform = CloseForm(request.POST)
-            if cform.is_valid():
-                query = []
-                for s in cform.cleaned_data['query'].split(')'):
-                    query.append(s[1:].split("|"))
-
-        elif 'add' in request.POST:
-            aform = AddUserForm(request.POST)
-            if aform.is_valid():
-                new_ticket = {
-                    'ticket': {
-                        'req-name': aform.cleaned_data['zuser'],
-                        'field-143159': 'gh-%s' % (aform.cleaned_data['gnum']),
-                        'subject': aform.cleaned_data['subject'],
-                        'description': aform.cleaned_data['desc'],
-                    }
-                }
-                post_data = Zendesk.dict2xml(new_ticket)
-
-                return HttpResponseRedirect('/as/')
-
-    else:
-        cform = CloseForm()
-        aform = AddUserForm()
-
     return render_to_response('associations/home.html', {'gitTic': gitTic,
                                 'zenTics':zenTics, 'zenUsers': zenUsers, 
                                 'c_assocs': c_assocs, 'o_assocs': o_assocs,
-                                'no_assocs': no_assocs, 'cform': cform, 
-                                'aform': aform,}, 
+                                'no_assocs': no_assocs,}, 
                                 context_instance=RequestContext(request))
 
 def git(request, git_num):
