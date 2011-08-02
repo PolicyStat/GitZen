@@ -103,7 +103,7 @@ def home(request):
         github = Github(username=user.git_name, 
                     api_token=user.git_key)
         repo = user.git_repo
-    except Error:
+    except:
         gitTics = 'broken'
 
     try:
@@ -113,7 +113,7 @@ def home(request):
             (view_id=22796456)).getElementsByTagName('ticket')
         zuser_list = minidom.parseString(zendesk.list_users()). \
             getElementsByTagName('user')
-    except Error:
+    except:
         zenTics = 'broken'
         
     
