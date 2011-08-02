@@ -25,15 +25,19 @@ class NewForm(forms.Form):
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
 class ChangeForm(forms.Form):
-    old_pass = forms.CharField(max_length=75), widget=forms.PasswordInput)
-    new_pass = forms.CharField(max_length=75), widget=forms.PasswordInput)
-    aff_pass = forms.CharField(max_length=75), widget=forms.PasswordInput)
-    git_name = forms.CharField(max_length=75)
-    git_repo = forms.CharField(max_length=75)
-    git_key = forms.CharField(max_length=75)
-    zen_name = forms.CharField(max_length=75)
-    zen_url = forms.CharField(max_length=100)
-    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
+    old_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
+                                required=False)
+    new_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
+                                required=False)
+    aff_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
+                                required=False)
+    git_name = forms.CharField(max_length=75, required=False)
+    git_repo = forms.CharField(max_length=75, required=False)
+    git_key = forms.CharField(max_length=75, required=False)
+    zen_name = forms.CharField(max_length=75, required=False)
+    zen_url = forms.CharField(max_length=100, required=False)
+    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
+                                required=False)
 
 def user_login(request):
     if request.method == 'POST':
@@ -70,7 +74,7 @@ def user_login(request):
                     user.zen_pass = data['zen_pass']
 
                     user.save()
-                    return HttpResponseRedirect('/confirm/')
+                    return HttpResponseRedirect('/confirm/1')
                 else:
                     return HttpResponseRedirect('/nope/2/')
             logform = LogForm()
@@ -86,17 +90,21 @@ def nope(request, nope_num):
     return render_to_response('associations/nope.html', 
                                 {'nope_num': nope_num,})
 
-def confirm(request):
-    return render_to_response('associations/confirm.html')
+def confirm(request, con_num):
+    return render_to_response('associations/confirm.html',
+                                {'con_num': con_num,})
 
 def home(request):
     user = request.user
+    gitTics = ''
+    zenTics = ''
+
     try:
         github = Github(username=user.git_name, 
                     api_token=user.git_key)
         repo = user.git_repo
     except Error:
-        gitTic = 'broken'
+        gitTics = 'broken'
 
     try:
         zendesk = Zendesk(user.zen_url, user.zen_name,
@@ -109,8 +117,10 @@ def home(request):
         zenTics = 'broken'
         
     
-    if gitTic != 'broken':
-        gitTic = github.issues.list(repo, state='open') 
+    if gitTics != 'broken':
+        gitTics = github.issues.list(repo, state='open')
+        ticket_nums = [i.number for i in github.issues.list(repo, state='open')] \
+                    + [i.number for i in github.issues.list(repo, state='closed')]
     
     if zenTics != 'broken':
         zenTics = []
@@ -140,7 +150,7 @@ def home(request):
     else:
         zenUsers = 'broken'
     
-    if gitTics != 'broken' and zenTics != 'broken'
+    if gitTics != 'broken' and zenTics != 'broken':
         c_assocs = []
         o_assocs = []
         no_assocs = []
@@ -187,19 +197,39 @@ def home(request):
 
 def change(request):
     if request.method == 'POST':
-        if 'change' in request.POST:
-            newform = LogForm(request.POST)
-            if logform.is_valid():
-                user = authenticate(
-                    username=logform.cleaned_data['username'],
-                    password=logform.cleaned_data['password'],
-                )
+        changeform = ChangeForm(request.POST)
+        if changeform.is_valid():
+            data = changeform.cleaned_data
+            user = request.user
 
-                if user is not None:
-                    login(request, user)
-                    return HttpResponseRedirect('/main/')
+            if data['new_pass']:
+                if user.check_password(data['old_pass']):
+                    if data['new_pass'] == data['aff_pass']:
+                        user.set_password(data['new_pass'])
+                    else:
+                        return HttpResponseRedirect('/nope/4')
                 else:
-                    return HttpResponseRedirect('/nope/1/')
+                    return HttpResponseRedirect('/nope/3')
+            if data['git_name']:
+                user.git_name = data['git_name']
+            if data['git_repo']:
+                user.git_repo = data['git_repo']
+            if data['git_key']:
+                user.git_key = data['git_key']
+            if data['zen_name']:
+                user.zen_name = data['zen_name']
+            if data['zen_url']:
+                user.zen_url = data['zen_url']
+            if data['zen_pass']:
+                user.zen_pass = data['zen_pass']
+
+            return HttpResponseRedirect('/confirm/2')
+    else:
+        changeform = ChangeForm()
+    
+    return render_to_response('associations/change.html', {'changeform':
+                                changeform,}, 
+                                context_instance=RequestContext(request))
 
 
 def git(request, git_num):

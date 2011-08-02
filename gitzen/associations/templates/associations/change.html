@@ -1,7 +1,7 @@
 <html>
 <head>
-<style type="text/ccs">
-    h1, h2, p, div{
+<style type="text/css">
+    h1, p, div{
         text-align:center;
     }
 </style>
@@ -10,57 +10,59 @@
 
 <body>
 <h1>Change Account Data</h1>
+<p style="width:30%;margin-left:auto;margin-right:auto">All fields are 
+optional. Changing the User password requires entering of the previous 
+User password.</p>
 <br/>
-<h2 style="width:30%">All fields are optional. Changing a password requires
-entering of the previous password.</h2>
 
 <form action="/change/" method="post">{% csrf_token %}
-    {{ newform.non_field_errors }}
+    {{ changeform.non_field_errors }}
     <div class="fieldWrapper">
-        {{ newform.username.errors }}
-        <label for="id_username">Username:</label>
-        {{ newform.username }}
+        {{ changeform.old_pass.errors }}
+        <label for="id_old_pass">Old Password:</label>
+        {{ changeform.old_pass }}
     </div>
     <div class="fieldWrapper">
-        {{ newform.password.errors }}
-        <label for="id_password">Password:</label>
-        {{ newform.password }}
+        {{ changeform.new_pass.errors }}
+        <label for="id_new_pass">New Password:</label>
+        {{ changeform.new_pass }}
     </div>
     <div class="fieldWrapper">
-        {{ newform.affirmpass.errors }}
-        <label for="id_affirmpass">Affirm Password:</label>
-        {{ newform.affirmpass }}
+        {{ changeform.aff_pass.errors }}
+        <label for="id_aff_pass">Affirm New Password:</label>
+        {{ changeform.aff_pass }}
     </div>    
     <div class="fieldWrapper">
-        {{ newform.git_name.errors }}
+        {{ changeform.git_name.errors }}
         <label for="id_git_name">GitHub Username:</label>
-        {{ newform.git_name }}
+        {{ changeform.git_name }}
     </div>
     <div class="fieldWrapper">
-        {{ newform.git_repo.errors }}
+        {{ changeform.git_repo.errors }}
         <label for="id_git_repo">GitHub Repository:</label>
-        {{ newform.git_repo }}
+        {{ changeform.git_repo }}
     </div>
     <div class="fieldWrapper">
-        {{ newform.git_key.errors }}
+        {{ changeform.git_key.errors }}
         <label for="id_git_key">GitHub API Key:</label>
-        {{ newform.git_key }}
+        {{ changeform.git_key }}
     </div>
     <div class="fieldWrapper">
-        {{ newform.zen_name.errors }}
+        {{ changeform.zen_name.errors }}
         <label for="id_zen_name">Zendesk User Email:</label>
-        {{ newform.zen_name }}
+        {{ changeform.zen_name }}
     </div>
     <div class="fieldWrapper">
-        {{ newform.zen_url.errors }}
+        {{ changeform.zen_url.errors }}
         <label for="id_zen_url">Zendesk URL:</label>
-        {{ newform.zen_url }}
+        {{ changeform.zen_url }}
     </div>
    <div class="fieldWrapper">
-        {{ newform.zen_pass.errors }}
+        {{ changeform.zen_pass.errors }}
         <label for="id_zen_pass">Zendesk Password:</label>
-        {{ newform.zen_pass }}
+        {{ changeform.zen_pass }}
     </div> 
-    <p><input name="new" type="submit" value="Create User" /></p>
+    <p><input name="change" type="submit" value="Submit Changes" /></p>
 </form>
-
+</body>
+</html>
