@@ -11,18 +11,18 @@ from associations.models import GZUser
 
 class LogForm(forms.Form):
     username = forms.CharField(max_length=75)
-    password = forms.CharField(max_length=75)
+    password = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
 class NewForm(forms.Form):
     username = forms.CharField(max_length=75)
-    password = forms.CharField(max_length=75)
-    affirmpass = forms.CharField(max_length=75)
+    password = forms.CharField(max_length=75, widget=forms.PasswordInput)
+    affirmpass = forms.CharField(max_length=75, widget=forms.PasswordInput)
     git_name = forms.CharField(max_length=75)
     git_repo = forms.CharField(max_length=75)
     git_key = forms.CharField(max_length=75)
     zen_name = forms.CharField(max_length=75)
     zen_url = forms.CharField(max_length=100)
-    zen_pass = forms.CharField(max_length=75)
+    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
 def login(request):
     if request.method == 'POST':
@@ -47,7 +47,7 @@ def login(request):
 
                     return HttpResponseRedirect('/main/')
                 else:
-                    return HttpResponseRedirect('/nope/1')
+                    return HttpResponseRedirect('/nope/1/')
             newform = NewForm()
 
         elif 'new' in request.POST:
@@ -67,9 +67,9 @@ def login(request):
                     user.zen_pass = data['zen_pass']
 
                     user.save()
-                    return HttpResponseRedirect('/login/')
+                    return HttpResponseRedirect('/')
                 else:
-                    return HttpResponseRedirect('/nope/2')
+                    return HttpResponseRedirect('/nope/2/')
             logform = LogForm()
     else:
         logform = LogForm()
@@ -79,6 +79,9 @@ def login(request):
                                 'newform': newform,}, 
                                 context_instance=RequestContext(request))
 
+def nope(request, nope_num):
+    return render_to_response('associations/nope.html', 
+                                {'nope_num': nope_num,})
 
 def home(request):
     gitTic = github.issues.list(repo, state='open')
