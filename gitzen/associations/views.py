@@ -75,6 +75,9 @@ def nope(request, nope_num):
     return render_to_response('associations/nope.html', 
                                 {'nope_num': nope_num,})
 
+def confirm(request):
+    return render_to_response('associations/confirm.html')
+
 def home(request):
     user = request.user
     github = Github(username=user.git_name, 
