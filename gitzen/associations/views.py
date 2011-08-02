@@ -1,20 +1,84 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
+from django.contrib.auth import authenticate
 from django import forms
 from github2.client import Github
 from github2.issues import *
 from zendesk import Zendesk
 from xml.dom import minidom
+from associations.models import GZUser
 
-github = Github(username='FriedRice', api_token='68c7180e60ad2354b9bc84792c6ba7ab')
-repo = 'PolicyStat/PolicyStat'
-zendesk = Zendesk('https://policystat.zendesk.com', 'wes@policystat.com',
-                    'l2us3apitokens')
-zticket_list = minidom.parseString(zendesk.list_tickets \
-                (view_id=22796456)).getElementsByTagName('ticket')
-zuser_list = minidom.parseString(zendesk.list_users()). \
-    getElementsByTagName('user')
+class LogForm(forms.Form):
+    username = forms.CharField(max_length=75)
+    password = forms.CharField(max_length=75)
+
+class NewForm(forms.Form):
+    username = forms.CharField(max_length=75)
+    password = forms.CharField(max_length=75)
+    affirmpass = forms.CharField(max_length=75)
+    git_name = forms.CharField(max_length=75)
+    git_repo = forms.CharField(max_length=75)
+    git_key = forms.CharField(max_length=75)
+    zen_name = forms.CharField(max_length=75)
+    zen_url = forms.CharField(max_length=100)
+    zen_pass = forms.CharField(max_length=75)
+
+def login(request):
+    if request.method == 'POST':
+        if 'log' in request.POST:
+            logform = LogForm(request.POST)
+            if logform.is_valid():
+                user = authenticate(
+                    username=logform.cleaned_data['username'],
+                    password=logform.cleaned_data['password'],
+                )
+
+                if user is not None:
+                    github = Github(username=user.git_name, 
+                                    api_token=user.git_key)
+                    repo = user.git_repo
+                    zendesk = Zendesk(user.zen_url, user.zen_name,
+                                    user.zen_pass)
+                    zticket_list = minidom.parseString(zendesk.list_tickets \
+                        (view_id=22796456)).getElementsByTagName('ticket')
+                    zuser_list = minidom.parseString(zendesk.list_users()). \
+                        getElementsByTagName('user')
+
+                    return HttpResponseRedirect('/main/')
+                else:
+                    return HttpResponseRedirect('/nope/1')
+            newform = NewForm()
+
+        elif 'new' in request.POST:
+            newform = NewForm(request.POST)
+            if newform.is_valid():
+                data = newform.cleaned_data
+                if data['password'] == data['affirmpass']
+                    user = GZUser.objects.create_user(
+                        username=data['username'],
+                        password=data['password'],
+                    )
+                    user.git_name = data['git_name']
+                    user.git_repo = data['git_repo']
+                    user.git_key = data['git_key']
+                    user.zen_name = data['zen_name']
+                    user.zen_url = data['zen_url']
+                    user.zen_pass = data['zen_pass']
+
+                    user.save()
+                    return HttpResponseRedirect('/login/')
+                else:
+                    return HttpResponseRedirect('/nope/2')
+            logform = LogForm()
+    else:
+        logform = LogForm()
+        newform = NewForm()
+
+    return render_to_response('associations/login.html', {'logform': logfrom,
+                                'newform': newform,}, 
+                                context_instance=RequestContext(request))
+
 
 def home(request):
     gitTic = github.issues.list(repo, state='open')

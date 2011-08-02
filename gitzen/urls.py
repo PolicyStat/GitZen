@@ -5,7 +5,8 @@ from django.conf.urls.defaults import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('associations.views',
-    (r'^$', 'home'),
+    (r'^$', 'login'),
+    (r'^main/$', 'home'),
     (r'^close/$', 'close'),
     (r'^git/(?P<git_num>\d+)/$', 'git'),
     (r'^zen/t(?P<zen_num>\d+)/$', 'zenT'),
