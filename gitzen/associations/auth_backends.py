@@ -17,7 +17,8 @@ class GZUserModelBackend(ModelBackend):
             return self.user_class.objects.get(pk=user_id)
         except self.user_class.DoesNotExist:
             return None
-
+    
+    @property
     def user_class(self):
         if not hasattr(self, '_user_class'):
             self._user_class = get_model(*settings.CUSTOM_USER_MODEL.split('.', 2))

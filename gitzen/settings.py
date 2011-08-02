@@ -128,7 +128,7 @@ AUTHENTICATION_BACKENDS = (
     'gitzen.associations.auth_backends.GZUserModelBackend',
 )
 
-CUSTOM_USER_MODEL = 'accounts.GZUser'
+CUSTOM_USER_MODEL = 'associations.GZUser'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

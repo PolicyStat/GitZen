@@ -1,17 +1,21 @@
 <html>
 <head>
-    <title>Nope</title>
+<title>Nope</title>
 </head>
 
 <body>
     <h1>Nope</h1>
     <p>
-    {% if nope_num == 1 %}
+    {% if nope_num == '1' %}
         The user entered does not exist.
-    {% if nope_num == 2 %}
-        The passwords entered for the user do not match.
     {% else %}
-        You should not be viewing this page.
+        {% if nope_num == 2 %}
+            The entered user password was not equal to the entered affirming password.
+        {% else %}
+            You should not be viewing this page.
+        {% endif %}
+    {% endif %}
+    <a href="/">Return to Login</a>
     </p>
 </body>
 </html>

@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django import forms
 from github2.client import Github
 from github2.issues import *
@@ -24,7 +24,7 @@ class NewForm(forms.Form):
     zen_url = forms.CharField(max_length=100)
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
-def login(request):
+def user_login(request):
     if request.method == 'POST':
         if 'log' in request.POST:
             logform = LogForm(request.POST)
@@ -35,16 +35,7 @@ def login(request):
                 )
 
                 if user is not None:
-                    github = Github(username=user.git_name, 
-                                    api_token=user.git_key)
-                    repo = user.git_repo
-                    zendesk = Zendesk(user.zen_url, user.zen_name,
-                                    user.zen_pass)
-                    zticket_list = minidom.parseString(zendesk.list_tickets \
-                        (view_id=22796456)).getElementsByTagName('ticket')
-                    zuser_list = minidom.parseString(zendesk.list_users()). \
-                        getElementsByTagName('user')
-
+                    login(request, user)
                     return HttpResponseRedirect('/main/')
                 else:
                     return HttpResponseRedirect('/nope/1/')
@@ -54,10 +45,11 @@ def login(request):
             newform = NewForm(request.POST)
             if newform.is_valid():
                 data = newform.cleaned_data
-                if data['password'] == data['affirmpass']
+                if data['password'] == data['affirmpass']:
                     user = GZUser.objects.create_user(
                         username=data['username'],
                         password=data['password'],
+                        email='',
                     )
                     user.git_name = data['git_name']
                     user.git_repo = data['git_repo']
@@ -67,7 +59,7 @@ def login(request):
                     user.zen_pass = data['zen_pass']
 
                     user.save()
-                    return HttpResponseRedirect('/')
+                    return HttpResponseRedirect('/confirm/')
                 else:
                     return HttpResponseRedirect('/nope/2/')
             logform = LogForm()
@@ -75,7 +67,7 @@ def login(request):
         logform = LogForm()
         newform = NewForm()
 
-    return render_to_response('associations/login.html', {'logform': logfrom,
+    return render_to_response('associations/login.html', {'logform': logform,
                                 'newform': newform,}, 
                                 context_instance=RequestContext(request))
 
@@ -84,6 +76,17 @@ def nope(request, nope_num):
                                 {'nope_num': nope_num,})
 
 def home(request):
+    user = request.user
+    github = Github(username=user.git_name, 
+                    api_token=user.git_key)
+    repo = user.git_repo
+    zendesk = Zendesk(user.zen_url, user.zen_name,
+                        user.zen_pass)
+    zticket_list = minidom.parseString(zendesk.list_tickets \
+        (view_id=22796456)).getElementsByTagName('ticket')
+    zuser_list = minidom.parseString(zendesk.list_users()). \
+        getElementsByTagName('user')
+
     gitTic = github.issues.list(repo, state='open')
     ticket_nums = [i.number for i in github.issues.list(repo, state='open')] \
                 + [i.number for i in github.issues.list(repo, state='closed')]
@@ -154,12 +157,23 @@ def home(request):
                                 context_instance=RequestContext(request))
 
 def git(request, git_num):
+    user = request.user
+    github = Github(username=user.git_name, 
+                    api_token=user.git_key)
+    repo = user.git_repo
+
     issue = github.issues.show(repo, git_num)
     comments = github.issues.comments(repo, git_num) 
     return render_to_response('associations/git.html', {'issue':issue,
                                 'comments': comments})
 
 def zenT(request, zen_num):
+    user = request.user
+    zendesk = Zendesk(user.zen_url, user.zen_name,
+                        user.zen_pass)
+    zticket_list = minidom.parseString(zendesk.list_tickets \
+        (view_id=22796456)).getElementsByTagName('ticket')
+
     cntr = 0
 
     for t in zticket_list:
@@ -179,6 +193,11 @@ def zenT(request, zen_num):
                                 {'ticket_data': ticket_data,})
 
 def zenU(request, user_num):
+    user = request.user
+    zendesk = Zendesk(user.zen_url, user.zen_name,
+                        user.zen_pass)
+    zuser_list = minidom.parseString(zendesk.list_users()). \
+        getElementsByTagName('user') 
     cntr = 0
     
     for u in zuser_list:

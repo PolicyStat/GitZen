@@ -12,7 +12,7 @@
 <h1>User Login</h1>
 <br/>
 <h2>Existing User</h2>
-<form action="/" method="post">
+<form action="/" method="post">{% csrf_token %}
     {{ logform.non_field_errors }}
     <div class="fieldWrapper">
         {{ logform.username.errors }}
@@ -24,13 +24,13 @@
         <label for="id_password">Password:</label>
         {{ logform.password }}
     </div>
-    <p><input type="log" value="Login" /></p>
+    <p><input name="log" type="submit" value="Login" /></p>
 </form>
 
 <br/>
 
 <h2>New User</h2>
-<form action="/" method="post">
+<form action="/" method="post">{% csrf_token %}
     {{ newform.non_field_errors }}
     <div class="fieldWrapper">
         {{ newform.username.errors }}
@@ -45,7 +45,7 @@
     <div class="fieldWrapper">
         {{ newform.affirmpass.errors }}
         <label for="id_affirmpass">Affirm Password:</label>
-        {{ newform.afirmpass }}
+        {{ newform.affirmpass }}
     </div>    
     <div class="fieldWrapper">
         {{ newform.git_name.errors }}
@@ -77,7 +77,7 @@
         <label for="id_zen_pass">Zendesk Password:</label>
         {{ newform.zen_pass }}
     </div> 
-    <p><input type="new" value="Create User" /></p>
+    <p><input name="new" type="submit" value="Create User" /></p>
 </form>
 
 
