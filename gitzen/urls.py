@@ -6,7 +6,7 @@ from django.conf.urls.defaults import patterns, include, url
 
 urlpatterns = patterns('associations.views',
     (r'^$', 'user_login'),
-    (r'^confirm/$', 'confirm')
+    (r'^confirm/$', 'confirm'),
     (r'^main/$', 'home'),
     (r'^close/$', 'close'),
     (r'^nope/(?P<nope_num>\d+)/$', 'nope'),
