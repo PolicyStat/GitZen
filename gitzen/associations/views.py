@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django import forms
 from github2.client import Github
 from github2.issues import *
@@ -222,6 +222,8 @@ def change(request):
                 user.zen_url = data['zen_url']
             if data['zen_pass']:
                 user.zen_pass = data['zen_pass']
+            logout(request)
+            login(request, user)
 
             return HttpResponseRedirect('/confirm/2')
     else:
