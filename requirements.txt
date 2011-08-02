@@ -1,0 +1,4 @@
+django
+github2
+zendesk
+-e hg+http://code.google.com/p/httplib2/@6525cadfde53#egg=httplib2
