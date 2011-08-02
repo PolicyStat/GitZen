@@ -24,6 +24,17 @@ class NewForm(forms.Form):
     zen_url = forms.CharField(max_length=100)
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
+class ChangeForm(forms.Form):
+    old_pass = forms.CharField(max_length=75), widget=forms.PasswordInput)
+    new_pass = forms.CharField(max_length=75), widget=forms.PasswordInput)
+    aff_pass = forms.CharField(max_length=75), widget=forms.PasswordInput)
+    git_name = forms.CharField(max_length=75)
+    git_repo = forms.CharField(max_length=75)
+    git_key = forms.CharField(max_length=75)
+    zen_name = forms.CharField(max_length=75)
+    zen_url = forms.CharField(max_length=100)
+    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
+
 def user_login(request):
     if request.method == 'POST':
         if 'log' in request.POST:
