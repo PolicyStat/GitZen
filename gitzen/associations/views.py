@@ -80,84 +80,116 @@ def confirm(request):
 
 def home(request):
     user = request.user
-    github = Github(username=user.git_name, 
+    try:
+        github = Github(username=user.git_name, 
                     api_token=user.git_key)
-    repo = user.git_repo
-    zendesk = Zendesk(user.zen_url, user.zen_name,
-                        user.zen_pass)
-    zticket_list = minidom.parseString(zendesk.list_tickets \
-        (view_id=22796456)).getElementsByTagName('ticket')
-    zuser_list = minidom.parseString(zendesk.list_users()). \
-        getElementsByTagName('user')
+        repo = user.git_repo
+    except Error:
+        gitTic = 'broken'
 
-    gitTic = github.issues.list(repo, state='open')
-    ticket_nums = [i.number for i in github.issues.list(repo, state='open')] \
-                + [i.number for i in github.issues.list(repo, state='closed')]
+    try:
+        zendesk = Zendesk(user.zen_url, user.zen_name,
+                            user.zen_pass)
+        zticket_list = minidom.parseString(zendesk.list_tickets \
+            (view_id=22796456)).getElementsByTagName('ticket')
+        zuser_list = minidom.parseString(zendesk.list_users()). \
+            getElementsByTagName('user')
+    except Error:
+        zenTics = 'broken'
+        
+    
+    if gitTic != 'broken':
+        gitTic = github.issues.list(repo, state='open') 
+    
+    if zenTics != 'broken':
+        zenTics = []
+        for t in zticket_list:
+            zenTics.append({
+                'id': t.getElementsByTagName('nice-id')[0].firstChild.data,
+                'req_name':
+                t.getElementsByTagName('req-name')[0].firstChild.data,
+                'subject': t.getElementsByTagName('subject')[0].firstChild.data,
+            })
 
-    zenTics = []
-    for t in zticket_list:
-        zenTics.append({
-            'id': t.getElementsByTagName('nice-id')[0].firstChild.data,
-            'req_name':
-            t.getElementsByTagName('req-name')[0].firstChild.data,
-            'subject': t.getElementsByTagName('subject')[0].firstChild.data,
-        })
+        zenUsers = []
+        for i in zuser_list:
+            for o in minidom.parseString(zendesk.list_organizations()). \
+            getElementsByTagName('organization'):
+                org_name = 'None'
+                org_id = i.getElementsByTagName('organization-id')[0].firstChild               
+                if org_id is not None and o.getElementsByTagName \
+                ('id')[0].firstChild.data == org_id.data:
+                    org_name = o.getElementsByTagName('name')[0].firstChild.data
+                    break
 
-    zenUsers = []
-    for i in zuser_list:
-        for o in minidom.parseString(zendesk.list_organizations()). \
-        getElementsByTagName('organization'):
-            org_name = 'None'
-            org_id = i.getElementsByTagName('organization-id')[0].firstChild               
-            if org_id is not None and o.getElementsByTagName \
-            ('id')[0].firstChild.data == org_id.data:
-                org_name = o.getElementsByTagName('name')[0].firstChild.data
-                break
-
-        zenUsers.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
-                    'email': i.getElementsByTagName('email')[0].firstChild.data,
-                    'id': i.getElementsByTagName('id')[0].firstChild.data,
-                    'org_name': org_name})
-
-    c_assocs = []
-    o_assocs = []
-    no_assocs = []
-    for i in zticket_list:
-        anum = i.getElementsByTagName('field-143159')[0].firstChild
-        a_data = {}
-        a_data['znum'] = \
+            zenUsers.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
+                        'email': i.getElementsByTagName('email')[0].firstChild.data,
+                        'id': i.getElementsByTagName('id')[0].firstChild.data,
+                        'org_name': org_name})
+    else:
+        zenUsers = 'broken'
+    
+    if gitTics != 'broken' and zenTics != 'broken'
+        c_assocs = []
+        o_assocs = []
+        no_assocs = []
+        for i in zticket_list:
+            anum = i.getElementsByTagName('field-143159')[0].firstChild
+            a_data = {}
+            a_data['znum'] = \
                 i.getElementsByTagName('nice-id')[0].firstChild.data
-        a_data['zuser'] = \
+            a_data['zuser'] = \
                 i.getElementsByTagName('req-name')[0].firstChild.data
-        a_data['zdate'] = \
+            a_data['zdate'] = \
                 i.getElementsByTagName('updated-at')[0].firstChild.data
 
-        if anum is None or not anum.data.split('-')[0] == 'gh' or not \
-        int(anum.data.split('-')[1]) in ticket_nums:
-            if anum is None:
-                a_data['dassoc'] = 'None'
-            else:
-                a_data['dassoc'] = anum.data
-            no_assocs.append(a_data)
+            if anum is None or not anum.data.split('-')[0] == 'gh' or not \
+            int(anum.data.split('-')[1]) in ticket_nums:
+                if anum is None:
+                    a_data['dassoc'] = 'None'
+                else:
+                    a_data['dassoc'] = anum.data
+                no_assocs.append(a_data)
             
-        elif anum.data.split('-')[0] == 'gh':
-            git_issue = github.issues.show(repo, anum.data.split('-')[1])
-            a_data['gnum'] = git_issue.number
-            a_data['guser'] = git_issue.user
-            a_data['glabels'] = git_issue.labels
-            a_data['gstate'] = git_issue.state
-            if git_issue.state == 'open':
-                a_data['gdate'] = git_issue.updated_at
-                o_assocs.append(a_data)
-            else:
-                a_data['gdate'] = git_issue.closed_at
-                c_assocs.append(a_data)
+            elif anum.data.split('-')[0] == 'gh':
+                git_issue = github.issues.show(repo, anum.data.split('-')[1])
+                a_data['gnum'] = git_issue.number
+                a_data['guser'] = git_issue.user
+                a_data['glabels'] = git_issue.labels
+                a_data['gstate'] = git_issue.state
+                if git_issue.state == 'open':
+                    a_data['gdate'] = git_issue.updated_at
+                    o_assocs.append(a_data)
+                else:
+                    a_data['gdate'] = git_issue.closed_at
+                    c_assocs.append(a_data)
+    else:
+        c_assocs = 'broken'
+        o_assocs = 'broken'
+        no_assocs = 'broken'
         
-    return render_to_response('associations/home.html', {'gitTic': gitTic,
+    return render_to_response('associations/home.html', {'gitTics': gitTics,
                                 'zenTics':zenTics, 'zenUsers': zenUsers, 
                                 'c_assocs': c_assocs, 'o_assocs': o_assocs,
                                 'no_assocs': no_assocs,}, 
                                 context_instance=RequestContext(request))
+
+def change(request):
+    if request.method == 'POST':
+        if 'change' in request.POST:
+            newform = LogForm(request.POST)
+            if logform.is_valid():
+                user = authenticate(
+                    username=logform.cleaned_data['username'],
+                    password=logform.cleaned_data['password'],
+                )
+
+                if user is not None:
+                    login(request, user)
+                    return HttpResponseRedirect('/main/')
+                else:
+                    return HttpResponseRedirect('/nope/1/')
+
 
 def git(request, git_num):
     user = request.user

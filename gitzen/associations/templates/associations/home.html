@@ -15,11 +15,19 @@
         color:blue;
     }
 </style>
+<title>Home</title>
 </head>
 
 <body>
 <table class="noborder" style="width:100%;">
-<tr><th class="noborder" colspan="3"><h1>GitZen</h1></th></tr>
+<tr>
+    <th class="noborder" colspan="3"><h1>GitZen</h1></th>
+</tr>
+<tr>
+    <th class="noborder" colspan="3">
+    <a href="/change/">Change Account Data</a></th>
+</tr>
+
 <tr>
 <td class="noborder">
     <table>
@@ -27,13 +35,18 @@
     <th>Open GitHub Tickets</th>
     </tr>
 
-    {% if gitTic %}
-        {% for i in gitTic %}
-            <tr><td><a href='/git/{{ i.number }}/'>{{ i.number }}.</a> 
-            {{ i.title }}</td></tr>
-        {% endfor %}
+    {% if gitTics %}
+        {% if gitTics != 'broken' %}
+            {% for i in gitTics %}
+                <tr><td><a href='/git/{{ i.number }}/'>{{ i.number }}.</a> 
+                {{ i.title }}</td></tr>
+            {% endfor %}
+        {% else %}
+            <tr><td>There was an Error connecting to GitHub. Try 
+            adjusting your account settings.</td></tr>
+        {% endif %}
     {% else %}
-        <tr><td colspan="3">There are currently no open GitHub Tickets.</td></tr>
+        <tr><td>There are currently no open GitHub Tickets.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -49,15 +62,20 @@
     </tr>
 
     {% if zenTics %}
-        {% for t in zenTics %}
-            <tr>
-            <td><a href="/zen/t{{ t.id }}/">{{ t.id }}.</a> 
-            {{ t.subject }}</td>
-            <td>{{ t.req_name }}</td>
-            </tr>
-        {% endfor %}
+        {% if zenTics != 'broken' %}
+            {% for t in zenTics %}
+                <tr>
+                <td><a href="/zen/t{{ t.id }}/">{{ t.id }}.</a> 
+                {{ t.subject }}</td>
+                <td>{{ t.req_name }}</td>
+                </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="2">There was an Error connecting to Zendesk. Try 
+            adjusting your account settings.</td></tr>
+        {% endif %}
     {% else %}
-        <tr><td colspan="3">There are currently no Zendesk Tickets.</td></tr>
+        <tr><td colspan="2">There are currently no Zendesk Tickets.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -74,14 +92,19 @@
     </tr>
 
     {% if zenUsers %}
-        {% for u in zenUsers %}
-            <tr>
-            <td align="center"><a href="/zen/u{{ u.id }}/"
-            >{{ u.name }}</a></td>
-            <td>{{ u.email }}</td>
-            <td>{{ u.org_name }}</td>
-            </tr>
-        {% endfor %}
+        {% if zenUsers != 'broken' %}
+            {% for u in zenUsers %}
+                <tr>
+                <td align="center"><a href="/zen/u{{ u.id }}/"
+                >{{ u.name }}</a></td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.org_name }}</td>
+                </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="3">There was an Error connecting to Zendesk. Try 
+            adjusting your account settings.</td></tr>
+        {% endif %}
     {% else %}
         <tr><td colspan="3">There are currently no Zendesk users.</td></tr>
     {% endif %}
@@ -93,109 +116,112 @@
 <br/><br/>
 
 <h2 align="center">Associations</h2>
-<h3 align="center">Closed Associations</h3>
-{% if c_assocs %}
-    <table align="center" style="width:75%">
-    <tr>
-    <th>Association</th>
-    <th>Zendesk User</th>
-    <th>Last Zen Ticket Update</th>
-    <th>GitHub User</th>
-    <th>Git Issue Labels</th>
-    <th>Git Status</th>
-    <th class="noborder"></th>
-    </tr>
-    {% for a in c_assocs %}
+{% if c_assocs != 'broken' %}
+    <h3 align="center">Closed Associations</h3>
+    {% if c_assocs %}
+        <table align="center" style="width:75%">
         <tr>
-        <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
-        <a href="/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
-        <td align="center">{{ a.zuser }}</td>
-        <td align="center">{{ a.zdate }}</td>
-        <td align="center">{{ a.guser }}</td>
-        <td align="center">
-        {% if a.glabels %}
-            {% for b in a.glabels %}
-                {{ b }},
-            {% endfor %}
-        {% else %}
-            None
-        {% endif %}
-        </td>
-        <td align="center">
-            <span style="color:red">Closed ({{ a.gdate }})</span>
-        </td>
-        <td class="noborder" align="center">
-            <form action="/close/">­
-                <input type="Submit" value="Close">
-            </form>
+        <th>Association</th>
+        <th>Zendesk User</th>
+        <th>Last Zen Ticket Update</th>
+        <th>GitHub User</th>
+        <th>Git Issue Labels</th>
+        <th>Git Status</th>
         </tr>
-    {% endfor %}
-    </table>
-{% else %}
-    <p align="center">There are currently no Associations ready to be closed.</p>
-{% endif %}
-<br/>
+        {% for a in c_assocs %}
+            <tr>
+            <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
+            <a href="/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
+            <td align="center">{{ a.zuser }}</td>
+            <td align="center">{{ a.zdate }}</td>
+            <td align="center">{{ a.guser }}</td>
+            <td align="center">
+            {% if a.glabels %}
+                {% for b in a.glabels %}
+                    {{ b }},
+                {% endfor %}
+            {% else %}
+                None
+            {% endif %}
+            </td>
+            <td align="center">
+                <span style="color:red">Closed ({{ a.gdate }})</span>
+            </td>
+            <td class="noborder" align="center">
+                <form action="/close/">­
+                    <input type="Submit" value="Close">
+                </form>
+            </tr>
+        {% endfor %}
+        </table>
+    {% else %}
+        <p align="center">There are currently no Associations ready to be closed.</p>
+    {% endif %}
+    <br/>
 
-<h3 align="center">Open Associations</h3>
-{% if o_assocs %}
-    <table align="center" style="width:75%">
-    <tr>
-    <th>Association</th>
-    <th>Zendesk User</th>
-    <th>Last Zen Ticket Update</th>
-    <th>GitHub User</th>
-    <th>Git Issue Labels</th>
-    <th>Git Status</th>
-    </tr>
-    {% for a in o_assocs %}
+    <h3 align="center">Open Associations</h3>
+    {% if o_assocs %}
+        <table align="center" style="width:75%">
         <tr>
-        <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
-        <a href="/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
-        <td align="center">{{ a.zuser }}</td>
-        <td align="center">{{ a.zdate }}</td>
-        <td align="center">{{ a.guser }}</td>
-        <td align="center">
-        {% if a.glabels %}
-            {% for b in a.glabels %}
-                {{ b }},
-            {% endfor %}
-        {% else %}
-            None
-        {% endif %}
-        </td>
-        <td align="center"> 
-            <span style="color:green">Open ({{ a.gdate }})</span>
-        </td>
+        <th>Association</th>
+        <th>Zendesk User</th>
+        <th>Last Zen Ticket Update</th>
+        <th>GitHub User</th>
+        <th>Git Issue Labels</th>
+        <th>Git Status</th>
         </tr>
-    {% endfor %}
-    </table>
-{% else %}
-    <p align="center">There are currently no open Associations.</p>
-{% endif %}
-<br/>
+        {% for a in o_assocs %}
+            <tr>
+            <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a> --&gt; 
+            <a href="/git/{{ a.git }}/">G{{ a.gnum }}</a></td>
+            <td align="center">{{ a.zuser }}</td>
+            <td align="center">{{ a.zdate }}</td>
+            <td align="center">{{ a.guser }}</td>
+            <td align="center">
+            {% if a.glabels %}
+                {% for b in a.glabels %}
+                    {{ b }},
+                {% endfor %}
+            {% else %}
+                None
+            {% endif %}
+            </td>
+            <td align="center"> 
+                <span style="color:green">Open ({{ a.gdate }})</span>
+            </td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% else %}
+        <p align="center">There are currently no open Associations.</p>
+    {% endif %}
+    <br/>
 
-<h3 align="center">Not Associated with GitHub</h3>
-{% if no_assocs %}
-    <table align="center" style="width:50%">
-    <tr>
-    <th>Zendesk Ticket</th>
-    <th>Zendesk User</th>
-    <th>Last Updated</th>
-    <th>Displayed Association</th>
-    </tr>
-    {% for a in no_assocs %}
+    <h3 align="center">Not Associated with GitHub</h3>
+    {% if no_assocs %}
+        <table align="center" style="width:50%">
         <tr>
-        <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a></td>
-        <td align="center">{{ a.zuser }}</td>
-        <td align="center">{{ a.zdate }}</td>
-        <td align="center">{{ a.dassoc }}</td>
+        <th>Zendesk Ticket</th>
+        <th>Zendesk User</th>
+        <th>Last Updated</th>
+        <th>Displayed Association</th>
         </tr>
-    {% endfor %}
-    </table>
+        {% for a in no_assocs %}
+            <tr>
+            <td align="center"><a href="/zen/{{ a.zen }}/">Z{{ a.znum }}</a></td>
+            <td align="center">{{ a.zuser }}</td>
+            <td align="center">{{ a.zdate }}</td>
+            <td align="center">{{ a.dassoc }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% else %}
+        <p align="center">There are currently no Zendesk Tickets without Git
+        Associations.</p>
+    {% endif %}
 {% else %}
-    <p align="center">There are currently no Zendesk Tickets without Git
-    Associations.</p>
+    <p align="center">There was an Error connecting to either GitHub or
+    Zendesk. Try adjusting your account settings.</p>
 {% endif %}
-<br/>
 </body>
 </html>
