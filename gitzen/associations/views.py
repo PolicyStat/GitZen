@@ -222,6 +222,7 @@ def change(request):
                 user.zen_url = data['zen_url']
             if data['zen_pass']:
                 user.zen_pass = data['zen_pass']
+            user.save()
 
             return HttpResponseRedirect('/confirm/2')
     else:
