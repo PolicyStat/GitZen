@@ -2,4 +2,4 @@ www:
   type: python
   approot: .
 db:
-  type: sqlite
+  type: sqlite3
