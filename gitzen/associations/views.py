@@ -72,8 +72,8 @@ def user_login(request):
                     user.zen_name = data['zen_name']
                     user.zen_url = data['zen_url']
                     user.zen_pass = data['zen_pass']
-
                     user.save()
+
                     return HttpResponseRedirect('/confirm/1')
                 else:
                     return HttpResponseRedirect('/nope/2/')
