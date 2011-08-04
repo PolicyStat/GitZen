@@ -1,5 +1,3 @@
 www:
   type: python
   approot: .
-db:
-  type: sqlite3
