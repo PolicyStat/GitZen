@@ -206,7 +206,7 @@
         {% if zenUsers != 'broken' %}
             {% for u in zenUsers %}
                 <tr>
-                <td align="center"><a href="/zen/u{{ u.id }}/"
+                <td align="center"><a href="{{ zen_url }}/users/{{ u.id }}"
                 >{{ u.name }}</a></td>
                 <td>{{ u.email }}</td>
                 <td>{{ u.org_name }}</td>

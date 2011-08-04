@@ -10,7 +10,4 @@ urlpatterns = patterns('associations.views',
     (r'^change/$', 'change'),
     (r'^nope/(?P<nope_num>\d+)/$', 'nope'),
     (r'^confirm/(?P<con_num>\d+)/$', 'confirm'),
-    (r'^git/(?P<git_num>\d+)/$', 'git'),
-    (r'^zen/t(?P<zen_num>\d+)/$', 'zenT'),
-    (r'^zen/u(?P<user_num>\d+)/$', 'zenU'),
 ) 
