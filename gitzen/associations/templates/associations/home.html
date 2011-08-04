@@ -42,11 +42,12 @@
                 {{ i.title }}</td></tr>
             {% endfor %}
         {% else %}
-            <tr><td>There was an Error connecting to GitHub. Try 
+            <tr><td align="center">There was an Error connecting to GitHub. Try 
             adjusting your account settings.</td></tr>
         {% endif %}
     {% else %}
-        <tr><td>There are currently no open GitHub Tickets.</td></tr>
+        <tr><td align="center">There are currently no open GitHub 
+        Tickets.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -71,11 +72,12 @@
                 </tr>
             {% endfor %}
         {% else %}
-            <tr><td colspan="2">There was an Error connecting to Zendesk. Try 
-            adjusting your account settings.</td></tr>
+            <tr><td align="center" colspan="2">There was an Error connecting 
+            to Zendesk. Try adjusting your account settings.</td></tr>
         {% endif %}
     {% else %}
-        <tr><td colspan="2">There are currently no Zendesk Tickets.</td></tr>
+        <tr><td align="center" colspan="2">There are currently no Zendesk
+        Tickets.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -102,11 +104,12 @@
                 </tr>
             {% endfor %}
         {% else %}
-            <tr><td colspan="3">There was an Error connecting to Zendesk. Try 
-            adjusting your account settings.</td></tr>
+            <tr><td align="center" colspan="3">There was an Error connecting 
+            to Zendesk. Try adjusting your account settings.</td></tr>
         {% endif %}
     {% else %}
-        <tr><td colspan="3">There are currently no Zendesk users.</td></tr>
+        <tr><td align="center" colspan="3">There are currently no Zendesk 
+        users.</td></tr>
     {% endif %}
     </table>
 </td>
@@ -147,11 +150,6 @@
             <td align="center">
                 <span style="color:red">Closed ({{ a.gdate }})</span>
             </td>
-            <!-- <td class="noborder" align="center">
-                <form action="/close/">­
-                    <input type="Submit" value="Close">
-                </form>
-            </tr> --!>
         {% endfor %}
         </table>
     {% else %}
