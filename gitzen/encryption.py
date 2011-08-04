@@ -56,8 +56,4 @@ class EncryptedCharField(BaseEncryptedField):
     def formfield(self, **kwargs):
         defaults = {'max_length': self.max_length}
         defaults.update(kwargs)
-<<<<<<< HEAD
         return super(EncryptedCharField, self).formfield(**defaults)
-=======
-        return super(EncryptedCharField, self).formfield(**defaults))
->>>>>>> 8c79ec174176a156ae022a4d313ffb6d117a757d
