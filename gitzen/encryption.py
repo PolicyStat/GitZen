@@ -1,6 +1,7 @@
 import binascii
 import random
 import string
+import Crypto.Cipher
  
 from django import forms
 from django.db import models
