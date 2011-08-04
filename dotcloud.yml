@@ -1,5 +1,5 @@
 www:
-  type: python
-  approot: .
+  type:python
+  approot:.
 db:
-  type: mysql
+  type:sqlite3
