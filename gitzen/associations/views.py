@@ -113,7 +113,7 @@ def home(request):
         zendesk = Zendesk(user.zen_url, user.zen_name,
                             user.zen_pass)
         zticket_list = minidom.parseString(zendesk.list_tickets \
-            (user.zen_viewid)).getElementsByTagName('ticket')
+            (view_id=user.zen_viewid)).getElementsByTagName('ticket')
         zuser_list = minidom.parseString(zendesk.list_users()). \
             getElementsByTagName('user')
     except:

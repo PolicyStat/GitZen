@@ -41,8 +41,7 @@
         </tr>
         {% for a in c_assocs %}
             <tr>
-            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum
-            }}?col={{ zen_viewid }}">Z{{ a.znum }}</a> --&gt; 
+            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum }}?col={{ zen_viewid }}">Z{{ a.znum }}</a> --&gt; 
             <a href="https://github.com/{{ repo }}/issues/{{ a.gnum }}">G{{ a.gnum }}</a></td>
             <td align="center">{{ a.zuser }}</td>
             <td align="center">{{ a.zdate }}</td>
@@ -79,8 +78,7 @@
         </tr>
         {% for a in o_assocs %}
             <tr>
-            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum
-            }}?col={{ zen_viewid }}">Z{{ a.znum }}</a> --&gt; 
+            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum }}?col={{ zen_viewid }}">Z{{ a.znum }}</a> --&gt; 
             <a href="https://github.com/{{ repo }}/issues/{{ a.gnum }}">G{{ a.gnum }}</a></td>
             <td align="center">{{ a.zuser }}</td>
             <td align="center">{{ a.zdate }}</td>
@@ -116,8 +114,7 @@
         </tr>
         {% for a in no_assocs %}
             <tr>
-            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum
-            }}?col={{ zen_viewid }}">Z{{ a.znum }}</a></td>
+            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum }}?col={{ zen_viewid }}">Z{{ a.znum }}</a></td>
             <td align="center">{{ a.zuser }}</td>
             <td align="center">{{ a.zdate }}</td>
             <td align="center">{{ a.dassoc }}</td>
@@ -151,7 +148,7 @@
         {% if gitTics != 'broken' %}
             {% for i in gitTics %}
                 <tr><td>
-                <a href='https://github.com/{{ repo }}/issues/{{ a.gnum }}'>{{ i.number }}.</a>                 {{ i.title }}</td></tr>
+                <a href='https://github.com/{{ repo }}/issues/{{ i.number }}'>{{ i.number }}.</a>                 {{ i.title }}</td></tr>
             {% endfor %}
         {% else %}
             <tr><td align="center">There was an Error connecting to GitHub. Try 
@@ -178,8 +175,7 @@
         {% if zenTics != 'broken' %}
             {% for t in zenTics %}
                 <tr>
-                <td><a href="{{ zen_url }}/tickets/{{ a.znum
-                }}?col={{ zen_viewid }}">{{ t.id }}.</a> 
+                <td><a href="{{ zen_url }}/tickets/{{ t.id }}?col={{ zen_viewid }}">{{ t.id }}.</a> 
                 {{ t.subject }}</td>
                 <td>{{ t.req_name }}</td>
                 </tr>
