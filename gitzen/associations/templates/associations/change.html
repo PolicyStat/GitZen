@@ -57,7 +57,12 @@ User password. You must relogin to see the effects of the changes.</p>
         <label for="id_zen_url">Zendesk URL:</label>
         {{ changeform.zen_url }}
     </div>
-   <div class="fieldWrapper">
+    <div class="fieldWrapper">
+        {{ changeform.zen_viewid.errors }}
+        <label for="id_zen_url">Zendesk Ticket View ID:</label>
+        {{ changeform.zen_viewid }}
+    </div>
+    <div class="fieldWrapper">
         {{ changeform.zen_pass.errors }}
         <label for="id_zen_pass">Zendesk Password:</label>
         {{ changeform.zen_pass }}

@@ -22,6 +22,7 @@ class NewForm(forms.Form):
     git_key = forms.CharField(max_length=75)
     zen_name = forms.CharField(max_length=75)
     zen_url = forms.CharField(max_length=100)
+    zen_viewid = forms.CharField(max_length=25)
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
 class ChangeForm(forms.Form):
@@ -36,6 +37,7 @@ class ChangeForm(forms.Form):
     git_key = forms.CharField(max_length=75, required=False)
     zen_name = forms.CharField(max_length=75, required=False)
     zen_url = forms.CharField(max_length=100, required=False)
+    zen_viewid = forms.CharField(max_length=25, required=False)
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
                                 required=False)
 
@@ -71,6 +73,7 @@ def user_login(request):
                     user.git_key = data['git_key']
                     user.zen_name = data['zen_name']
                     user.zen_url = data['zen_url']
+                    user.zen_viewid = data['zen_viewid']
                     user.zen_pass = data['zen_pass']
                     user.save()
 
@@ -110,7 +113,7 @@ def home(request):
         zendesk = Zendesk(user.zen_url, user.zen_name,
                             user.zen_pass)
         zticket_list = minidom.parseString(zendesk.list_tickets \
-            (view_id=22796456)).getElementsByTagName('ticket')
+            (user.zen_viewid)).getElementsByTagName('ticket')
         zuser_list = minidom.parseString(zendesk.list_users()). \
             getElementsByTagName('user')
     except:
@@ -190,9 +193,11 @@ def home(request):
         no_assocs = 'broken'
         
     return render_to_response('associations/home.html', {'gitTics': gitTics,
-                                'zenTics':zenTics, 'zenUsers': zenUsers, 
+                                'zenTics': zenTics, 'zenUsers': zenUsers, 
                                 'c_assocs': c_assocs, 'o_assocs': o_assocs,
-                                'no_assocs': no_assocs,}, 
+                                'no_assocs': no_assocs, 'repo': repo,
+                                'zen_viewid': user.zen_viewid, 
+                                'zen_url': user.zen_url},
                                 context_instance=RequestContext(request))
 
 def change(request):
@@ -220,6 +225,8 @@ def change(request):
                 user.zen_name = data['zen_name']
             if data['zen_url']:
                 user.zen_url = data['zen_url']
+            if data['zen_viewid']:
+                user.zen_viewid = data['zen_viewid']
             if data['zen_pass']:
                 user.zen_pass = data['zen_pass']
             user.save()
@@ -228,8 +235,8 @@ def change(request):
     else:
         changeform = ChangeForm()
     
-    return render_to_response('associations/change.html', {'changeform':
-                                changeform,}, 
+    return render_to_response('associations/change.html', 
+                                {'changeform': changeform,},
                                 context_instance=RequestContext(request))
 
 

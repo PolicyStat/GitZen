@@ -72,7 +72,12 @@
         <label for="id_zen_url">Zendesk URL:</label>
         {{ newform.zen_url }}
     </div>
-   <div class="fieldWrapper">
+    <div class="fieldWrapper">
+        {{ newform.zen_viewid.errors }}
+        <label for="id_zen_viewid">Zendesk Ticket View ID:</label>
+        {{ newform.zen_viewid }}
+    </div>
+    <div class="fieldWrapper">
         {{ newform.zen_pass.errors }}
         <label for="id_zen_pass">Zendesk Password:</label>
         {{ newform.zen_pass }}

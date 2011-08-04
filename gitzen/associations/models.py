@@ -8,6 +8,7 @@ class GZUser(User):
     git_key = EncryptedCharField(max_length=75)
     zen_name = models.CharField(max_length=75)
     zen_url = models.CharField(max_length=100)
+    zen_viewid = models.CharField(max_length=25)
     zen_pass = EncryptedCharField(max_length=75)
 
     objects = UserManager()
