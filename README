@@ -1,2 +1,14 @@
 This is a web application built using Django that links Zendesk and Github for
 easier developer management.
+
+Setting up the application on Heroku:
+
+1. Make an account on http://www.heroku.com/
+2. Install the heroku toolbet using the command "wget -qO- https://toolbelt.heroku.com/install.sh | sh".
+3. Install python and virtualenv. (A guide for this can be found at http://docs.python-guide.org/en/latest/starting/install/linux/)
+4. Install a version of Postgres from http://www.postgresql.org/download/ so testing can be done locally.
+5. Clone the GitZen repo with the command "git clone git://github.com/FriedRice/GitZen.git".
+6. Change directories to the newly cloned GitZen directory and setup a virualenv using the command "virtualenv venv --distribute".
+7. Activate the virtualenv with the command "source venv/bin/activate".
+8. Run the command "sudo apt-get install libpq-dev python-dev" to install the necessary packages that allow for the installation of psycopg2 (Postgresql support for python) in the following step.
+9. Install the required packages for GitZen and Heroku with pip by using the command "pip install -r requirements.txt".
