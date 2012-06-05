@@ -2,7 +2,7 @@
 
 <p>This is a web application built using Django that links Zendesk and Github for easier developer management.</p>
 
-<h2>Deploying the application to Heroku (on Ubuntu)</h2>
+<h3>Deploying the application to Heroku (on Ubuntu)</h3>
 
 <ol>
 <li>Make an account on http://www.heroku.com/</li>
