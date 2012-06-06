@@ -53,6 +53,11 @@ User password.</p>
         {{ changeform.zen_name }}
     </div>
     <div class="fieldWrapper">
+        {{ changeform.zen_pass.errors }}
+        <label for="id_zen_pass">Zendesk Password:</label>
+        {{ changeform.zen_pass }}
+    </div> 
+    <div class="fieldWrapper">
         {{ changeform.zen_url.errors }}
         <label for="id_zen_url">Zendesk URL:</label>
         {{ changeform.zen_url }}
@@ -61,12 +66,12 @@ User password.</p>
         {{ changeform.zen_viewid.errors }}
         <label for="id_zen_url">Zendesk Ticket View ID:</label>
         {{ changeform.zen_viewid }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.zen_pass.errors }}
-        <label for="id_zen_pass">Zendesk Password:</label>
-        {{ changeform.zen_pass }}
-    </div> 
+	</div>
+	<div class="fieldWrapper">
+		{{ changeform.zen_fieldid.errors }}
+		<label for="id_zen_fieldid">Zendesk Ticket Association Field</label>
+		{{ changeform.zen_fieldid }}
+	</div>
     <p><input name="change" type="submit" value="Submit Changes" /></p>
 </form>
 </body>
