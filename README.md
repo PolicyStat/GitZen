@@ -59,7 +59,7 @@ This is a web application built using Django that links Zendesk and Github for e
 
 ### Configuration Instructions
 
-1. Go to the [GitZen website](gitzen.herokuapp.com) on Heroku.
+1. Go to the [GitZen website](http://gitzen.herokuapp.com) on Heroku.
 
 2. Located under the heading "New User", begin filling out the information to create a new user by first assigning them a username and password and filling the "Username", "Password", and "Affirm Password" fields with this information.
 
