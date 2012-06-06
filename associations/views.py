@@ -21,9 +21,10 @@ class NewForm(forms.Form):
     git_repo = forms.CharField(max_length=75)
     git_key = forms.CharField(max_length=75)
     zen_name = forms.CharField(max_length=75)
+    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
     zen_url = forms.CharField(max_length=100)
     zen_viewid = forms.CharField(max_length=25)
-    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
+    zen_fieldid = forms.CharField(max_length=50)
 
 class ChangeForm(forms.Form):
     old_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
@@ -36,10 +37,11 @@ class ChangeForm(forms.Form):
     git_repo = forms.CharField(max_length=75, required=False)
     git_key = forms.CharField(max_length=75, required=False)
     zen_name = forms.CharField(max_length=75, required=False)
-    zen_url = forms.CharField(max_length=100, required=False)
-    zen_viewid = forms.CharField(max_length=25, required=False)
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
                                 required=False)
+    zen_url = forms.CharField(max_length=100, required=False)
+    zen_viewid = forms.CharField(max_length=25, required=False)
+    zen_fieldid = forms.CharField(max_length=50, required=False)
 
 def user_login(request):
     if request.method == 'POST':
@@ -72,9 +74,10 @@ def user_login(request):
                     user.git_repo = data['git_repo']
                     user.git_key = data['git_key']
                     user.zen_name = data['zen_name']
+                    user.zen_pass = data['zen_pass']
                     user.zen_url = data['zen_url']
                     user.zen_viewid = data['zen_viewid']
-                    user.zen_pass = data['zen_pass']
+                    user.zen_fieldid = data['zen_fieldid']
                     user.save()
 
                     return HttpResponseRedirect('/confirm/1')
@@ -140,13 +143,13 @@ def home(request):
             for o in minidom.parseString(zendesk.list_organizations()). \
             getElementsByTagName('organization'):
                 org_name = 'None'
-                org_id = i.getElementsByTagName('organization-id')[0].firstChild               
+                org_id = i.getElementsByTagName('organization-id')[0].firstChild
                 if org_id is not None and o.getElementsByTagName \
                 ('id')[0].firstChild.data == org_id.data:
                     org_name = o.getElementsByTagName('name')[0].firstChild.data
                     break
 
-            zenUsers.append({'name': i.getElementsByTagName('name')[0].firstChild.data,  
+            zenUsers.append({'name': i.getElementsByTagName('name')[0].firstChild.data,
                         'email': i.getElementsByTagName('email')[0].firstChild.data,
                         'id': i.getElementsByTagName('id')[0].firstChild.data,
                         'org_name': org_name})
@@ -158,7 +161,7 @@ def home(request):
         o_assocs = []
         no_assocs = []
         for i in zticket_list:
-            anum = i.getElementsByTagName('field-143159')[0].firstChild
+            anum = i.getElementsByTagName(user.zen_fieldid)[0].firstChild
             a_data = {}
             a_data['znum'] = \
                 i.getElementsByTagName('nice-id')[0].firstChild.data
@@ -223,12 +226,14 @@ def change(request):
                 user.git_key = data['git_key']
             if data['zen_name']:
                 user.zen_name = data['zen_name']
+            if data['zen_pass']:
+                user.zen_pass = data['zen_pass']
             if data['zen_url']:
                 user.zen_url = data['zen_url']
             if data['zen_viewid']:
                 user.zen_viewid = data['zen_viewid']
-            if data['zen_pass']:
-                user.zen_pass = data['zen_pass']
+            if data['zen_fieldid']:
+                user.zen_fieldid = data['zen_fieldid']
             user.save()
 
             return HttpResponseRedirect('/confirm/2')
