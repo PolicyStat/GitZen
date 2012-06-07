@@ -2,7 +2,7 @@
 
 This is a web application built using Django that links Zendesk and Github for easier developer management.
 
-### Deploying the application to Heroku (on Ubuntu)
+### Setting up the environment for Heroku deployment (on Ubuntu)
 
 1. Make a Heroku account on their [website](http://www.heroku.com/).
 
@@ -11,8 +11,8 @@ This is a web application built using Django that links Zendesk and Github for e
 
 3. Login to Heroku by running the command
 	>`heroku login`
-	
-	and filling out the requested credentials.
+
+and filling out the requested credentials.
 
 4. Install python and virtualenv. (A guide for this can be found [here](http://docs.python-guide.org/en/latest/starting/install/linux/))
 
@@ -37,13 +37,16 @@ This is a web application built using Django that links Zendesk and Github for e
 10. Install the required packages for GitZen and Heroku with pip by using the command
 	>`pip install -r requirements.txt`
 
-11. Create the app on the Heroku Cedar stack by running the command
+
+### Deploying the application to Heroku (on Ubuntu)
+
+1. Create the app on the Heroku Cedar stack by running the command
 	>`heroku create --stack cedar`
 
-12. Deploy the app with the command
+2. Deploy the app with the command
 	>`git push heroku master`
 
-13. The command
+3. The command
 	>`heroku logs`
 
 	can be used to view the logs of the app if desired, and the command
@@ -51,7 +54,7 @@ This is a web application built using Django that links Zendesk and Github for e
 
 	can be used to visit the app on the web.
 
-14. In order to conduct one-off admin processes for the app in django, preface the commands with
+4. In order to conduct one-off admin processes for the app in django, preface the commands with
 	>`heroku run`
 
 	An example of this would be syncing the databases in django by using the command
@@ -63,7 +66,7 @@ This is a web application built using Django that links Zendesk and Github for e
 
 2. Located under the heading "New User", begin filling out the information to create a new user by first assigning them a username and password and filling the "Username", "Password", and "Affirm Password" fields with this information.
 
-3. In order to use GitHub ticket information in GitZen, each user must provide a set of access information from a GitHub account linked to the repository from which the ticket information should be monitored. This access information consists of a GitHub username, repository name, and API key associated with the desired ticket information, and those access parameters should be filled into the "GitHub Username", "GitHub Repository", and "GitHub API Key" fields in the new user form respectively.
+3. In order to use GitHub ticket information in GitZen, each user must provide a set of access information from a GitHub account linked to the repository from which the ticket information should be monitored. This access information consists of a GitHub username, password, organization name, and repository name associated with the desired ticket information, and those access parameters should be filled into the "GitHub Username", "GitHub Password", "GitHub Organization", and "GitHub Repository" fields in the new user form respectively. If the repository is under a user account rather than an organization, provide the username in the organization field instead.
 
 4. In order to use Zendesk ticket information in GitZen, each user must provide a set of access information from a Zendesk account linked to the tickets that should be monitored. The first information required to access this data is a Zendesk user email and password, and those access parameters should be filled into the "Zendesk User Email" and "Zendesk Password" fields in the new user form respectively. The other three bits of Zendesk access information needed are more specific and are covered in the following steps.
 
