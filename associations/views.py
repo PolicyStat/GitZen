@@ -107,16 +107,23 @@ def confirm(request, con_num):
 
 def home(request):
     user = request.user
-    gitTics = ''
-    zenTics = ''
+    git_tics = ''
+    zen_tics = ''
 
     try:
-        r = requests.get('https://api.github.com/users/%s/%s/issues' %
-                         (user.git_org, user.git_repo), auth=(user.git_name,
-                                                              user.git_pass))
-        if r.text
+        r_op = requests.get('https://api.github.com/users/%s/%s/issues' %
+                            (user.git_org, user.git_repo),
+                            params={'state': 'open'},
+                            auth=(user.git_name, user.git_pass))
+        r_cl = requests.get('https://api.github.com/users/%s/%s/issues' %
+                            (user.git_org, user.git_repo),
+                            params={'state': 'closed'},
+                            auth=(user.git_name, user.git_pass))
+
+        if type(r_op.text) is type({}) and "message" in r_op.text:
+            git_tics = 'broken'
     except:
-        gitTics = 'broken'
+        git_tics = 'broken'
 
     try:
         zendesk = Zendesk(user.zen_url, user.zen_name,
@@ -126,25 +133,25 @@ def home(request):
         zuser_list = minidom.parseString(zendesk.list_users()). \
             getElementsByTagName('user')
     except:
-        zenTics = 'broken'
+        zen_tics = 'broken'
         
     
-    if gitTics != 'broken':
-        gitTics = github.issues.list(repo, state='open')
-        ticket_nums = [i.number for i in github.issues.list(repo, state='open')] \
-                    + [i.number for i in github.issues.list(repo, state='closed')]
+    if git_tics != 'broken':
+        git_tics = json.loads(r_op.text) + json.loads(r_cl.text)
+        ticket_nums = [i['number'] for i in git_tics]
     
-    if zenTics != 'broken':
-        zenTics = []
+    if zen_tics != 'broken':
+        zen_tics = []
         for t in zticket_list:
-            zenTics.append({
+            zen_tics.append({
                 'id': t.getElementsByTagName('nice-id')[0].firstChild.data,
-                'req_name':
+                'req_name': 
                 t.getElementsByTagName('req-name')[0].firstChild.data,
-                'subject': t.getElementsByTagName('subject')[0].firstChild.data,
+                'subject':
+                t.getElementsByTagName('subject')[0].firstChild.data,
             })
 
-        zenUsers = []
+        zen_users = []
         for i in zuser_list:
             for o in minidom.parseString(zendesk.list_organizations()). \
             getElementsByTagName('organization'):
@@ -155,19 +162,21 @@ def home(request):
                     org_name = o.getElementsByTagName('name')[0].firstChild.data
                     break
 
-            zenUsers.append({'name': i.getElementsByTagName('name')[0].firstChild.data,
-                        'email': i.getElementsByTagName('email')[0].firstChild.data,
+            zen_users.append({'name': 
+                             i.getElementsByTagName('name')[0].firstChild.data,
+                        'email': 
+                             i.getElementsByTagName('email')[0].firstChild.data,
                         'id': i.getElementsByTagName('id')[0].firstChild.data,
                         'org_name': org_name})
     else:
-        zenUsers = 'broken'
+        zen_users = 'broken'
     
-    if gitTics != 'broken' and zenTics != 'broken':
+    if git_tics != 'broken' and zen_tics != 'broken':
         c_assocs = []
         o_assocs = []
         no_assocs = []
         for i in zticket_list:
-            anum = i.getElementsByTagName(user.zen_fieldid)[0].firstChild
+            a_num = i.getElementsByTagName(user.zen_fieldid)[0].firstChild
             a_data = {}
             a_data['znum'] = \
                 i.getElementsByTagName('nice-id')[0].firstChild.data
@@ -176,35 +185,36 @@ def home(request):
             a_data['zdate'] = \
                 i.getElementsByTagName('updated-at')[0].firstChild.data
 
-            if anum is None or not anum.data.split('-')[0] == 'gh' or not \
-            int(anum.data.split('-')[1]) in ticket_nums:
-                if anum is None:
+            if a_num is None or not a_num.data.split('-')[0] == 'gh' or not \
+            int(a_num.data.split('-')[1]) in ticket_nums:
+                if a_num is None:
                     a_data['dassoc'] = 'None'
                 else:
-                    a_data['dassoc'] = anum.data
+                    a_data['dassoc'] = a_num.data
                 no_assocs.append(a_data)
             
-            elif anum.data.split('-')[0] == 'gh':
-                git_issue = github.issues.show(repo, anum.data.split('-')[1])
-                a_data['gnum'] = git_issue.number
-                a_data['guser'] = git_issue.user
-                a_data['glabels'] = git_issue.labels
-                a_data['gstate'] = git_issue.state
+            elif a_num.data.split('-')[0] == 'gh':
+                git_issue = [i for i in git_tics if 
+                             i['number'] == a_num.data.split('-')[1]][0]
+                a_data['gnum'] = git_issue['number']
+                a_data['guser'] = git_issue['user']['login']
+                a_data['glabels'] = [i['name'] for i in git_issue['labels']]
+                a_data['gstate'] = git_issue['state']
                 if git_issue.state == 'open':
-                    a_data['gdate'] = git_issue.updated_at
+                    a_data['gdate'] = git_issue['updated_at']
                     o_assocs.append(a_data)
                 else:
-                    a_data['gdate'] = git_issue.closed_at
+                    a_data['gdate'] = git_issue['closed_at']
                     c_assocs.append(a_data)
     else:
         c_assocs = 'broken'
         o_assocs = 'broken'
         no_assocs = 'broken'
         
-    return render_to_response('associations/home.html', {'gitTics': gitTics,
-                                'zenTics': zenTics, 'zenUsers': zenUsers, 
+    return render_to_response('associations/home.html', {'git_tics': git_tics,
+                                'zen_tics': zen_tics, 'zen_users': zen_users, 
                                 'c_assocs': c_assocs, 'o_assocs': o_assocs,
-                                'no_assocs': no_assocs, 'repo': repo,
+                                'no_assocs': no_assocs, 'repo': user.git_repo,
                                 'zen_viewid': user.zen_viewid, 
                                 'zen_url': user.zen_url},
                                 context_instance=RequestContext(request))
