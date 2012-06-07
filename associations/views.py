@@ -3,11 +3,11 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django import forms
-from github2.client import Github
-from github2.issues import *
 from zendesk import Zendesk
 from xml.dom import minidom
 from associations.models import GZUser
+import requests
+import json
 
 class LogForm(forms.Form):
     username = forms.CharField(max_length=75)
@@ -18,8 +18,9 @@ class NewForm(forms.Form):
     password = forms.CharField(max_length=75, widget=forms.PasswordInput)
     affirmpass = forms.CharField(max_length=75, widget=forms.PasswordInput)
     git_name = forms.CharField(max_length=75)
+    git_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
+    git_org = forms.CharField(max_length=75)
     git_repo = forms.CharField(max_length=75)
-    git_key = forms.CharField(max_length=75)
     zen_name = forms.CharField(max_length=75)
     zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
     zen_url = forms.CharField(max_length=100)
@@ -28,17 +29,20 @@ class NewForm(forms.Form):
 
 class ChangeForm(forms.Form):
     old_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                                required=False)
-    new_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
-                                required=False)
-    aff_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
-                                required=False)
+                               required=False)
+    new_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
+                               required=False)
+    aff_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
+                               required=False)
     git_name = forms.CharField(max_length=75, required=False)
+    git_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
+                               required=False)
+    git_org = forms.CharField(max_length=75, required=False)
     git_repo = forms.CharField(max_length=75, required=False)
     git_key = forms.CharField(max_length=75, required=False)
     zen_name = forms.CharField(max_length=75, required=False)
-    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
-                                required=False)
+    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
+                               required=False)
     zen_url = forms.CharField(max_length=100, required=False)
     zen_viewid = forms.CharField(max_length=25, required=False)
     zen_fieldid = forms.CharField(max_length=50, required=False)
@@ -71,8 +75,9 @@ def user_login(request):
                         email='',
                     )
                     user.git_name = data['git_name']
+                    user.git_pass = data['git_pass']
+                    user.git_org = data['git_org']
                     user.git_repo = data['git_repo']
-                    user.git_key = data['git_key']
                     user.zen_name = data['zen_name']
                     user.zen_pass = data['zen_pass']
                     user.zen_url = data['zen_url']
@@ -106,9 +111,10 @@ def home(request):
     zenTics = ''
 
     try:
-        github = Github(username=user.git_name, 
-                    api_token=user.git_key)
-        repo = user.git_repo
+        r = requests.get('https://api.github.com/users/%s/%s/issues' %
+                         (user.git_org, user.git_repo), auth=(user.git_name,
+                                                              user.git_pass))
+        if r.text
     except:
         gitTics = 'broken'
 
@@ -220,10 +226,12 @@ def change(request):
                     return HttpResponseRedirect('/nope/3')
             if data['git_name']:
                 user.git_name = data['git_name']
+            if data['git_pass']:
+                user.git_key = data['git_pass']
+            if data['git_org']:
+                user.git_key = data['git_org']
             if data['git_repo']:
                 user.git_repo = data['git_repo']
-            if data['git_key']:
-                user.git_key = data['git_key']
             if data['zen_name']:
                 user.zen_name = data['zen_name']
             if data['zen_pass']:

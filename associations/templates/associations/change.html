@@ -38,14 +38,19 @@ User password.</p>
         {{ changeform.git_name }}
     </div>
     <div class="fieldWrapper">
+        {{ changeform.git_pass.errors }}
+        <label for="id_git_pass">GitHub Password:</label>
+        {{ changeform.git_pass }}
+    </div>
+    <div class="fieldWrapper">
+        {{ changeform.git_org.errors }}
+        <label for="id_git_org">GitHub Organization:</label>
+        {{ changeform.git_org }}
+    </div>
+    <div class="fieldWrapper">
         {{ changeform.git_repo.errors }}
         <label for="id_git_repo">GitHub Repository:</label>
         {{ changeform.git_repo }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.git_key.errors }}
-        <label for="id_git_key">GitHub API Key:</label>
-        {{ changeform.git_key }}
     </div>
     <div class="fieldWrapper">
         {{ changeform.zen_name.errors }}
@@ -74,5 +79,6 @@ User password.</p>
 	</div>
     <p><input name="change" type="submit" value="Submit Changes" /></p>
 </form>
+
 </body>
 </html>
