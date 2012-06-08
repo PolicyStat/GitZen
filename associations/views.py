@@ -3,11 +3,8 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django import forms
-from zendesk import Zendesk
-from xml.dom import minidom
 from associations.models import GZUser
 import requests
-import json
 
 class LogForm(forms.Form):
     username = forms.CharField(max_length=75)
@@ -79,9 +76,9 @@ def user_login(request):
                     user.git_org = data['git_org']
                     user.git_repo = data['git_repo']
                     user.zen_name = data['zen_name']
-                    user.zen_pass = data['zen_pass']
+                    user.zen_name += '/token'
+                    user.zen_token = data['zen_token']
                     user.zen_url = data['zen_url']
-                    user.zen_viewid = data['zen_viewid']
                     user.zen_fieldid = data['zen_fieldid']
                     user.save()
 
@@ -119,6 +116,9 @@ def home(request):
                             (user.git_org, user.git_repo),
                             params={'state': 'closed'},
                             auth=(user.git_name, user.git_pass))
+        
+        gopen_list = r_op.json
+        gclosed_list = r_cl.json
 
         if type(r_op.text) is type({}) and "message" in r_op.text:
             git_tics = 'broken'
@@ -126,66 +126,96 @@ def home(request):
         git_tics = 'broken'
 
     try:
-        zendesk = Zendesk(user.zen_url, user.zen_name,
-                            user.zen_pass)
-        zticket_list = minidom.parseString(zendesk.list_tickets \
-            (view_id=user.zen_viewid)).getElementsByTagName('ticket')
-        zuser_list = minidom.parseString(zendesk.list_users()). \
-            getElementsByTagName('user')
+        r_zt = requests.get('%s/api/v2/tickets.json' % (user.zen_url),
+                            auth=(user.zen_name, user.zen_token))
+        r_zu = requests.get('%s/api/v2/users.json' % (user.zen_url),
+                            auth=(user.zen_name, user.zen_token))
+        r_zo = requests.get('%s/api/v2/organizations.json' % (user.zen_url),
+                            auth=(user.zen_name, user.zen_token))
+
+        zticket_list = r_zt.json['tickets'] 
+        zuser_list = r_zu.json['users']
+        zorg_list = r_zo.json['organizations']
+
+        if type(r_zt.text) is type({}) and "message" in r_zt.text:
+            zen_tics = 'broken'
     except:
         zen_tics = 'broken'
-        
-    
-    if git_tics != 'broken':
-        git_tics = json.loads(r_op.text) + json.loads(r_cl.text)
-        ticket_nums = [i['number'] for i in git_tics]
-    
+         
     if zen_tics != 'broken':
-        zen_tics = []
+        req_ref = {}
+        id_nums = []
         for t in zticket_list:
-            zen_tics.append({
-                'id': t.getElementsByTagName('nice-id')[0].firstChild.data,
-                'req_name': 
-                t.getElementsByTagName('req-name')[0].firstChild.data,
-                'subject':
-                t.getElementsByTagName('subject')[0].firstChild.data,
-            })
-
-        zen_users = []
-        for i in zuser_list:
-            for o in minidom.parseString(zendesk.list_organizations()). \
-            getElementsByTagName('organization'):
-                org_name = 'None'
-                org_id = i.getElementsByTagName('organization-id')[0].firstChild
-                if org_id is not None and o.getElementsByTagName \
-                ('id')[0].firstChild.data == org_id.data:
-                    org_name = o.getElementsByTagName('name')[0].firstChild.data
+            if t['requester_id'] not in id_nums:
+                id_nums.append(t['requester_id'])
+        for i in id_nums:
+            for u in zuser_list:
+                if i == u['id']:
+                    req_ref[i] = u['name']
                     break
 
-            zen_users.append({'name': 
-                             i.getElementsByTagName('name')[0].firstChild.data,
-                        'email': 
-                             i.getElementsByTagName('email')[0].firstChild.data,
-                        'id': i.getElementsByTagName('id')[0].firstChild.data,
+        zen_tics = []
+        zen_tics_full = []
+        for t in zticket_list:
+            a_field = [f for f in t['fields'] \
+                       if f['id'] == int(user.zen_fieldid)]
+            if a_field != []:
+                if not (a_field[0]['value'] == '' and \
+                        t['status'] == 'closed'):
+                    zen_tics_full.append(t)
+                    zen_tics.append({
+                        'id': t['id'],
+                        'req_name': req_ref[t['requester_id']],
+                        'subject': t['subject'],
+                    })
+                    
+        zen_users = []
+        for u in zuser_list:
+            org_name = 'None'
+            org_id = u['organization_id']
+            
+            if org_id is not None:
+                for o in zorg_list:
+                    if o['id'] == org_id:
+                        org_name = o['name']
+                        break
+
+            zen_users.append({'name': u['name']
+                        'email': u['email']
+                        'id': u['id'],
                         'org_name': org_name})
     else:
         zen_users = 'broken'
     
+    if git_tics != 'broken':
+        on_zen = []
+        for t in zen_tics_full:
+            a_num = [f for f in t['fields'] if f['id'] == \
+                     int(user.zen_fieldid)][0]['value'].split('-')
+            if a_num[0] == 'gh':
+                on_zen.append(int(a_num[1]))
+
+        for t in gclosed_list:
+            if t['number'] in on_zen:
+                git_tics.append(t)
+        git_tics += gopen_list
+        ticket_nums = [i['number'] for i in git_tics]
+
     if git_tics != 'broken' and zen_tics != 'broken':
         c_assocs = []
         o_assocs = []
         no_assocs = []
-        for i in zticket_list:
-            a_num = i.getElementsByTagName(user.zen_fieldid)[0].firstChild
-            a_data = {}
-            a_data['znum'] = \
-                i.getElementsByTagName('nice-id')[0].firstChild.data
-            a_data['zuser'] = \
-                i.getElementsByTagName('req-name')[0].firstChild.data
-            a_data['zdate'] = \
-                i.getElementsByTagName('updated-at')[0].firstChild.data
 
-            if a_num is None or not a_num.data.split('-')[0] == 'gh' or not \
+        for t in zen_tics_full:
+            a_num = [f for f in t['fields'] if f['id'] == \
+                     int(user.zen_fieldid)][0]['value']
+            a_data = {}
+            a_data['znum'] = t['id']
+            a_data['zuser'] = req_ref[t['requester_id']]
+            a_data['zstatus'] = t['status']
+            a_data['zdate'] = t['updated_at']
+
+            if a_num == '' or not a_num.data.split('-')[0] == 'gh' or not \
             int(a_num.data.split('-')[1]) in ticket_nums:
                 if a_num is None:
                     a_data['dassoc'] = 'None'
