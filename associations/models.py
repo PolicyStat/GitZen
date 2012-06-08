@@ -8,9 +8,8 @@ class GZUser(User):
     git_org = models.CharField(max_length=75)
     git_repo = models.CharField(max_length=75)
     zen_name = models.CharField(max_length=75)
-    zen_pass = EncryptedCharField(max_length=75)
+    zen_token = EncryptedCharField(max_length=75)
     zen_url = models.CharField(max_length=100)
-    zen_viewid = models.CharField(max_length=25)
     zen_fieldid = models.CharField(max_length=50)
 
     objects = UserManager()

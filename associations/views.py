@@ -19,9 +19,8 @@ class NewForm(forms.Form):
     git_org = forms.CharField(max_length=75)
     git_repo = forms.CharField(max_length=75)
     zen_name = forms.CharField(max_length=75)
-    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
+    zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput)
     zen_url = forms.CharField(max_length=100)
-    zen_viewid = forms.CharField(max_length=25)
     zen_fieldid = forms.CharField(max_length=50)
 
 class ChangeForm(forms.Form):
@@ -36,12 +35,10 @@ class ChangeForm(forms.Form):
                                required=False)
     git_org = forms.CharField(max_length=75, required=False)
     git_repo = forms.CharField(max_length=75, required=False)
-    git_key = forms.CharField(max_length=75, required=False)
     zen_name = forms.CharField(max_length=75, required=False)
-    zen_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
+    zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput,
                                required=False)
     zen_url = forms.CharField(max_length=100, required=False)
-    zen_viewid = forms.CharField(max_length=25, required=False)
     zen_fieldid = forms.CharField(max_length=50, required=False)
 
 def user_login(request):
@@ -160,7 +157,8 @@ def home(request):
             a_field = [f for f in t['fields'] \
                        if f['id'] == int(user.zen_fieldid)]
             if a_field != []:
-                if not (a_field[0]['value'] == '' and \
+                if not ((a_field[0]['value'] == '' or \
+                         a_field[0]['value'].split('-') != 'gh') and \
                         t['status'] == 'closed'):
                     zen_tics_full.append(t)
                     zen_tics.append({
@@ -215,26 +213,39 @@ def home(request):
             a_data['zstatus'] = t['status']
             a_data['zdate'] = t['updated_at']
 
-            if a_num == '' or not a_num.data.split('-')[0] == 'gh' or not \
-            int(a_num.data.split('-')[1]) in ticket_nums:
-                if a_num is None:
+            if a_num.split('-')[0] != 'gh':
+                if a_num == '':
                     a_data['dassoc'] = 'None'
                 else:
-                    a_data['dassoc'] = a_num.data
+                    a_data['dassoc'] = a_num
                 no_assocs.append(a_data)
             
-            elif a_num.data.split('-')[0] == 'gh':
+            else:
                 git_issue = [i for i in git_tics if 
-                             i['number'] == a_num.data.split('-')[1]][0]
+                             i['number'] == int(a_num.split('-')[1])][0]
                 a_data['gnum'] = git_issue['number']
                 a_data['guser'] = git_issue['user']['login']
                 a_data['glabels'] = [i['name'] for i in git_issue['labels']]
                 a_data['gstate'] = git_issue['state']
-                if git_issue.state == 'open':
+                
+                if a_data['gstate'] == 'open' and a_data['zstatus'] == 'open':
                     a_data['gdate'] = git_issue['updated_at']
                     o_assocs.append(a_data)
+                elif a_data['gstate'] != 'open' and \
+                        a_data['zstatus'] != 'open':
+                    for i in range(len(git_tics)):
+                        if git_tics[i]['number'] == a_data['gnum']:
+                            git_tics.pop(i)
+                            break
+                    for i in range(len(zen_tics)):
+                        if zen_tics[i]['id'] == a_data['znum']:
+                            zen_tics.pop(i)
+                            break
                 else:
-                    a_data['gdate'] = git_issue['closed_at']
+                    if a_data['gstate'] == 'open':
+                        a_data['closed'] = 'z'
+                    else:
+                        a_data['closed'] = 'g'
                     c_assocs.append(a_data)
     else:
         c_assocs = 'broken'
@@ -274,12 +285,11 @@ def change(request):
                 user.git_repo = data['git_repo']
             if data['zen_name']:
                 user.zen_name = data['zen_name']
-            if data['zen_pass']:
-                user.zen_pass = data['zen_pass']
+                user.zen_name += '/token'
+            if data['zen_token']:
+                user.zen_token = data['zen_token']
             if data['zen_url']:
                 user.zen_url = data['zen_url']
-            if data['zen_viewid']:
-                user.zen_viewid = data['zen_viewid']
             if data['zen_fieldid']:
                 user.zen_fieldid = data['zen_fieldid']
             user.save()
