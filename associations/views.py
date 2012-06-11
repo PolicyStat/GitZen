@@ -178,8 +178,8 @@ def home(request):
                         org_name = o['name']
                         break
 
-            zen_users.append({'name': u['name']
-                        'email': u['email']
+            zen_users.append({'name': u['name'],
+                        'email': u['email'],
                         'id': u['id'],
                         'org_name': org_name})
     else:
