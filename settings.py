@@ -13,6 +13,13 @@ MANAGERS = ADMINS
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(PROJECT_ROOT, '..', 'gitzen.db'),
+    }
+}
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -114,7 +121,7 @@ INSTALLED_APPS = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'associations.auth_backends.GZUserModelBackend',
+    'gitzen.associations.auth_backends.GZUserModelBackend',
 )
 
 CUSTOM_USER_MODEL = 'associations.GZUser'
