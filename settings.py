@@ -1,7 +1,6 @@
 # Django settings for gitzen project.
 
 import os.path
-import dj_database_url
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -13,10 +12,6 @@ ADMINS = (
 MANAGERS = ADMINS
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-
-DATABASES = {
-    'default': dj_database_url.config(default='postgres://localhost')
-    }
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -146,3 +141,8 @@ LOGGING = {
         },
     }
 }
+
+import dj_database_url
+DATABASES = {
+    'default': dj_database_url.config(default='postgres://localhost')
+    }
