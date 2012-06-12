@@ -104,41 +104,73 @@ def home(request):
     working = {}
 
     try:
-        r_op = requests.get('https://api.github.com/repos/%s/%s/issues' %
-                            (user.git_org, user.git_repo),
-                            params={'state': 'open'},
+        gopen_list = []
+        page = 1
+        url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
+                            (user.git_org, user.git_repo, page)
+        while True:
+            r_op = requests.get(url, params={'state': 'open'},
                             auth=(user.git_name, user.git_pass))
-        r_cl = requests.get('https://api.github.com/repos/%s/%s/issues' %
-                            (user.git_org, user.git_repo),
-                            params={'state': 'closed'},
+            gopen_list.extend(r_op.json)
+            if r_op.json:
+                page += 1
+                url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
+                            (user.git_org, user.git_repo, page)
+            else:
+                break
+            
+        gclosed_list = []
+        page = 1
+        url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
+                            (user.git_org, user.git_repo, page)
+        while True:
+            r_cl = requests.get(url, params={'state': 'closed'},
                             auth=(user.git_name, user.git_pass))
-        
-        gopen_list = r_op.json
-        gclosed_list = r_cl.json
-
-        if "message" in gopen_list:
-            working['git'] = False
-        else:
-            working['git'] = True
+            gclosed_list.extend(r_cl.json)
+            if r_cl.json:
+                page += 1
+                url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
+                            (user.git_org, user.git_repo, page)
+            else:
+                break
+         
+        working['git'] = True
     except:
         working['git'] = False
 
     try:
-        r_zt = requests.get('%s/api/v2/tickets.json' % (user.zen_url),
-                            auth=(user.zen_name, user.zen_token))
-        r_zu = requests.get('%s/api/v2/users.json' % (user.zen_url),
-                            auth=(user.zen_name, user.zen_token))
-        r_zo = requests.get('%s/api/v2/organizations.json' % (user.zen_url),
-                            auth=(user.zen_name, user.zen_token))
+        zticket_list = []
+        url = '%s/api/v2/tickets.json' % (user.zen_url)
+        while True:
+            r_zt = requests.get(url, auth=(user.zen_name, user.zen_token))
+            zticket_list.extend(r_zt.json['tickets'])
+            if r_zt.json['next_page'] is not None:
+                url = r_zt.json['next_page']
+            else:
+                break
 
-        zticket_list = r_zt.json['tickets'] 
-        zuser_list = r_zu.json['users']
-        zorg_list = r_zo.json['organizations']
+        zuser_list = []
+        url = '%s/api/v2/users.json' % (user.zen_url)
+        while True:
+            r_zu = requests.get(url, auth=(user.zen_name, user.zen_token))
+            zuser_list.extend(r_zu.json['users'])
+            if r_zu.json['next_page'] is not None:
+                url = r_zu.json['next_page']
+            else:
+                break
 
-        if "message" in zticket_list:
-            working['zen'] = False
-        else:
-            working['zen'] = True
+        zorg_list = []
+        url = '%s/api/v2/organizations.json' % (user.zen_url)
+        while True:
+            r_zo = requests.get(url, auth=(user.zen_name, user.zen_token))
+            zorg_list.extend(r_zo.json['organizations'])
+            if r_zo.json['next_page'] is not None:
+                url = r_zo.json['next_page']
+            else:
+                break
+        
+        working['zen'] = True
+        'break' == 1
     except:
         working['zen'] = False
          
