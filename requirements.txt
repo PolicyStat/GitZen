@@ -3,3 +3,4 @@ psycopg2==2.4.5
 dj-database-url==0.2.0
 requests==0.13.0
 pycrypto==2.6
+django_evolution==0.6.7
