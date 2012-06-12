@@ -115,7 +115,7 @@ INSTALLED_APPS = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'gitzen.associations.auth_backends.GZUserModelBackend',
+    'associations.auth_backends.GZUserModelBackend',
 )
 
 CUSTOM_USER_MODEL = 'associations.GZUser'
