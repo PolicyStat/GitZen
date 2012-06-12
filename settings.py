@@ -13,6 +13,13 @@ MANAGERS = ADMINS
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(PROJECT_ROOT, '..', 'gitzen.db')
+    }
+}
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -143,7 +150,7 @@ LOGGING = {
     }
 }
 
-import dj_database_url
-DATABASES = {
-    'default': dj_database_url.config(default='postgres://localhost')
-    }
+#import dj_database_url
+#DATABASES = {
+#    'default': dj_database_url.config(default='postgres://localhost')
+#    }

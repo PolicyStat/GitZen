@@ -101,15 +101,13 @@ def confirm(request, con_num):
 
 def home(request):
     user = request.user
-    git_tics = ''
-    zen_tics = ''
 
     try:
-        r_op = requests.get('https://api.github.com/users/%s/%s/issues' %
+        r_op = requests.get('https://api.github.com/repos/%s/%s/issues' %
                             (user.git_org, user.git_repo),
                             params={'state': 'open'},
                             auth=(user.git_name, user.git_pass))
-        r_cl = requests.get('https://api.github.com/users/%s/%s/issues' %
+        r_cl = requests.get('https://api.github.com/repos/%s/%s/issues' %
                             (user.git_org, user.git_repo),
                             params={'state': 'closed'},
                             auth=(user.git_name, user.git_pass))
@@ -117,7 +115,7 @@ def home(request):
         gopen_list = r_op.json
         gclosed_list = r_cl.json
 
-        if type(r_op.text) is type({}) and "message" in r_op.text:
+        if "message" in gopen_list:
             git_tics = 'broken'
     except:
         git_tics = 'broken'
@@ -134,7 +132,7 @@ def home(request):
         zuser_list = r_zu.json['users']
         zorg_list = r_zo.json['organizations']
 
-        if type(r_zt.text) is type({}) and "message" in r_zt.text:
+        if "message" in zticket_list:
             zen_tics = 'broken'
     except:
         zen_tics = 'broken'
@@ -186,6 +184,7 @@ def home(request):
         zen_users = 'broken'
     
     if git_tics != 'broken':
+        git_tics = []
         on_zen = []
         for t in zen_tics_full:
             a_num = [f for f in t['fields'] if f['id'] == \
@@ -196,7 +195,7 @@ def home(request):
         for t in gclosed_list:
             if t['number'] in on_zen:
                 git_tics.append(t)
-        git_tics += gopen_list
+        git_tics.extend(gopen_list)
         ticket_nums = [i['number'] for i in git_tics]
 
     if git_tics != 'broken' and zen_tics != 'broken':
