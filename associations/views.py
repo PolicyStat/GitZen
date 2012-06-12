@@ -101,6 +101,7 @@ def confirm(request, con_num):
 
 def home(request):
     user = request.user
+    working = {}
 
     try:
         r_op = requests.get('https://api.github.com/repos/%s/%s/issues' %
@@ -116,9 +117,11 @@ def home(request):
         gclosed_list = r_cl.json
 
         if "message" in gopen_list:
-            git_tics = 'broken'
+            working['git'] = False
+        else:
+            working['git'] = True
     except:
-        git_tics = 'broken'
+        working['git'] = False
 
     try:
         r_zt = requests.get('%s/api/v2/tickets.json' % (user.zen_url),
@@ -133,11 +136,13 @@ def home(request):
         zorg_list = r_zo.json['organizations']
 
         if "message" in zticket_list:
-            zen_tics = 'broken'
+            working['zen'] = False
+        else:
+            working['zen'] = True
     except:
-        zen_tics = 'broken'
+        working['zen'] = False
          
-    if zen_tics != 'broken':
+    if working['zen']:
         req_ref = {}
         id_nums = []
         for t in zticket_list:
@@ -148,6 +153,7 @@ def home(request):
                 if i == u['id']:
                     req_ref[i] = u['name']
                     break
+        del id_nums
 
         zen_tics = []
         zen_tics_full = []
@@ -167,23 +173,22 @@ def home(request):
                     
         zen_users = []
         for u in zuser_list:
-            org_name = 'None'
-            org_id = u['organization_id']
-            
-            if org_id is not None:
-                for o in zorg_list:
-                    if o['id'] == org_id:
-                        org_name = o['name']
-                        break
+            if u['id'] in req_ref:
+                org_name = 'None'
+                org_id = u['organization_id']
+                
+                if org_id is not None:
+                    for o in zorg_list:
+                        if o['id'] == org_id:
+                            org_name = o['name']
+                            break
 
-            zen_users.append({'name': u['name'],
-                        'email': u['email'],
-                        'id': u['id'],
-                        'org_name': org_name})
-    else:
-        zen_users = 'broken'
+                zen_users.append({'name': u['name'],
+                            'email': u['email'],
+                            'id': u['id'],
+                            'org_name': org_name})
     
-    if git_tics != 'broken':
+    if working['git']:
         git_tics = []
         on_zen = []
         for t in zen_tics_full:
@@ -195,13 +200,19 @@ def home(request):
         for t in gclosed_list:
             if t['number'] in on_zen:
                 git_tics.append(t)
+        del on_zen
+
         git_tics.extend(gopen_list)
+        git_tics.reverse()
         ticket_nums = [i['number'] for i in git_tics]
 
-    if git_tics != 'broken' and zen_tics != 'broken':
+    if working['git'] and working['zen']:
         c_assocs = []
         o_assocs = []
         no_assocs = []
+        working['c_assocs'] = True
+        working['o_assocs'] = True
+        working['no_assocs'] = True
 
         for t in zen_tics_full:
             a_num = [f for f in t['fields'] if f['id'] == \
@@ -247,16 +258,15 @@ def home(request):
                         a_data['closed'] = 'g'
                     c_assocs.append(a_data)
     else:
-        c_assocs = 'broken'
-        o_assocs = 'broken'
-        no_assocs = 'broken'
+        working['c_assocs'] = False
+        working['o_assocs'] = False
+        working['no_assocs'] = False
         
     return render_to_response('associations/home.html', {'git_tics': git_tics,
                                 'zen_tics': zen_tics, 'zen_users': zen_users, 
                                 'c_assocs': c_assocs, 'o_assocs': o_assocs,
-                                'no_assocs': no_assocs, 'repo': user.git_repo,
-                                'zen_viewid': user.zen_viewid, 
-                                'zen_url': user.zen_url},
+                                'no_assocs': no_assocs, 'repo': user.git_repo, 
+                                'zen_url': user.zen_url, 'working': working},
                                 context_instance=RequestContext(request))
 
 def change(request):
