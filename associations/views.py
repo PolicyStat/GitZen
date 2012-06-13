@@ -169,10 +169,32 @@ def confirm(request, con_num):
 
 
 def home(request):
+    api_lists = {} # Stores lists from API calls and their status
+    filtered_lists = {} # Stores lists of the filitered API data
+    render_data = {} # Data to be rendered to the home page
+
+    api_lists = api_calls(request)
+    filitered_lists = filter_lists(requests, api_lists)
+    render_data = build_associations(requests, api_lists, filitered_lists)
+
+def api_calls(request):
+    """Makes API calls to GitHub and Zendesk to gather the data used in the app.
+
+    Returns a dictionary with the following keys and values:
+        'gopen' - List of all of the open tickets in the GitHub repo
+        'gclosed' - List of all of the closed tickets in the GitHub repo
+        'ztickets' - List of all of the tickets on the Zendesk account
+        'zusers' - List of all of the users (customers, admins, etc.) on the
+                    Zendesk account
+        'status' - Dictionary with the status of the API calls for GitHub and
+                    Zendesk with the following keys and values:
+                        'git' - True if Git call was successful, False if not
+                        'zen' - True if Zen call was successful, False if not
+    """
     user = request.user
     working = {}
 
-    try:
+    try:  # GitHub API calls to get all open and closed tickets
         gopen_list = []
         page = 1
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
@@ -207,8 +229,8 @@ def home(request):
     except:
         working['git'] = False
 
-    try:
-        zen_name_tk = user.zen_name + '/token' #Zen user email set up for
+    try:  # Zendesk API calls to get all tickets and users
+        zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
                                                #API token authorization
         zticket_list = []
         url = '%s/api/v2/tickets.json' % (user.zen_url)
@@ -230,36 +252,57 @@ def home(request):
             else:
                 break
 
-        zorg_list = []
-        url = '%s/api/v2/organizations.json' % (user.zen_url)
-        while True:
-            r_zo = requests.get(url, auth=(zen_name_tk, user.zen_token))
-            zorg_list.extend(r_zo.json['organizations'])
-            if r_zo.json['next_page'] is not None:
-                url = r_zo.json['next_page']
-            else:
-                break
-        
         working['zen'] = True
     except:
         working['zen'] = False
-         
-    if working['zen']:
+
+    api_lists = {
+        'gopen': gopen_list,
+        'gclosed': gclosed_list,
+        'ztickets': zticket_list,
+        'zusers': zuser_list,
+        'status': working
+    }
+
+    return api_lists
+
+def filter_lists(request, data_lists):
+    """Filters GitHub and Zendesk data to remove the data not needed in the app.
+    
+    Returns a dictionary with the following keys and values:
+        'req_ref' - Reference table for looking up users by ID number.
+        'ztics' - Filtered Zendesk ticket list with only the values needed in
+                    the quick reference table.
+        'ztics_full' - Filtered Zendesk ticket list with all values.
+        'gtics' - Filtered GitHub ticket list
+    """
+
+    # Zendesk list filtering
+    if data_lists['status']['zen']:
+
+        # Builds a table (req_ref) that allows for quickly looking up a user's
+        # name with their user ID.
         req_ref = {}
         id_nums = []
-        for t in zticket_list:
+        for t in data_lists['ztickets']:
             if t['requester_id'] not in id_nums:
                 id_nums.append(t['requester_id'])
         for i in id_nums:
-            for u in zuser_list:
+            for u in data_lists['zusers']:
                 if i == u['id']:
                     req_ref[i] = u['name']
                     break
         del id_nums
-
+        
+        # Filters the list of Zendesk tickets to remove closed tickets that are
+        # not associated with GitHub. The filterd list is appended into two
+        # different lists: one that includes only the attributes needed for the
+        # quick reference table of the app display (zen_tics), and one that
+        # includes all of the attributes for later use in building the
+        # association lists (zen_tics_full).
         zen_tics = []
         zen_tics_full = []
-        for t in zticket_list:
+        for t in data_lists['ztickets']:
             a_field = {}
             for f in t['fields']:
                 if f['id'] == int(user.zen_fieldid):
@@ -277,25 +320,13 @@ def home(request):
                         'req_name': req_ref[t['requester_id']],
                         'subject': t['subject'],
                     })
-                    
-        zen_users = []
-        for u in zuser_list:
-            if u['id'] in req_ref:
-                org_name = 'None'
-                org_id = u['organization_id']
-                
-                if org_id is not None:
-                    for o in zorg_list:
-                        if o['id'] == org_id:
-                            org_name = o['name']
-                            break
-
-                zen_users.append({'name': u['name'],
-                            'email': u['email'],
-                            'id': u['id'],
-                            'org_name': org_name})
     
-    if working['git']:
+    # GitHub list filtering
+    if data_lists['status']['git']:
+
+        # Filters the list of closed GitHub tickets to remove the ones that are
+        # not associated with any Zendesk ticket. This filtered list is then
+        # combined with all of the open GitHub tickets.
         git_tics = []
         on_zen = []
         for t in zen_tics_full:
@@ -309,14 +340,23 @@ def home(request):
             if a_num[0] == 'gh':
                 on_zen.append(int(a_num[1]))
 
-        for t in gclosed_list:
+        for t in data_lists['gclosed']:
             if t['number'] in on_zen:
                 git_tics.append(t)
         del on_zen
 
-        git_tics.extend(gopen_list)
-        git_tics.reverse()
-        ticket_nums = [i['number'] for i in git_tics]
+        git_tics.extend(data_lists['gopen'])
+        git_tics.reverse() # List is reversed to put the oldest tickets first.
+
+    filtered_lists = {
+        'req_ref': req_ref
+        'ztics': zen_tics,
+        'ztics_full': zen_tics_full,
+        'gtics': git_tics
+    }
+
+    return filtered_lists
+
 
     if working['git'] and working['zen']:
         o_assocs = [] # open associations
