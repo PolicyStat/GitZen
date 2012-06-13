@@ -319,11 +319,11 @@ def home(request):
         ticket_nums = [i['number'] for i in git_tics]
 
     if working['git'] and working['zen']:
-        c_assocs = []
-        o_assocs = []
-        no_assocs = []
-        working['c_assocs'] = True
+        o_assocs = [] # open associations
+        ho_assocs = [] # half-open associations
+        no_assocs = [] # no associations
         working['o_assocs'] = True
+        working['ho_assocs'] = True
         working['no_assocs'] = True
 
         for t in zen_tics_full:
@@ -349,9 +349,10 @@ def home(request):
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
                         break
-                a_data['g_is'] = git_issue['number']
+                a_data['g_id'] = git_issue['number']
                 a_data['g_user'] = git_issue['user']['login']
                 a_data['g_labels'] = [i['name'] for i in git_issue['labels']]
+                a_data['g_url'] = git_issue['html_url']
                 a_data['g_status'] = git_issue['state']
                 
                 if a_data['g_status'] == 'open' and \
@@ -375,15 +376,15 @@ def home(request):
                         a_data['closed'] = 'z'
                     else:
                         a_data['closed'] = 'g'
-                    c_assocs.append(a_data)
+                    ho_assocs.append(a_data)
     else:
-        working['c_assocs'] = False
         working['o_assocs'] = False
+        working['ho_assocs'] = False
         working['no_assocs'] = False
         
     return render_to_response('associations/home.html', {'git_tics': git_tics,
                                 'zen_tics': zen_tics, 'zen_users': zen_users, 
-                                'c_assocs': c_assocs, 'o_assocs': o_assocs,
+                                'ho_assocs': c_assocs, 'o_assocs': o_assocs,
                                 'no_assocs': no_assocs, 'repo': user.git_repo, 
                                 'zen_url': user.zen_url, 'working': working},
                                 context_instance=RequestContext(request))
