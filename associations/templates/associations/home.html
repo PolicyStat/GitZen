@@ -33,7 +33,7 @@
 	a.open, td.open {
 		color:green
 	}
-	a.close, td.close {
+	a.closed, td.closed {
 		color:red
 	}
 
@@ -49,7 +49,7 @@
 <h3><a href="/change/">Change Account Data</a></h3>
 
 <h2>Associations</h2>
-{% if working.o_assocs %}
+{% if status.o_assocs %}
     <h3>Open Associations</h3>
     {% if o_assocs %}
         <table align="center" style="width:75%">
@@ -118,7 +118,7 @@
 				{% else %}
 					<td class="open">{{ a.z_date }}</td>
 				{% endif %}
-				<td>{{ a.guser }}</td>
+				<td>{{ a.g_user }}</td>
 				{% if a.closed == 'g' %}
 					<td class="closed">{{ a.g_date }}</td>
 				{% else %}
@@ -144,29 +144,33 @@
     <h3>Not Associated with GitHub</h3>
     {% if no_assocs %}
         <table align="center" style="width:50%">
-        <tr>
-        <th>Zendesk Ticket</th>
-        <th>Zendesk User</th>
-        <th>Last Updated</th>
-        <th>Displayed Association</th>
-        </tr>
+			<tr>
+				<th>Zendesk Ticket</th>
+				<th>Zendesk User</th>
+				<th>Last Updated</th>
+				<th>Displayed Association</th>
+			</tr>
         {% for a in no_assocs %}
             <tr>
-            <td align="center"><a href="{{ zen_url }}/tickets/{{ a.znum }}?col={{ zen_viewid }}">Z{{ a.znum }}</a></td>
-            <td align="center">{{ a.zuser }}</td>
-            <td align="center">{{ a.zdate }}</td>
-            <td align="center">{{ a.dassoc }}</td>
+            	<td><a class="open" href="{{ zen_url }}/tickets/
+						{{ a.z_id }}">Z{{ a.z_id }}</a>
+				</td>
+				<td>{{ a.z_user }}</td>
+				<td class="open">{{ a.z_date }}</td>
+				<td>{{ a.assoc }}</td>
             </tr>
         {% endfor %}
         </table>
     {% else %}
-        <p align="center">There are currently no Zendesk Tickets without Git
-        Associations.</p>
+        <p align="center">There are currently no Zendesk Tickets without GitHub 
+							Associations.</p>
     {% endif %}
 {% else %}
     <p align="center">There was an Error connecting to either GitHub or
     Zendesk. Try adjusting your account settings.</p>
 {% endif %}
+
+<!--
 
 <br/><br/>
 
@@ -186,7 +190,7 @@
 		<th>Subject</th>
 	</tr>
 
-    {% if working.git %}
+    {% if status.git %}
         {% if git_tics %}
             {% for i in git_tics %}
 			<tr>
@@ -274,6 +278,6 @@
 		to Zendesk. Try adjusting your account settings.</td></tr>
     {% endif %}
 </table>
-
+-->
 </body>
 </html>

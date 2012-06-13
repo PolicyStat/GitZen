@@ -200,8 +200,11 @@ def home(request):
     render_data = {} # Data to be rendered to the home page
 
     api_lists = api_calls(request)
-    filitered_lists = filter_lists(request.zen_fieldid, api_lists)
-    render_data = build_associations(request.zen_fieldid, filitered_lists)
+    filitered_lists = filter_lists(request.user.zen_fieldid, api_lists)
+
+    api_status = api_lists['status']['git'] and api_lists['status']['zen']
+    render_data = build_associations(request.user.zen_fieldid, filitered_lists,
+                                    api_status)
     
     # Combine the status dictionaries from the API data and association lists
     render_data['status'] = dict(render_data['status'].items() +
@@ -400,7 +403,7 @@ def filter_lists(zen_fieldid, data_lists):
         git_tics.reverse() # List is reversed to put the oldest tickets first.
 
     filtered_lists = {
-        'req_ref': req_ref
+        'req_ref': req_ref,
         'ztics': zen_tics,
         'ztics_full': zen_tics_full,
         'gtics': git_tics
@@ -408,7 +411,7 @@ def filter_lists(zen_fieldid, data_lists):
 
     return filtered_lists
 
-def build_associations(zen_fieldid, filtered_lists):
+def build_associations(zen_fieldid, filtered_lists, api_status):
     """Builds the association tables from the Zendesk and GitHub data.
     
     Parameters:
@@ -418,6 +421,9 @@ def build_associations(zen_fieldid, filtered_lists):
                             tickets, and a Zendesk user reference table that
                             have all been filtered and contain only the
                             entries to be used in building associations.
+        api_status - A boolean that is True if the API lists were successfully
+                        gathered, and False if they were not. Needed to
+                        determine the status of the association lists.
 
     Returns a dictionary of the built data with the following keys and values:
         'git_tics' - List of the GitHub tickets used in the app.
@@ -436,7 +442,7 @@ def build_associations(zen_fieldid, filtered_lists):
                             successfully, False if not.
     """
 
-    if api_lists['status']['git'] and api_lists['status']['zen']:
+    if api_status:
         o_assocs = [] # open associations
         ho_assocs = [] # half-open associations
         no_assocs = [] # no associations
@@ -490,8 +496,8 @@ def build_associations(zen_fieldid, filtered_lists):
                 
                 # Check if the tickets have a closed association (Both are
                 # closed). These tickets are deleted from their lists.
-                elif a_data['gstatus'] != 'open' and \
-                        a_data['zstatus'] != 'open':
+                elif a_data['g_status'] != 'open' and \
+                        a_data['z_status'] != 'open':
                     for i in range(len(filtered_lists['gtics'])):
                         if filtered_lists['gtics'][i]['number'] == \
                            a_data['g_id']:
@@ -500,7 +506,7 @@ def build_associations(zen_fieldid, filtered_lists):
                     for i in range(len(filtered_lists['ztics'])):
                         if filtered_lists['ztics'][i]['id'] == \
                            a_data['z_id']:
-                            filtered_lists['zen_tics'].pop(i)
+                            filtered_lists['ztics'].pop(i)
                             break
                 
                 # Check if the tickets have a half-open association (One is open
