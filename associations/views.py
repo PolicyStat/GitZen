@@ -7,10 +7,14 @@ from associations.models import GZUser
 import requests
 
 class LogForm(forms.Form):
+    """Form for login of an existing user."""
+
     username = forms.CharField(max_length=75)
     password = forms.CharField(max_length=75, widget=forms.PasswordInput)
 
 class NewForm(forms.Form):
+    """Form for creating a new user."""
+
     username = forms.CharField(max_length=75)
     password = forms.CharField(max_length=75, widget=forms.PasswordInput)
     affirmpass = forms.CharField(max_length=75, widget=forms.PasswordInput)
@@ -24,6 +28,8 @@ class NewForm(forms.Form):
     zen_fieldid = forms.CharField(max_length=50)
 
 class ChangeForm(forms.Form):
+    """Form for changing the data of an existing user."""
+
     old_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
                                required=False)
     new_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
@@ -41,8 +47,17 @@ class ChangeForm(forms.Form):
     zen_url = forms.CharField(max_length=100, required=False)
     zen_fieldid = forms.CharField(max_length=50, required=False)
 
+
 def user_login(request):
-    if request.method == 'POST':
+    """Processes the requests from the login page. 
+    
+    Authenticates the login of an existing user or creates a new user by adding
+    their user data to the database. If any of the fields in the submitted form
+    are not completed properly, the login page will come up again with those
+    fields marked as needing to be properly filled. 
+    """
+
+    if request.method == 'POST':  # Process login form
         if 'log' in request.POST:
             logform = LogForm(request.POST)
             if logform.is_valid():
@@ -58,7 +73,7 @@ def user_login(request):
                     return HttpResponseRedirect('/nope/1/')
             newform = NewForm()
 
-        elif 'new' in request.POST:
+        elif 'new' in request.POST:  # Process new user form
             newform = NewForm(request.POST)
             if newform.is_valid():
                 data = newform.cleaned_data
@@ -88,15 +103,70 @@ def user_login(request):
 
     return render_to_response('associations/login.html', {'logform': logform,
                                 'newform': newform,}, 
+                              context_instance=RequestContext(request))
+
+def change(request):
+    """Processes the requests from the Change Account Data page.
+
+    All of the fields on the change form are optional so that the user can
+    change only the account data that they want changed.
+    """
+
+    if request.method == 'POST':
+        changeform = ChangeForm(request.POST)
+        if changeform.is_valid():
+            data = changeform.cleaned_data
+            user = request.user
+
+            if data['new_pass']:
+                if user.check_password(data['old_pass']):
+                    if data['new_pass'] == data['aff_pass']:
+                        user.set_password(data['new_pass'])
+                    else:
+                        return HttpResponseRedirect('/nope/4')
+                else:
+                    return HttpResponseRedirect('/nope/3')
+            if data['git_name']:
+                user.git_name = data['git_name']
+            if data['git_pass']:
+                user.git_key = data['git_pass']
+            if data['git_org']:
+                user.git_key = data['git_org']
+            if data['git_repo']:
+                user.git_repo = data['git_repo']
+            if data['zen_name']:
+                user.zen_name = data['zen_name']
+            if data['zen_token']:
+                user.zen_token = data['zen_token']
+            if data['zen_url']:
+                user.zen_url = data['zen_url']
+            if data['zen_fieldid']:
+                user.zen_fieldid = data['zen_fieldid']
+            user.save()
+
+            return HttpResponseRedirect('/confirm/2')
+    else:
+        changeform = ChangeForm()
+    
+    return render_to_response('associations/change.html', 
+                                {'changeform': changeform,},
                                 context_instance=RequestContext(request))
 
+
 def nope(request, nope_num):
+    """Renders the error page if there are issues in the submitted data from the
+    different forms.
+    """
     return render_to_response('associations/nope.html', 
                                 {'nope_num': nope_num,})
 
 def confirm(request, con_num):
+    """Renders the confirmation page to confirm the successful submission of
+    data from the different forms.
+    """
     return render_to_response('associations/confirm.html',
                                 {'con_num': con_num,})
+
 
 def home(request):
     user = request.user
@@ -302,6 +372,12 @@ def home(request):
                                 context_instance=RequestContext(request))
 
 def change(request):
+    """Processes the requests from the Change Account Data page.
+
+    All of the fields on the change form are optional so that the user can
+    change only the account data that they want changed.
+    """
+
     if request.method == 'POST':
         changeform = ChangeForm(request.POST)
         if changeform.is_valid():
@@ -326,7 +402,6 @@ def change(request):
                 user.git_repo = data['git_repo']
             if data['zen_name']:
                 user.zen_name = data['zen_name']
-                user.zen_name += '/token'
             if data['zen_token']:
                 user.zen_token = data['zen_token']
             if data['zen_url']:
