@@ -260,11 +260,16 @@ def home(request):
         zen_tics = []
         zen_tics_full = []
         for t in zticket_list:
-            a_field = [f for f in t['fields'] \
-                       if f['id'] == int(user.zen_fieldid)]
-            if a_field != []:
-                if not ((a_field[0]['value'] == '' or \
-                         a_field[0]['value'].split('-') != 'gh') and \
+            a_field = {}
+            for f in t['fields']:
+                if f['id'] == int(user.zen_fieldid):
+                    a_field = f
+                    break
+
+            if a_field != {}:
+                a_value = a_field['value']
+                if not ((a_value == '' or a_value is None or \
+                         a_value.split('-')[0] != 'gh') and \
                         t['status'] == 'closed'):
                     zen_tics_full.append(t)
                     zen_tics.append({
@@ -294,8 +299,13 @@ def home(request):
         git_tics = []
         on_zen = []
         for t in zen_tics_full:
-            a_num = [f for f in t['fields'] if f['id'] == \
-                     int(user.zen_fieldid)][0]['value'].split('-')
+            for f in t['fields']:
+                if f['id'] == int(user.zen_fieldid):
+                    if f['value'] is not None:
+                        a_num = f['value'].split('-')
+                    else:
+                        a_num = ['']
+                    break
             if a_num[0] == 'gh':
                 on_zen.append(int(a_num[1]))
 
@@ -317,44 +327,51 @@ def home(request):
         working['no_assocs'] = True
 
         for t in zen_tics_full:
-            a_num = [f for f in t['fields'] if f['id'] == \
-                     int(user.zen_fieldid)][0]['value']
+            for f in t['fields']:
+                if f['id'] == int(user.zen_fieldid):
+                    a_num = f['value']
+                    break
             a_data = {}
-            a_data['znum'] = t['id']
-            a_data['zuser'] = req_ref[t['requester_id']]
-            a_data['zstatus'] = t['status']
-            a_data['zdate'] = t['updated_at']
+            a_data['z_id'] = t['id']
+            a_data['z_user'] = req_ref[t['requester_id']]
+            a_data['z_status'] = t['status']
+            a_data['z_date'] = t['updated_at']
 
-            if a_num.split('-')[0] != 'gh':
-                if a_num == '':
-                    a_data['dassoc'] = 'None'
+            if a_num is None or a_num.split('-')[0] != 'gh':
+                if a_num is None or a_num == '':
+                    a_data['assoc'] = 'None'
                 else:
-                    a_data['dassoc'] = a_num
+                    a_data['assoc'] = a_num
                 no_assocs.append(a_data)
             
             else:
-                git_issue = [i for i in git_tics if 
-                             i['number'] == int(a_num.split('-')[1])][0]
-                a_data['gnum'] = git_issue['number']
-                a_data['guser'] = git_issue['user']['login']
-                a_data['glabels'] = [i['name'] for i in git_issue['labels']]
-                a_data['gstate'] = git_issue['state']
+                for i in git_tics:
+                    if i['number'] == int(a_num.split('-')[1]):
+                        git_issue = i
+                        break
+                a_data['g_is'] = git_issue['number']
+                a_data['g_user'] = git_issue['user']['login']
+                a_data['g_labels'] = [i['name'] for i in git_issue['labels']]
+                a_data['g_status'] = git_issue['state']
                 
-                if a_data['gstate'] == 'open' and a_data['zstatus'] == 'open':
-                    a_data['gdate'] = git_issue['updated_at']
+                if a_data['g_status'] == 'open' and \
+                   a_data['z_status'] == 'open':
+                    a_data['g_date'] = git_issue['updated_at']
                     o_assocs.append(a_data)
-                elif a_data['gstate'] != 'open' and \
+
+                elif a_data['gstatus'] != 'open' and \
                         a_data['zstatus'] != 'open':
                     for i in range(len(git_tics)):
-                        if git_tics[i]['number'] == a_data['gnum']:
+                        if git_tics[i]['number'] == a_data['g_id']:
                             git_tics.pop(i)
                             break
                     for i in range(len(zen_tics)):
-                        if zen_tics[i]['id'] == a_data['znum']:
+                        if zen_tics[i]['id'] == a_data['z_id']:
                             zen_tics.pop(i)
                             break
+
                 else:
-                    if a_data['gstate'] == 'open':
+                    if a_data['g_status'] == 'open':
                         a_data['closed'] = 'z'
                     else:
                         a_data['closed'] = 'g'
@@ -369,51 +386,4 @@ def home(request):
                                 'c_assocs': c_assocs, 'o_assocs': o_assocs,
                                 'no_assocs': no_assocs, 'repo': user.git_repo, 
                                 'zen_url': user.zen_url, 'working': working},
-                                context_instance=RequestContext(request))
-
-def change(request):
-    """Processes the requests from the Change Account Data page.
-
-    All of the fields on the change form are optional so that the user can
-    change only the account data that they want changed.
-    """
-
-    if request.method == 'POST':
-        changeform = ChangeForm(request.POST)
-        if changeform.is_valid():
-            data = changeform.cleaned_data
-            user = request.user
-
-            if data['new_pass']:
-                if user.check_password(data['old_pass']):
-                    if data['new_pass'] == data['aff_pass']:
-                        user.set_password(data['new_pass'])
-                    else:
-                        return HttpResponseRedirect('/nope/4')
-                else:
-                    return HttpResponseRedirect('/nope/3')
-            if data['git_name']:
-                user.git_name = data['git_name']
-            if data['git_pass']:
-                user.git_key = data['git_pass']
-            if data['git_org']:
-                user.git_key = data['git_org']
-            if data['git_repo']:
-                user.git_repo = data['git_repo']
-            if data['zen_name']:
-                user.zen_name = data['zen_name']
-            if data['zen_token']:
-                user.zen_token = data['zen_token']
-            if data['zen_url']:
-                user.zen_url = data['zen_url']
-            if data['zen_fieldid']:
-                user.zen_fieldid = data['zen_fieldid']
-            user.save()
-
-            return HttpResponseRedirect('/confirm/2')
-    else:
-        changeform = ChangeForm()
-    
-    return render_to_response('associations/change.html', 
-                                {'changeform': changeform,},
                                 context_instance=RequestContext(request))
