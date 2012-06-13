@@ -73,7 +73,6 @@ def user_login(request):
                     user.git_org = data['git_org']
                     user.git_repo = data['git_repo']
                     user.zen_name = data['zen_name']
-                    user.zen_name += '/token'
                     user.zen_token = data['zen_token']
                     user.zen_url = data['zen_url']
                     user.zen_fieldid = data['zen_fieldid']
@@ -139,10 +138,12 @@ def home(request):
         working['git'] = False
 
     try:
+        zen_name_tk = user.zen_name + '/token' #Zen user email set up for
+                                               #API token authorization
         zticket_list = []
         url = '%s/api/v2/tickets.json' % (user.zen_url)
         while True:
-            r_zt = requests.get(url, auth=(user.zen_name, user.zen_token))
+            r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
             zticket_list.extend(r_zt.json['tickets'])
             if r_zt.json['next_page'] is not None:
                 url = r_zt.json['next_page']
@@ -152,7 +153,7 @@ def home(request):
         zuser_list = []
         url = '%s/api/v2/users.json' % (user.zen_url)
         while True:
-            r_zu = requests.get(url, auth=(user.zen_name, user.zen_token))
+            r_zu = requests.get(url, auth=(zen_name_tk, user.zen_token))
             zuser_list.extend(r_zu.json['users'])
             if r_zu.json['next_page'] is not None:
                 url = r_zu.json['next_page']
@@ -162,7 +163,7 @@ def home(request):
         zorg_list = []
         url = '%s/api/v2/organizations.json' % (user.zen_url)
         while True:
-            r_zo = requests.get(url, auth=(user.zen_name, user.zen_token))
+            r_zo = requests.get(url, auth=(zen_name_tk, user.zen_token))
             zorg_list.extend(r_zo.json['organizations'])
             if r_zo.json['next_page'] is not None:
                 url = r_zo.json['next_page']
@@ -170,7 +171,6 @@ def home(request):
                 break
         
         working['zen'] = True
-        'break' == 1
     except:
         working['zen'] = False
          
