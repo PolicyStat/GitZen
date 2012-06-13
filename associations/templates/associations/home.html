@@ -100,29 +100,44 @@
 				<th>Git Issue Labels</th>
 			</tr>
         {% for a in ho_assocs %}
-            <tr>
-            	<td><a href="{{ zen_url }}/tickets/{{ a.znum }}?col={{ zen_viewid }}">Z{{ a.znum }}</a> --&gt; 
-            <a href="https://github.com/{{ repo }}/issues/{{ a.gnum }}">G{{ a.gnum }}</a></td>
-            <td align="center">{{ a.zuser }}</td>
-            <td align="center">{{ a.zdate }}</td>
-            <td align="center">{{ a.guser }}</td>
-            <td align="center">
-            {% if a.glabels %}
-                {% for b in a.glabels %}
-                    {{ b }},
-                {% endfor %}
-            {% else %}
-                None
-            {% endif %}
-            </td>
-            <td align="center"> 
-                <span style="color:green">Open ({{ a.gdate }})</span>
-            </td>
+			<tr>
+				<td>
+				{% if a.closed == 'g' %}
+					<a class="open" href="{{ zen_url }}/tickets/
+						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
+					<a class="closed" href="a.g_url">G{{ a.g_id }}</a>
+				{% else %}
+					<a class="closed" href="{{ zen_url }}/tickets/
+						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
+					<a class="open" href="a.g_url">G{{ a.g_id }}</a>
+				{% endif %}
+				</td>
+				<td>{{ a.z_user }}</td>
+				{% if a.closed == 'z' %}
+					<td class="closed">{{ a.z_date }}</td>
+				{% else %}
+					<td class="open">{{ a.z_date }}</td>
+				{% endif %}
+				<td>{{ a.guser }}</td>
+				{% if a.closed == 'g' %}
+					<td class="closed">{{ a.g_date }}</td>
+				{% else %}
+					<td class="open">{{ a.g_date }}</td>
+				{% endif %}
+				<td>
+				{% if a.g_labels %}
+					{% for l in a.g_labels %}
+						{{ l }},
+					{% endfor %}
+				{% else %}
+					None
+				{% endif %}
+				</td>
             </tr>
         {% endfor %}
         </table>
     {% else %}
-        <p align="center">There are currently no open Associations.</p>
+        <p align="center">There are currently no half-open Associations.</p>
     {% endif %}
     <br/>
 
