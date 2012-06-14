@@ -52,14 +52,19 @@
         {{ newform.git_name }}
     </div>
     <div class="fieldWrapper">
+        {{ newform.git_pass.errors }}
+        <label for="id_git_pass">GitHub Password:</label>
+        {{ newform.git_pass }}
+	</div>
+    <div class="fieldWrapper">
+        {{ newform.git_org.errors }}
+        <label for="id_git_org">GitHub Organization:</label>
+        {{ newform.git_org }}
+    </div>
+    <div class="fieldWrapper">
         {{ newform.git_repo.errors }}
         <label for="id_git_repo">GitHub Repository:</label>
         {{ newform.git_repo }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.git_key.errors }}
-        <label for="id_git_key">GitHub API Key:</label>
-        {{ newform.git_key }}
     </div>
     <div class="fieldWrapper">
         {{ newform.zen_name.errors }}
@@ -67,26 +72,22 @@
         {{ newform.zen_name }}
 	</div>
 	<div class="fieldWrapper">
-        {{ newform.zen_pass.errors }}
-        <label for="id_zen_pass">Zendesk Password:</label>
-        {{ newform.zen_pass }}
+        {{ newform.zen_token.errors }}
+        <label for="id_zen_token">Zendesk API Token:</label>
+        {{ newform.zen_token }}
     </div>
     <div class="fieldWrapper">
         {{ newform.zen_url.errors }}
         <label for="id_zen_url">Zendesk URL:</label>
         {{ newform.zen_url }}
     </div>
-    <div class="fieldWrapper">
-        {{ newform.zen_viewid.errors }}
-        <label for="id_zen_viewid">Zendesk Ticket View ID:</label>
-        {{ newform.zen_viewid }}
-	</div>
 	<div class="fieldWrapper">
 		{{ newform.zen_fieldid.errors }}
-		<label for="id_zen_fieldid">Zendesk Ticket Association Field:</label>
+		<label for="id_zen_fieldid">Zendesk Ticket Association Field ID:</label>
 		{{ newform.zen_fieldid }}
 	</div>
     <p><input name="new" type="submit" value="Create User" /></p>
 </form>
 
-
+</body>
+</html>
