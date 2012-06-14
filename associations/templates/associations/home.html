@@ -73,10 +73,14 @@
 			<td>{{ a.g_user }}</td>
 			<td class="open">{{ a.g_date }}</td>
             <td>
-            {% if a.g_labels %}
-                {% for l in a.g_labels %}
-                    {{ l }},
-                {% endfor %}
+			{% if a.g_labels %}
+				{% for l in a.g_labels %}
+					{% if not forloop.last %}
+						{{ l }},
+					{% else %}
+						{{ l }}
+					{% endif %}
+				{% endfor %}
             {% else %}
                 None
             {% endif %}
@@ -105,11 +109,11 @@
 				{% if a.closed == 'g' %}
 					<a class="open" href="{{ zen_url }}/tickets/
 						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-					<a class="closed" href="a.g_url">G{{ a.g_id }}</a>
+					<a class="closed" href="{{ a.g_url }}">G{{ a.g_id }}</a>
 				{% else %}
 					<a class="closed" href="{{ zen_url }}/tickets/
 						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-					<a class="open" href="a.g_url">G{{ a.g_id }}</a>
+					<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
 				{% endif %}
 				</td>
 				<td>{{ a.z_user }}</td>
@@ -127,7 +131,11 @@
 				<td>
 				{% if a.g_labels %}
 					{% for l in a.g_labels %}
-						{{ l }},
+						{% if not forloop.last %}
+							{{ l }},
+						{% else %}
+							{{ l }}
+						{% endif %}
 					{% endfor %}
 				{% else %}
 					None
@@ -141,7 +149,7 @@
     {% endif %}
     <br/>
 
-    <h3>Not Associated with GitHub</h3>
+    <h3>New Tickets not Associated with GitHub</h3>
     {% if no_assocs %}
         <table align="center" style="width:50%">
 			<tr>
@@ -171,6 +179,9 @@
 {% endif %}
 
 <!--
+
+TODO: Update the Quick Reference tables within this comment so that they work
+with the changes made in the code.
 
 <br/><br/>
 

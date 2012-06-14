@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django import forms
 from associations.models import GZUser
 import requests
+from datetime import datetime, timedelta
 
 class LogForm(forms.Form):
     """Form for login of an existing user."""
@@ -61,8 +62,8 @@ def user_login(request):
                     forms.
     """
 
-    if request.method == 'POST':  # Process login form
-        if 'log' in request.POST:
+    if request.method == 'POST':
+        if 'log' in request.POST:  # Process login form
             logform = LogForm(request.POST)
             if logform.is_valid():
                 user = authenticate(
@@ -162,8 +163,8 @@ def change(request):
 
 
 def nope(request, nope_num):
-    """Renders the error page if there are issues in the submitted data from the
-    different forms.
+    """Renders the error page if there is an issue in the submitted data from
+    the different forms.
 
     Parameters:
         request - The request object sent with the call to render the page. Not
@@ -193,17 +194,17 @@ def home(request):
     app with this data.
     
     Parameters:
-        request - The request object that contains the current user's data
+        request - The request object that contains the current user's data.
     """
     api_lists = {} # Stores lists from API calls and their status
-    filtered_lists = {} # Stores lists of the filitered API data
+    filtered_lists = {} # Stores lists of the filtered API data
     render_data = {} # Data to be rendered to the home page
 
     api_lists = api_calls(request)
-    filitered_lists = filter_lists(request.user.zen_fieldid, api_lists)
+    filtered_lists = filter_lists(request.user.zen_fieldid, api_lists)
 
     api_status = api_lists['status']['git'] and api_lists['status']['zen']
-    render_data = build_associations(request.user.zen_fieldid, filitered_lists,
+    render_data = build_associations(request.user.zen_fieldid, filtered_lists,
                                     api_status)
     
     # Combine the status dictionaries from the API data and association lists
@@ -450,6 +451,10 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
         status['o_assocs'] = True
         status['ho_assocs'] = True
         status['no_assocs'] = True
+
+        # The app will only display Zendesk tickets with no association up to
+        # this far away from the current date.
+        na_limit = timedelta(weeks=1)
         
         # Iterate through the Zendesk tickets using their data to classify them
         # into an open association, half-open association, or no associarion. If
@@ -466,15 +471,26 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
             a_data['z_id'] = t['id']
             a_data['z_user'] = filtered_lists['req_ref'][t['requester_id']]
             a_data['z_status'] = t['status']
-            a_data['z_date'] = t['updated_at']
+            z_date = datetime.strptime(t['updated_at'], 
+                                        "%Y-%m-%dT%H:%M:%SZ")
+            a_data['z_date'] = z_date.strftime('%m/%d/%Y @ %H:%M')
             
             # Check if it has no associated ticket
             if a_num is None or a_num.split('-')[0] != 'gh':
-                if a_num is None or a_num == '':
-                    a_data['assoc'] = 'None'
+                # Check if date is in the no association delta range
+                if datetime.now() > z_date + na_limit:
+                    for i in range(len(filtered_lists['ztics'])):
+                        if filtered_lists['ztics'][i]['id'] == \
+                           a_data['z_id']:
+                            filtered_lists['ztics'].pop(i)
+                            break
+                
                 else:
-                    a_data['assoc'] = a_num
-                no_assocs.append(a_data)
+                    if a_num is None or a_num == '':
+                        a_data['assoc'] = 'None'
+                    else:
+                        a_data['assoc'] = a_num
+                    no_assocs.append(a_data)
             
             else:
                 # Add GitHub data to association data object
@@ -487,11 +503,13 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
                 a_data['g_labels'] = [i['name'] for i in git_issue['labels']]
                 a_data['g_url'] = git_issue['html_url']
                 a_data['g_status'] = git_issue['state']
+                g_date = datetime.strptime(git_issue['updated_at'], 
+                                            "%Y-%m-%dT%H:%M:%SZ")
+                a_data['g_date'] = g_date.strftime('%m/%d/%Y @ %H:%M')
                 
                 # Check if the tickets have an open association (Both are open).
                 if a_data['g_status'] == 'open' and \
                    a_data['z_status'] == 'open':
-                    a_data['g_date'] = git_issue['updated_at']
                     o_assocs.append(a_data)
                 
                 # Check if the tickets have a closed association (Both are
@@ -521,7 +539,7 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
         status['o_assocs'] = False
         status['ho_assocs'] = False
         status['no_assocs'] = False
-        
+    
     built_data = {
         'git_tics': filtered_lists['gtics'],
         'zen_tics': filtered_lists['ztics'],
