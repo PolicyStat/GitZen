@@ -323,8 +323,7 @@ def api_calls(request):
         'gclosed': gclosed_list,
         'ztickets': zticket_list,
         'zusers': zuser_list,
-        'status': working,
-        'times': times
+        'status': working
     }
 
     return api_lists
