@@ -74,7 +74,7 @@ def user_login(request):
 
                 if user is not None:
                     login(request, user)
-                    return HttpResponseRedirect('/main/')
+                    return HttpResponseRedirect('/home/')
                 else:
                     return HttpResponseRedirect('/nope/1/')
             newform = NewForm()
