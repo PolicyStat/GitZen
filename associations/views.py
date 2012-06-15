@@ -272,6 +272,8 @@ def api_calls(request):
 
         working['git'] = True
     except:
+        gopen_list = []
+        gclosed_list = []
         working['git'] = False
 
     try:  # Zendesk API calls to get all tickets and users
@@ -301,6 +303,8 @@ def api_calls(request):
 
         working['zen'] = True
     except:
+        zticket_list = []
+        zuser_list = []
         working['zen'] = False
     
     api_lists = {
