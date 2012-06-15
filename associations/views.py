@@ -6,6 +6,7 @@ from django import forms
 from associations.models import GZUser
 import requests
 from datetime import datetime, timedelta
+from time import time
 
 class LogForm(forms.Form):
     """Form for login of an existing user."""
@@ -199,14 +200,20 @@ def home(request):
     api_lists = {} # Stores lists from API calls and their status
     filtered_lists = {} # Stores lists of the filtered API data
     render_data = {} # Data to be rendered to the home page
-
+    
+    api_start = time()
     api_lists = api_calls(request)
+    api_time = time() - api_start
+    filter_start = time()
     filtered_lists = filter_lists(request.user.zen_fieldid, api_lists)
+    filter_time = time() - filter_start
 
     api_status = api_lists['status']['git'] and api_lists['status']['zen']
+    build_start = time()
     render_data = build_associations(request.user.zen_fieldid, filtered_lists,
                                     api_status)
-    
+    build_time = time() - build_start()
+
     # Combine the status dictionaries from the API data and association lists
     render_data['status'] = dict(render_data['status'].items() +
                                  api_lists['status'].items())
@@ -214,6 +221,11 @@ def home(request):
     # Add additional user data to be rendered to the home page
     render_data['repo'] = request.user.git_repo
     render_data['zen_url'] = request.user.zen_url
+    render_data['times'] = {
+        'api': api_time,
+        'filter': filter_time,
+        'build': build_time
+    }
     
     return render_to_response('associations/home.html', render_data,
                                 context_instance=RequestContext(request))
