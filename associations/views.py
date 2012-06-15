@@ -6,11 +6,6 @@ from django import forms
 from associations.models import GZUser
 import requests
 from datetime import datetime, timedelta
-<<<<<<< HEAD
-from time import strptime, mktime
-=======
-from time import time
->>>>>>> ff1306c62ccdc4cf81ad4e3779e78d2256cc90d9
 
 class LogForm(forms.Form):
     """Form for login of an existing user."""
@@ -219,7 +214,6 @@ def home(request):
     # Add additional user data to be rendered to the home page
     render_data['repo'] = request.user.git_repo
     render_data['zen_url'] = request.user.zen_url
-    render_data['times'] = api_lists['times']
     
     return render_to_response('associations/home.html', render_data,
                                 context_instance=RequestContext(request))
@@ -246,7 +240,6 @@ def api_calls(request):
 
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
-        go_start = time()
         gopen_list = []
         page = 1
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
@@ -261,9 +254,7 @@ def api_calls(request):
                             (user.git_org, user.git_repo, page)
             else:
                 break
-        go_time = time() - go_start
         # Get GitHub closed tickets
-        gc_start = time()
         gclosed_list = []
         page = 1
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
@@ -317,8 +308,7 @@ def api_calls(request):
         'gclosed': gclosed_list,
         'ztickets': zticket_list,
         'zusers': zuser_list,
-        'status': working,
-        'times': times
+        'status': working
     }
 
     return api_lists
