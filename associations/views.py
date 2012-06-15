@@ -6,6 +6,7 @@ from django import forms
 from associations.models import GZUser
 import requests
 from datetime import datetime, timedelta
+from time import strptime, mktime
 
 class LogForm(forms.Form):
     """Form for login of an existing user."""
@@ -280,18 +281,15 @@ def api_calls(request):
         working['git'] = False
 
     try:  # Zendesk API calls to get all tickets and users
+        limit_epoch = int(mktime(strptime(limit_str,'%Y-%m-%dT%H:%M:%SZ')))
         zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
                                                #API token authorization
         # Get Zendesk tickets
         zticket_list = []
-        url = '%s/api/v2/tickets.json' % (user.zen_url)
-        while True:
-            r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
-            zticket_list.extend(r_zt.json['tickets'])
-            if r_zt.json['next_page'] is not None:
-                url = r_zt.json['next_page']
-            else:
-                break
+        url = '%s/api/v2/exports/tickets.json?start_time=%s' % (user.zen_url,
+                                                                limit_epoch)
+        r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
+        zticket_list = r_zt.json['tickets']
         
         # Get Zendesk users
         zuser_list = []
