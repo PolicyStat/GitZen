@@ -243,8 +243,6 @@ def api_calls(request):
     """
     user = request.user
     working = {}
-    date_limit = datetime.now() - timedelta(days=180)
-    limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
 
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
@@ -254,9 +252,8 @@ def api_calls(request):
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
                             (user.git_org, user.git_repo, page)
         while True:
-            r_op = requests.get(url,
-                                params={'state': 'open', 'since': limit_str}, 
-                                auth=(user.git_name, user.git_pass))
+            r_op = requests.get(url, params={'state': 'open'},
+                            auth=(user.git_name, user.git_pass))
             gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
@@ -272,9 +269,8 @@ def api_calls(request):
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
                             (user.git_org, user.git_repo, page)
         while True:
-            r_cl = requests.get(url, 
-                                params={'state': 'closed', 'since': limit_str},
-                                auth=(user.git_name, user.git_pass))
+            r_cl = requests.get(url, params={'state': 'closed'},
+                            auth=(user.git_name, user.git_pass))
             gclosed_list.extend(r_cl.json)
             if r_cl.json:
                 page += 1
