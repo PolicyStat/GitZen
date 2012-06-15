@@ -212,7 +212,7 @@ def home(request):
     build_start = time()
     render_data = build_associations(request.user.zen_fieldid, filtered_lists,
                                     api_status)
-    build_time = time() - build_start()
+    build_time = time() - build_start
 
     # Combine the status dictionaries from the API data and association lists
     render_data['status'] = dict(render_data['status'].items() +
