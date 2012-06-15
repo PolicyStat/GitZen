@@ -6,7 +6,7 @@ from django import forms
 from associations.models import GZUser
 import requests
 from datetime import datetime, timedelta
-import time from time
+from time import time
 
 class LogForm(forms.Form):
     """Form for login of an existing user."""
