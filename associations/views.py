@@ -6,7 +6,11 @@ from django import forms
 from associations.models import GZUser
 import requests
 from datetime import datetime, timedelta
+<<<<<<< HEAD
 from time import strptime, mktime
+=======
+from time import time
+>>>>>>> ff1306c62ccdc4cf81ad4e3779e78d2256cc90d9
 
 class LogForm(forms.Form):
     """Form for login of an existing user."""
@@ -215,6 +219,7 @@ def home(request):
     # Add additional user data to be rendered to the home page
     render_data['repo'] = request.user.git_repo
     render_data['zen_url'] = request.user.zen_url
+    render_data['times'] = api_lists['times']
     
     return render_to_response('associations/home.html', render_data,
                                 context_instance=RequestContext(request))
@@ -243,6 +248,7 @@ def api_calls(request):
 
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
+        go_start = time()
         gopen_list = []
         page = 1
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
@@ -258,8 +264,9 @@ def api_calls(request):
                             (user.git_org, user.git_repo, page)
             else:
                 break
-        
+        go_time = time() - go_start
         # Get GitHub closed tickets
+        gc_start = time()
         gclosed_list = []
         page = 1
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
@@ -275,22 +282,25 @@ def api_calls(request):
                             (user.git_org, user.git_repo, page)
             else:
                 break
-         
+
         working['git'] = True
     except:
         working['git'] = False
 
     try:  # Zendesk API calls to get all tickets and users
-        limit_epoch = int(mktime(strptime(limit_str,'%Y-%m-%dT%H:%M:%SZ')))
         zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
                                                #API token authorization
         # Get Zendesk tickets
         zticket_list = []
-        url = '%s/api/v2/exports/tickets.json?start_time=%s' % (user.zen_url,
-                                                                limit_epoch)
-        r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
-        zticket_list = r_zt.json['tickets']
-        
+        url = '%s/api/v2/tickets.json' % (user.zen_url)
+        while True:
+            r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
+            zticket_list.extend(r_zt.json['tickets'])
+            if r_zt.json['next_page'] is not None:
+                url = r_zt.json['next_page']
+            else:
+                break
+
         # Get Zendesk users
         zuser_list = []
         url = '%s/api/v2/users.json' % (user.zen_url)
@@ -305,13 +315,14 @@ def api_calls(request):
         working['zen'] = True
     except:
         working['zen'] = False
-
+    
     api_lists = {
         'gopen': gopen_list,
         'gclosed': gclosed_list,
         'ztickets': zticket_list,
         'zusers': zuser_list,
-        'status': working
+        'status': working,
+        'times': times
     }
 
     return api_lists
