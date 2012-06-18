@@ -445,8 +445,13 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
         'zen_tics' - List of the Zendesk tickets used in the app.
         'o_assocs' - List of open association data objects.
         'ho_assocs' - List of half-open association data objects
-        'no_assocs' - List of association data objects with no associated GitHub
-                        ticket.
+        'no_assocs' - Dictionary with two lists each containing one half of the
+                        list of association data objects with no associated
+                        GitHub ticket. It has the following keys and values:
+            'even' - List of the entries with even indexes of the full no
+                        association list.  
+            'odd' - List of the entries with odd indexes of the full no
+                        association list
         'status' - Dictionary with the status of building the association lists
                     with the following keys and values:
             'o_assocs' - True if the open association list was built
@@ -500,10 +505,6 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
                             break
                 
                 else:
-                    if a_num is None or a_num == '':
-                        a_data['assoc'] = 'None'
-                    else:
-                        a_data['assoc'] = a_num
                     no_assocs.append(a_data)
             
             else:
@@ -554,12 +555,26 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
         status['ho_assocs'] = False
         status['no_assocs'] = False
     
+    # Split the No Association list evenly into two lists for display in a two
+    # column table the on home page.
+    na_even = []
+    na_odd = []
+    for i in range(len(no_assocs)):
+        if i % 2 == 0:
+            na_even.append(no_assocs[i])
+        else:
+            na_odd.append(no_assocs[i])
+    na_lists = {
+        'even': na_even,
+        'odd': na_odd
+    }
+
     built_data = {
         'git_tics': filtered_lists['gtics'],
         'zen_tics': filtered_lists['ztics'],
         'o_assocs': o_assocs,
         'ho_assocs': ho_assocs,
-        'no_assocs': no_assocs,
+        'no_assocs': na_lists,
         'status': status
     }
 
