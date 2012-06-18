@@ -141,19 +141,29 @@
         <table align="center" style="width:50%">
 			<tr>
 				<th>Zendesk Ticket</th>
-				<th>Zendesk User</th>
 				<th>Last Updated</th>
-				<th>Displayed Association</th>
+				<th>Zendesk Ticket</th>
+				<th>Last Updated</th>
 			</tr>
-        {% for a in no_assocs %}
-            <tr>
-            	<td><a class="open" href="{{ zen_url }}/tickets/
-						{{ a.z_id }}">Z{{ a.z_id }}</a>
-				</td>
-				<td>{{ a.z_user }}</td>
-				<td class="open">{{ a.z_date }}</td>
-				<td>{{ a.assoc }}</td>
-            </tr>
+		{% for a in no_assocs %}
+			{% if forloop.counter0|divisibleby:2 %}
+            	<tr>
+					<td>
+						<a class="open" href="{{ zen_url }}/tickets/
+							{{ a.z_id }}">Z{{ a.z_id }}</a>
+					</td>
+					<td>{{ a.z_date }}</td>
+				{% if forloop.last %}
+					</tr>
+				{% endif %}
+			{% else %}
+					<td>
+						<a class="open" href="{{ zen_url }}/tickets/
+							{{ a.z_id }}">Z{{ a.z_id }}</a>
+					</td>
+					<td>{{ a.z_date }}</td>
+				</tr>
+			{% endif %}
         {% endfor %}
         </table>
     {% else %}
