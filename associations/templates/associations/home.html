@@ -1,20 +1,22 @@
 <html>
 <head>
+	<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+
 <style type="text/css">
-    table, td, th {
+	table, td, th {
 		border:1px solid black;
     }
-    table.noborder, td.noborder, th.noborder {
-        border:0px;
+	table.noborder, td.noborder, th.noborder {
+		border:0px;
 	}
-    td {
+	td {
 		padding:5px;
 		text-align:center;
 	}
 
-    a:link, a:visited {
-        text-decoration:none;
-        color:blue;
+	a:link, a:visited {
+		text-decoration:none;
+		color:blue;
 	}
 
 	a.open, td.open {
@@ -24,18 +26,23 @@
 		color:red
 	}
 
-    h1, h2, h3 {
-        text-align:center;
-    }
+	h1, h2, h3 {
+		text-align:center;
+	}
 </style>
+
 <title>Home</title>
 </head>
 
 <body>
+
 <h1>GitZen</h1>
 <h3><a href="/change/">Change Account Data</a></h3>
 
 <h2>Associations</h2>
+<div class="container">
+<div class="row">
+<div class="span6">
 {% if status.o_assocs %}
     <h3>Open Associations</h3>
     {% if o_assocs %}
@@ -78,7 +85,8 @@
         <p align="center">There are currently no open Associations</p>
     {% endif %}
     <br/>
-
+</div>
+<div class="span6">
     <h3>Half Open Associations</h3>
     {% if ho_assocs %}
         <table align="center" style="width:75%">
@@ -135,6 +143,9 @@
         <p align="center">There are currently no half-open Associations.</p>
     {% endif %}
     <br/>
+</div>
+</div>
+</div>
 
     <h3>New Tickets not Associated with GitHub</h3>
     {% if no_assocs %}
