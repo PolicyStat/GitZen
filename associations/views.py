@@ -73,7 +73,7 @@ def user_login(request):
 
                 if user is not None:
                     login(request, user)
-                    return HttpResponseRedirect('/main/')
+                    return HttpResponseRedirect('/home/')
                 else:
                     return HttpResponseRedirect('/nope/1/')
             newform = NewForm()
@@ -199,14 +199,14 @@ def home(request):
     api_lists = {} # Stores lists from API calls and their status
     filtered_lists = {} # Stores lists of the filtered API data
     render_data = {} # Data to be rendered to the home page
-
+    
     api_lists = api_calls(request)
     filtered_lists = filter_lists(request.user.zen_fieldid, api_lists)
 
     api_status = api_lists['status']['git'] and api_lists['status']['zen']
     render_data = build_associations(request.user.zen_fieldid, filtered_lists,
                                     api_status)
-    
+
     # Combine the status dictionaries from the API data and association lists
     render_data['status'] = dict(render_data['status'].items() +
                                  api_lists['status'].items())
@@ -238,6 +238,12 @@ def api_calls(request):
     user = request.user
     working = {}
 
+    # These lines set the limit for how far back the API calls go when
+    # gathering tickets. Currently, this limit is 180 days.
+    date_limit = datetime.now() - timedelta(days=180)
+    limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
+    ztic_start_page = 22
+
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
         gopen_list = []
@@ -245,8 +251,9 @@ def api_calls(request):
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
                             (user.git_org, user.git_repo, page)
         while True:
-            r_op = requests.get(url, params={'state': 'open'},
-                            auth=(user.git_name, user.git_pass))
+            r_op = requests.get(url,
+                                params={'state': 'open', 'since': limit_str},
+                                auth=(user.git_name, user.git_pass))
             gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
@@ -261,8 +268,9 @@ def api_calls(request):
         url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
                             (user.git_org, user.git_repo, page)
         while True:
-            r_cl = requests.get(url, params={'state': 'closed'},
-                            auth=(user.git_name, user.git_pass))
+            r_cl = requests.get(url,
+                                params={'state': 'closed', 'since': limit_str},
+                                auth=(user.git_name, user.git_pass))
             gclosed_list.extend(r_cl.json)
             if r_cl.json:
                 page += 1
@@ -270,9 +278,11 @@ def api_calls(request):
                             (user.git_org, user.git_repo, page)
             else:
                 break
-         
+        
         working['git'] = True
     except:
+        gopen_list = []
+        gclosed_list = []
         working['git'] = False
 
     try:  # Zendesk API calls to get all tickets and users
@@ -280,12 +290,14 @@ def api_calls(request):
                                                #API token authorization
         # Get Zendesk tickets
         zticket_list = []
-        url = '%s/api/v2/tickets.json' % (user.zen_url)
+        page = ztic_start_page
+        url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
         while True:
             r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
             zticket_list.extend(r_zt.json['tickets'])
             if r_zt.json['next_page'] is not None:
-                url = r_zt.json['next_page']
+                page += 1
+                url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
             else:
                 break
         
@@ -299,11 +311,13 @@ def api_calls(request):
                 url = r_zu.json['next_page']
             else:
                 break
-
+        
         working['zen'] = True
     except:
+        zticket_list = []
+        zuser_list = []
         working['zen'] = False
-
+    
     api_lists = {
         'gopen': gopen_list,
         'gclosed': gclosed_list,
