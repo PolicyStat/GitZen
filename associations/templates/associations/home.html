@@ -37,41 +37,41 @@
 {% if status.o_assocs %}
     <h3>Open Associations</h3>
     {% if o_assocs %}
-        <table align="center" style="width:75%">
-			<tr>
-				<th>Association</th>
-				<th>Zendesk User</th>
-				<th>Last Zen Ticket Update</th>
-				<th>GitHub User</th>
-				<th>Last Git Ticket Update</th>
-				<th>Git Issue Labels</th>
-			</tr>
-        {% for a in o_assocs %}
-            <tr>
+		<table class="table span5">
+			<thead>
+				<tr>
+					<th>Association</th>
+					<th>Last Zen Ticket Update</th>
+					<th>Last Git Ticket Update</th>
+					<th>Git Issue Labels</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for a in o_assocs %}
+				<tr>
+					<td>
+						<a class="open" href="{{ zen_url }}/tickets/
+						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
+						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+					</td>
+				<td class="open">{{ a.z_date }}</td>
+				<td class="open">{{ a.g_date }}</td>
 				<td>
-					<a class="open" href="{{ zen_url }}/tickets/
-					{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-					<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+				{% if a.g_labels %}
+					{% for l in a.g_labels %}
+						{% if not forloop.last %}
+							{{ l }},
+						{% else %}
+							{{ l }}
+						{% endif %}
+					{% endfor %}
+				{% else %}
+					None
+				{% endif %}
 				</td>
-            <td>{{ a.z_user }}</td>
-            <td class="open">{{ a.z_date }}</td>
-			<td>{{ a.g_user }}</td>
-			<td class="open">{{ a.g_date }}</td>
-            <td>
-			{% if a.g_labels %}
-				{% for l in a.g_labels %}
-					{% if not forloop.last %}
-						{{ l }},
-					{% else %}
-						{{ l }}
-					{% endif %}
-				{% endfor %}
-            {% else %}
-                None
-            {% endif %}
-            </td>
-        {% endfor %}
-        </table>
+			{% endfor %}
+			</tbody>
+		</table>
     {% else %}
         <p align="center">There are currently no open Associations</p>
     {% endif %}
@@ -84,9 +84,7 @@
 			<thead>
 				<tr>
 					<th>Association</th>
-					<th>Zendesk User</th>
 					<th>Last Zen Ticket Update</th>
-					<th>GitHub User</th>
 					<th>Last Git Ticket Update</th>
 					<th>Git Issue Labels</th>
 				</tr>
@@ -105,13 +103,11 @@
 						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
 					{% endif %}
 					</td>
-					<td>{{ a.z_user }}</td>
 					{% if a.closed == 'z' %}
 						<td class="closed">{{ a.z_date }}</td>
 					{% else %}
 						<td class="open">{{ a.z_date }}</td>
 					{% endif %}
-					<td>{{ a.g_user }}</td>
 					{% if a.closed == 'g' %}
 						<td class="closed">{{ a.g_date }}</td>
 					{% else %}
