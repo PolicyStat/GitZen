@@ -1,21 +1,26 @@
 <html>
 <head>
+<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+
 <style type="text/css">
     h1, p, div{
         text-align:center;
     }
 </style>
+
 <title>Change Account Data</title>
 </head>
 
 <body>
+<div class="container">
+
 <h1>Change Account Data</h1>
 <p style="width:30%;margin-left:auto;margin-right:auto">All fields are 
 optional. Changing the User password requires entering of the previous 
 User password.</p>
 <br/>
 
-<form action="/change/" method="post">{% csrf_token %}
+<form class="well" action="/change/" method="post">{% csrf_token %}
     {{ changeform.non_field_errors }}
     <div class="fieldWrapper">
         {{ changeform.old_pass.errors }}
@@ -74,6 +79,8 @@ User password.</p>
 	</div>
     <p><input name="change" type="submit" value="Submit Changes" /></p>
 </form>
+
+</div>
 
 </body>
 </html>
