@@ -252,6 +252,9 @@ def api_calls(request):
             r_op = requests.get(url,
                                 params={'state': 'open', 'since': limit_str},
                                 auth=(user.git_name, user.git_pass))
+            if type(r_op.json) == type({}):
+                raise Exception('Error in accessing GitHub API - %s' %
+                                (r_op.json['message']))
             gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
@@ -269,6 +272,9 @@ def api_calls(request):
             r_cl = requests.get(url,
                                 params={'state': 'closed', 'since': limit_str},
                                 auth=(user.git_name, user.git_pass))
+            if type(r_op.json) == type({}):
+                raise Exception('Error in accessing GitHub API - %s' %
+                                (r_op.json['message']))
             gclosed_list.extend(r_cl.json)
             if r_cl.json:
                 page += 1
@@ -292,6 +298,9 @@ def api_calls(request):
         url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
         while True:
             r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
+            if 'error' in r_zt.json:
+                raise Exception('Error in accessing Zendesk API - %s' %
+                                (r_zt.json['error']))
             zticket_list.extend(r_zt.json['tickets'])
             if r_zt.json['next_page'] is not None:
                 page += 1
@@ -359,12 +368,13 @@ def filter_lists(zen_fieldid, data_lists):
                     })
     
     # GitHub list filtering
-    git_tics = []
+    git_tics_sorted = []
     if data_lists['status']['git']:
 
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
+        git_tics = []
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
@@ -425,12 +435,12 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
             'no_assocs' - True if the no association list was built
                             successfully, False if not.
     """
-
+    
+    status = {}
+    o_assocs = [] # open associations
+    ho_assocs = [] # half-open associations
+    no_assocs = [] # no associations
     if api_status:
-        o_assocs = [] # open associations
-        ho_assocs = [] # half-open associations
-        no_assocs = [] # no associations
-        status = {}
         status['o_assocs'] = True
         status['ho_assocs'] = True
         status['no_assocs'] = True
