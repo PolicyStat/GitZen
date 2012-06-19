@@ -1,10 +1,14 @@
 <html>
 <head>
-	<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
 
 <style type="text/css">
+	.center {
+		margin-left:auto;
+		margin-right:auto;
+	}
+
 	a:link, a:visited {
-		text-decoration:none;
 		color:blue;
 	}
 
@@ -24,6 +28,7 @@
 </head>
 
 <body>
+<div class="container">
 
 <h1>GitZen</h1>
 <h3><a href="/change/">Change Account Data</a></h3>
@@ -31,13 +36,13 @@
 
 <h2>Associations</h2>
 <br/>
-<div class="container">
+
+{% if status.o_assocs %}
 <div class="row">
 <div class="span6">
-{% if status.o_assocs %}
     <h3>Open Associations</h3>
     {% if o_assocs %}
-		<table class="table span5">
+		<table class="table span6 center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -77,10 +82,11 @@
     {% endif %}
     <br/>
 </div>
+
 <div class="span6">
     <h3>Half Open Associations</h3>
     {% if ho_assocs %}
-		<table class="table span6">
+		<table class="table span6 center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -136,11 +142,11 @@
     <br/>
 </div>
 </div>
-</div>
 <br/>
+
     <h3>New Tickets not Associated with GitHub</h3>
     {% if no_assocs %}
-		<table class="table table-striped" align="center" style="width:50%">
+		<table class="table table-striped center" style="width:50%">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
@@ -181,117 +187,87 @@
     Zendesk. Try adjusting your account settings.</p>
 {% endif %}
 
-<!--
-
-TODO: Update the Quick Reference tables within this comment so that they work
-with the changes made in the code.
-
 <br/><br/>
 
 <h2>Quick Reference</h2>
 <br/>
 
-<table id="table_tics" class="noborder">
-<col width="90%" />
-<tr>
-<td class="noborder">
-    <table>
-    <tr>
-    	<th colspan="2">Open GitHub Tickets</th>
-	</tr>
-	<tr>
-		<th>Issue #</th>
-		<th>Subject</th>
-	</tr>
+<div class="row">
+<div class="span6">
+	<h3>GitHub Tickets</h3>
+	{% if status.git %}
+		<table class="table table-striped span6 center">
+			<thead>
+				<tr>
+					<th>Issue</th>
+					<th>Subject</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% if git_tics %}
+				{% for i in git_tics %}
+					<tr>
+						<td>
+							<a href='https://github.com/{{ repo }}
+								/issues/{{ i.number }}'>{{ i.number }}</a>
+						</td>
+						<td>
+							{{ i.title }}
+						</td>
+					</tr>
+				{% endfor %}
+			{% else %}
+				<tr>
+					<td align="center" colspan="2">
+						There are currently no open GitHub Tickets.
+					</td>
+				</tr>
+			{% endif %}
+			</tbody>
+		</table>
+	{% else %}
+		<p align="center">There was an Error connecting to GitHub. Try
+		adjusting your account settings.</p> 
+	{% endif %}
+</div>
 
-    {% if status.git %}
-        {% if git_tics %}
-            {% for i in git_tics %}
-			<tr>
-				<td>
-					<a href='https://github.com/{{ repo }}
-						/issues/{{ i.number }}'>{{ i.number }}</a>
-				</td>
-				<td>
-					{{ i.title }}
-				</td>
-			</tr>
-            {% endfor %}
-        {% else %}
-		<tr><td align="center">There are currently no open 
-				GitHub Tickets.</td></tr>
-		<tr><td align="center">There was an Error connecting to GitHub. Try 
-        {% endif %}
+<div class="span6">
+	<h3>Zendesk Tickets</h3>
+	{% if status.zen %}
+		<table class="table table-striped span6 center">
+			<thead>
+				<tr>
+					<th>ID</th>
+    				<th>Subject</th>
+				</tr>
+			</thead>
+			<tbody>
+        	{% if zen_tics %}
+            	{% for t in zen_tics %}
+                	<tr>
+						<td>
+							<a href="{{ zen_url }}/tickets/
+								{{ t.id }}">{{ t.id }}</a> 
+           				</td>
+                		<td>{{ t.subject }}</td>
+                	</tr>
+            	{% endfor %}
+        	{% else %}
+				<tr>
+					<td align="center" colspan="2">
+						There are currently no Zendesk Tickets.
+					</td>
+				</tr>
+			{% endif %}
+			</tbody>
+		</table>
     {% else %}
-		<tr><td align="center">There was an Error connecting to GitHub. Try 
-		adjusting your account settings.</td></tr>
-    {% endif %}
-    </table>
-</td>
+		<p align="center">There was an Error connecting to Zendesk. Try
+		adjusting your account settings.</p> 
+	{% endif %}
+</div>
+</div>
+</div>
 
-<td class="noborder">
-    <table>
-    <tr>
-    <th colspan="2">Zendesk Tickets</th>
-    </tr>
-    <tr>
-    <th>Subject</th>
-    <th>Requester</th>
-    </tr>
-
-    {% if working.zen %}
-        {% if zen_tics %}
-            {% for t in zen_tics %}
-                <tr>
-                <td><a href="{{ zen_url }}/tickets/{{ t.id }}?col={{ zen_viewid }}">{{ t.id }}.</a> 
-                {{ t.subject }}</td>
-                <td>{{ t.req_name }}</td>
-                </tr>
-            {% endfor %}
-        {% else %}
-			<tr><td align="center" colspan="2">There are currently no Zendesk
-			Tickets.</td></tr>
-        {% endif %}
-    {% else %}
-		<tr><td align="center" colspan="2">There was an Error connecting 
-		to Zendesk. Try adjusting your account settings.</td></tr>
-    {% endif %}
-    </table>
-</td>
-</tr>
-</table>
-
-<br/>
-
-<table class="ref_users">
-    <tr>
-    	<th colspan="3">Zendesk Users</th>
-    </tr>
-    <tr>
-		<th>Name</th>
-		<th>Email</th>
-		<th>Organization</th>
-    </tr>
-
-    {% if working.zen %}
-        {% if zen_users %}
-            {% for u in zen_users %}
-                <tr>
-                <td align="center"><a href="{{ zen_url }}/users/{{ u.id }}"
-                >{{ u.name }}</a></td>
-                <td>{{ u.email }}</td>
-                <td>{{ u.org_name }}</td>
-                </tr>
-            {% endfor %}
-        {% else %}
-			<tr><td align="center" colspan="3">There are currently no Zendesk 
-			users.</td></tr>
-        {% endif %}
-    {% else %}
-		<tr><td align="center" colspan="3">There was an Error connecting 
-		to Zendesk. Try adjusting your account settings.</td></tr>
-    {% endif %}
-</table>
--->
 </body>
 </html>
