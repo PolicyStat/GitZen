@@ -1,17 +1,24 @@
 <html>
 <head>
+<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+
 <style type="text/css">
     h1, h2, p, div{
         text-align:center;
     }
 </style>
+
 <title>Login</title> 
 </head>
 
 <body>
+<div class="container">
+
 <h1>User Login</h1>
+<br/>
+
 <h2>Existing User</h2>
-<form action="/" method="post">{% csrf_token %}
+<form class="well" action="/" method="post">{% csrf_token %}
     {{ logform.non_field_errors }}
     <div class="fieldWrapper">
         {{ logform.username.errors }}
@@ -23,13 +30,13 @@
         <label for="id_password">Password:</label>
         {{ logform.password }}
     </div>
-    <p><input name="log" type="submit" value="Login" /></p>
+    <p><input name="log" type="submit" value="Login"/></p>
 </form>
 
 <br/>
 
 <h2>New User</h2>
-<form action="/" method="post">{% csrf_token %}
+<form class="well" action="/" method="post">{% csrf_token %}
     {{ newform.non_field_errors }}
     <div class="fieldWrapper">
         {{ newform.username.errors }}
@@ -88,6 +95,8 @@
 	</div>
     <p><input name="new" type="submit" value="Create User" /></p>
 </form>
+
+</div>
 
 </body>
 </html>
