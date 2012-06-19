@@ -228,8 +228,6 @@ def api_calls(request):
         'gopen' - List of all of the open tickets in the GitHub repo
         'gclosed' - List of all of the closed tickets in the GitHub repo
         'ztickets' - List of all of the tickets on the Zendesk account
-        'zusers' - List of all of the users (customers, admins, etc.) on the
-                    Zendesk account
         'status' - Dictionary with the status of the API calls for GitHub and
                     Zendesk with the following keys and values:
             'git' - True if Git call was successful, False if not
@@ -285,7 +283,7 @@ def api_calls(request):
         gclosed_list = []
         working['git'] = False
 
-    try:  # Zendesk API calls to get all tickets and users
+    try:  # Zendesk API calls to get tickets
         zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
                                                #API token authorization
         # Get Zendesk tickets
@@ -301,28 +299,15 @@ def api_calls(request):
             else:
                 break
         
-        # Get Zendesk users
-        zuser_list = []
-        url = '%s/api/v2/users.json' % (user.zen_url)
-        while True:
-            r_zu = requests.get(url, auth=(zen_name_tk, user.zen_token))
-            zuser_list.extend(r_zu.json['users'])
-            if r_zu.json['next_page'] is not None:
-                url = r_zu.json['next_page']
-            else:
-                break
-        
         working['zen'] = True
     except:
         zticket_list = []
-        zuser_list = []
         working['zen'] = False
     
     api_lists = {
         'gopen': gopen_list,
         'gclosed': gclosed_list,
         'ztickets': zticket_list,
-        'zusers': zuser_list,
         'status': working
     }
 
@@ -339,7 +324,6 @@ def filter_lists(zen_fieldid, data_lists):
                         that needs filtering.
 
     Returns a dictionary with the following keys and values:
-        'req_ref' - Reference table for looking up users by ID number.
         'ztics' - Filtered Zendesk ticket list with only the values needed in
                     the quick reference table.
         'ztics_full' - Filtered Zendesk ticket list with all values.
@@ -347,30 +331,15 @@ def filter_lists(zen_fieldid, data_lists):
     """
 
     # Zendesk list filtering
+    zen_tics = []
+    zen_tics_full = []
     if data_lists['status']['zen']:
-
-        # Builds a table (req_ref) that allows for quickly looking up a user's
-        # name with their user ID.
-        req_ref = {}
-        id_nums = []
-        for t in data_lists['ztickets']:
-            if t['requester_id'] not in id_nums:
-                id_nums.append(t['requester_id'])
-        for i in id_nums:
-            for u in data_lists['zusers']:
-                if i == u['id']:
-                    req_ref[i] = u['name']
-                    break
-        del id_nums
-        
         # Filters the list of Zendesk tickets to remove closed tickets that are
         # not associated with GitHub. The filterd list is appended into two
         # different lists: one that includes only the attributes needed for the
         # quick reference table of the app display (zen_tics), and one that
         # includes all of the attributes for later use in building the
         # association lists (zen_tics_full).
-        zen_tics = []
-        zen_tics_full = []
         for t in data_lists['ztickets']:
             a_field = {}
             for f in t['fields']:
@@ -386,17 +355,16 @@ def filter_lists(zen_fieldid, data_lists):
                     zen_tics_full.append(t)
                     zen_tics.append({
                         'id': t['id'],
-                        'req_name': req_ref[t['requester_id']],
                         'subject': t['subject'],
                     })
     
     # GitHub list filtering
+    git_tics = []
     if data_lists['status']['git']:
 
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
-        git_tics = []
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
@@ -415,13 +383,14 @@ def filter_lists(zen_fieldid, data_lists):
         del on_zen
 
         git_tics.extend(data_lists['gopen'])
-        git_tics.reverse() # List is reversed to put the oldest tickets first.
+
+        # Tickets are sorted into order by their issue number
+        git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
 
     filtered_lists = {
-        'req_ref': req_ref,
         'ztics': zen_tics,
         'ztics_full': zen_tics_full,
-        'gtics': git_tics
+        'gtics': git_tics_sorted
     }
 
     return filtered_lists
@@ -483,7 +452,6 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
                     break
             a_data = {} # Association data object
             a_data['z_id'] = t['id']
-            a_data['z_user'] = filtered_lists['req_ref'][t['requester_id']]
             a_data['z_status'] = t['status']
             z_date = datetime.strptime(t['updated_at'], 
                                         "%Y-%m-%dT%H:%M:%SZ")
@@ -498,12 +466,7 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
                            a_data['z_id']:
                             filtered_lists['ztics'].pop(i)
                             break
-                
                 else:
-                    if a_num is None or a_num == '':
-                        a_data['assoc'] = 'None'
-                    else:
-                        a_data['assoc'] = a_num
                     no_assocs.append(a_data)
             
             else:
@@ -513,7 +476,6 @@ def build_associations(zen_fieldid, filtered_lists, api_status):
                         git_issue = i
                         break
                 a_data['g_id'] = git_issue['number']
-                a_data['g_user'] = git_issue['user']['login']
                 a_data['g_labels'] = [i['name'] for i in git_issue['labels']]
                 a_data['g_url'] = git_issue['html_url']
                 a_data['g_status'] = git_issue['state']
