@@ -167,26 +167,26 @@ def nope(request, nope_num):
     the different forms.
 
     Parameters:
-        request - The request object sent with the call to render the page. Not
-                    used in this function.
+        request - The request object sent with the call to render the page.
         nope_num - The number to identify which error message should be 
                     displayed on the page.
     """
     return render_to_response('associations/nope.html', 
-                                {'nope_num': nope_num,})
+                                {'nope_num': nope_num,},
+                              context_instance=RequestContext(request))
 
 def confirm(request, con_num):
     """Renders the confirmation page to confirm the successful submission of
     data from the different forms.
 
     Parameters:
-        request - The request object sent with the call to render the page. Not
-                    used in this function.
+        request - The request object sent with the call to render the page.
         con_num - The number to identify which confirmation message should be
                     displayed on the page.
     """
     return render_to_response('associations/confirm.html',
-                                {'con_num': con_num,})
+                              {'con_num': con_num,},
+                              context_instance=RequestContext(request))
 
 
 def home(request):
