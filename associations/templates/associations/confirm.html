@@ -1,18 +1,8 @@
-<html>
-<head>
-<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+{% extends "associations/base.html" %}
 
-<style type="text/css">
-	h2, p, a, div {
-		text-align:center;
-	}
-</style>
+{% block title %}Confirmation{% endblock %}
 
-<title>Confirmation</title>
-</head>
-
-<body>
-<div class="container">
+{% block body %}
 	<h2>Confirmation</h2>
 
     <p>
@@ -30,7 +20,5 @@
         {% endif %}
     {% endif %}
 	</p>
-</div>
-</body>
-</html>
+{% endblock %}
 

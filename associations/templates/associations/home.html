@@ -1,34 +1,8 @@
-<html>
-<head>
-<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+{% extends "associations/base.html" %}
 
-<style type="text/css">
-	.center {
-		margin-left:auto;
-		margin-right:auto;
-	}
+{% block title %}Home{% endblock %}
 
-	a:link, a:visited {
-		color:blue;
-	}
-
-	a.open, td.open {
-		color:green
-	}
-	a.closed, td.closed {
-		color:red
-	}
-
-	h1, h2, h3 {
-		text-align:center;
-	}
-</style>
-
-<title>Home</title>
-</head>
-
-<body>
-<div class="container">
+{% block body %}
 
 <h1>GitZen</h1>
 <h3><a href="/change/">Change Account Data</a></h3>
@@ -267,7 +241,5 @@
 	{% endif %}
 </div>
 </div>
-</div>
 
-</body>
-</html>
+{% endblock %}

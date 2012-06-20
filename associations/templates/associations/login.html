@@ -1,18 +1,8 @@
-<html>
-<head>
-<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+{% extends "associations/base.html" %}
 
-<style type="text/css">
-    h1, h2, p, div{
-        text-align:center;
-    }
-</style>
+{% block title %}Login{% endblock %}
 
-<title>Login</title> 
-</head>
-
-<body>
-<div class="container">
+{% block body %}
 
 <h1>User Login</h1>
 <br/>
@@ -96,7 +86,4 @@
     <p><input name="new" type="submit" value="Create User" /></p>
 </form>
 
-</div>
-
-</body>
-</html>
+{% endblock %}
