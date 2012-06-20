@@ -1,0 +1,13 @@
+<html>
+<head>
+	<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
+	<link rel="stylesheet" href="{{ STATIC_URL }}css/base.css">
+	<title>{% block title %}{% endblock %}</title>
+</head>
+
+<body>
+	<div class="container">
+		{% block body %}{% endblock %}
+	</div>
+</body>
+</html>

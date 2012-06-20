@@ -72,6 +72,7 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    os.path.join(PROJECT_ROOT, 'statics'),
 )
 
 # List of finder classes that know how to find static files in
@@ -113,7 +114,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'associations'
+    'enhancement_tracking'
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
@@ -121,10 +122,10 @@ INSTALLED_APPS = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'associations.auth_backends.GZUserModelBackend',
+    'enhancement_tracking.auth_backends.GZUserModelBackend',
 )
 
-CUSTOM_USER_MODEL = 'associations.GZUser'
+CUSTOM_USER_MODEL = 'enhancement_tracking.GZUser'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

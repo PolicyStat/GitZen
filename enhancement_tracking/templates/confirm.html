@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmation{% endblock %}
+
+{% block body %}
+	<h2>Confirmation</h2>
+
+	<p>
+	{% if con_num == '1' %}
+		Your account was successfully created.
+		<br/>
+		<a href="{% url login %}">Return to Login</a>
+	{% else %}
+		{% if con_num == '2' %}
+			Your account has been updated with the entered information.
+			<br/>
+			<a href="{% url home %}">Return to Homepage</a>
+		{% else %}
+			You should not be viewing this page.
+		{% endif %}
+	{% endif %}
+	</p>
+{% endblock %}
