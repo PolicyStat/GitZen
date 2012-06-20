@@ -1,0 +1,27 @@
+/* Base CSS used on all pages of the Association application. */
+
+h1, h2, h3, p, a, div 
+{
+	text-align:center;
+}
+
+a:link, a:visited 
+{
+	color:blue;
+}
+
+a.open, td.open 
+{
+	color:green
+}
+a.closed, td.closed 
+{
+	color:red
+}
+
+.center 
+{
+	margin-left:auto;
+	margin-right:auto;
+}
+
