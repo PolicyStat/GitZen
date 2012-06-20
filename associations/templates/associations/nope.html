@@ -9,24 +9,24 @@
     {% if nope_num == '1' %}
         The user entered does not exist.
         <br/>
-        <a href="/">Return to Login</a>
+		<a href="{% url login %}">Return to Login</a>
     {% else %}
         {% if nope_num == '2' %}
 			The entered user password was not equal to the entered affirming 
 			password.
 			<br/>
-            <a href="/">Return to Login</a>
+			<a href="{% url login %}">Return to Login</a>
         {% else %}
             {% if nope_num == '3' %}
                 The entered old password was incorrect.
 				<br/>
-				<a href="/home/">Return to Homepage</a>
+				<a href="{% url home %}">Return to Homepage</a>
             {% else %}
                 {% if nope_num == '4' %}
 					The entered user password was not equal to the entered 
 					affirming password.
 					<br/>
-                    <a href="/home/">Return to Homepage</a>
+					<a href="{% url home %}">Return to Homepage</a>
                 {% else %}
                     You should not be viewing this page.
                 {% endif %}

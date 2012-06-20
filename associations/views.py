@@ -2,6 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
+from django.core.urlresolvers import reverse
 from django import forms
 from associations.models import GZUser
 import requests
@@ -73,9 +74,9 @@ def user_login(request):
 
                 if user is not None:
                     login(request, user)
-                    return HttpResponseRedirect('/home/')
+                    return HttpResponseRedirect(reverse('home'))
                 else:
-                    return HttpResponseRedirect('/nope/1/')
+                    return HttpResponseRedirect(reverse('nope', args=[1]))
             newform = NewForm()
 
         elif 'new' in request.POST:  # Process new user form
@@ -98,9 +99,9 @@ def user_login(request):
                     user.zen_fieldid = data['zen_fieldid']
                     user.save()
 
-                    return HttpResponseRedirect('/confirm/1')
+                    return HttpResponseRedirect(reverse('confirm', args=[1]))
                 else:
-                    return HttpResponseRedirect('/nope/2/')
+                    return HttpResponseRedirect(reverse('nope', args=[2]))
             logform = LogForm()
     else:
         logform = LogForm()
@@ -132,9 +133,9 @@ def change(request):
                     if data['new_pass'] == data['aff_pass']:
                         user.set_password(data['new_pass'])
                     else:
-                        return HttpResponseRedirect('/nope/4')
+                        return HttpResponseRedirect(reverse('nope', args=[4]))
                 else:
-                    return HttpResponseRedirect('/nope/3')
+                    return HttpResponseRedirect(reverse('nope', args=[3]))
             if data['git_name']:
                 user.git_name = data['git_name']
             if data['git_pass']:
@@ -153,7 +154,7 @@ def change(request):
                 user.zen_fieldid = data['zen_fieldid']
             user.save()
 
-            return HttpResponseRedirect('/confirm/2')
+            return HttpResponseRedirect(reverse('confirm', args=[2]))
     else:
         changeform = ChangeForm()
     
