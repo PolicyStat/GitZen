@@ -1,21 +1,21 @@
-{% extends "associations/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Home{% endblock %}
 
 {% block body %}
 
 <h1>GitZen</h1>
-<h3><a href="/change/">Change Account Data</a></h3>
+<h3><a href={% url change %}>Change Account Data</a></h3>
 <br/>
 
-<h2>Associations</h2>
+<h2>Enhancement Tracking</h2>
 <br/>
 
-{% if status.o_assocs %}
+{% if status.tracking %}
 <div class="row">
 <div class="span6">
-    <h3>Open Associations</h3>
-    {% if o_assocs %}
+    <h3>Currently Tracking</h3>
+    {% if tracking %}
 		<table class="table span6 center">
 			<thead>
 				<tr>
@@ -26,7 +26,7 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in o_assocs %}
+			{% for a in tracking %}
 				<tr>
 					<td>
 						<a class="open" href="{{ zen_url }}/tickets/
@@ -52,14 +52,14 @@
 			</tbody>
 		</table>
     {% else %}
-        <p align="center">There are currently no open Associations</p>
+        <p>There are currently no Enhancements being tracked.</p>
     {% endif %}
     <br/>
 </div>
 
 <div class="span6">
-    <h3>Half Open Associations</h3>
-    {% if ho_assocs %}
+	<h3>Need Attention</h3>
+    {% if need_attention %}
 		<table class="table span6 center">
 			<thead>
 				<tr>
@@ -70,7 +70,7 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in ho_assocs %}
+			{% for a in need_attention %}
 				<tr>
 					<td>
 					{% if a.closed == 'g' %}
@@ -111,15 +111,14 @@
 			</tbody>
         </table>
     {% else %}
-        <p align="center">There are currently no half-open Associations.</p>
+        <p>There are currently no Enhancements in need of attention.</p>
     {% endif %}
     <br/>
 </div>
 </div>
-<br/>
 
-    <h3>New Tickets not Associated with GitHub</h3>
-    {% if no_assocs %}
+    <h3>Requested Enhancements not Associated with GitHub</h3>
+    {% if not_tracking %}
 		<table class="table table-striped center" style="width:50%">
 			<thead>
 				<tr>
@@ -130,7 +129,7 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in no_assocs %}
+			{% for a in not_tracking %}
 				{% if forloop.counter0|divisibleby:2 %}
 					<tr>
 						<td>
@@ -153,15 +152,15 @@
 			</tbody>
 		</table>
     {% else %}
-        <p align="center">There are currently no Zendesk Tickets without GitHub 
-							Associations.</p>
+		<p>There are currently no requested Enhancements without GitHub
+			associations.</p>
     {% endif %}
 {% else %}
-    <p align="center">There was an Error connecting to either GitHub or
-    Zendesk. Try adjusting your account settings.</p>
+	<p>There was an Error connecting to either GitHub or Zendesk. Try adjusting
+		your account settings.</p>
 {% endif %}
 
-<br/><br/>
+<br/>
 
 <h2>Quick Reference</h2>
 <br/>

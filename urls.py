@@ -4,7 +4,7 @@ from django.conf.urls.defaults import patterns, include, url
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('associations.views',
+urlpatterns = patterns('enhancement_tracking.views',
     url(r'^$', 'user_login', name='login'),
     url(r'^home/$', 'home', name='home'),
     url(r'^change/$', 'change', name='change'),
