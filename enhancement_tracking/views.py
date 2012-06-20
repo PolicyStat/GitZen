@@ -253,7 +253,7 @@ def api_calls(request):
             r_op = requests.get(url,
                                 params={'state': 'open', 'since': limit_str},
                                 auth=(user.git_name, user.git_pass))
-            if type(r_op.json) == type({}):
+            if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
             gopen_list.extend(r_op.json)
@@ -273,7 +273,7 @@ def api_calls(request):
             r_cl = requests.get(url,
                                 params={'state': 'closed', 'since': limit_str},
                                 auth=(user.git_name, user.git_pass))
-            if type(r_op.json) == type({}):
+            if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
             gclosed_list.extend(r_cl.json)
