@@ -8,7 +8,7 @@
 <br/>
 
 <h2>Existing User</h2>
-<form class="well" action="/" method="post">{% csrf_token %}
+<form class="well" method="post">{% csrf_token %}
     {{ logform.non_field_errors }}
     <div class="fieldWrapper">
         {{ logform.username.errors }}
@@ -26,7 +26,7 @@
 <br/>
 
 <h2>New User</h2>
-<form class="well" action="/" method="post">{% csrf_token %}
+<form class="well" method="post">{% csrf_token %}
     {{ newform.non_field_errors }}
     <div class="fieldWrapper">
         {{ newform.username.errors }}
