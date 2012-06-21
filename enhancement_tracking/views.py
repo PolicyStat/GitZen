@@ -240,19 +240,24 @@ def api_calls(request):
     # These lines set the limit for how far back the API calls go when
     # gathering tickets. Currently, this limit is 180 days.
     date_limit = datetime.now() - timedelta(days=180)
-    limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
+
+    # Git and Zen require the date_limit to be formatted differently
+    git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
+    zen_limit_str = datetime.strftime(date_limit, '%Y-%m-%d')
 
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
         gopen_list = []
         page = 1
-        BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues?page=' % \
+        BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues' % \
                             (user.git_org, user.git_repo)
-        full_url = '%s%s' % (BASE_GIT_URL, page)
 
         while True:
-            r_op = requests.get(full_url,
-                                params={'state': 'open', 'since': limit_str},
+            r_op = requests.get(BASE_GIT_URL,
+                                params={'state': 'open', 
+                                        'since': git_limit_str,
+                                        'per_page': 100,
+                                        'page': page},
                                 auth=(user.git_name, user.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
@@ -260,18 +265,19 @@ def api_calls(request):
             gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
-                full_url = '%s%s' % (BASE_GIT_URL, page)
             else:
                 break
         
         # Get GitHub closed tickets
         gclosed_list = []
         page = 1
-        full_url = '%s%s' % (BASE_GIT_URL, page)
 
         while True:
-            r_cl = requests.get(full_url,
-                                params={'state': 'closed', 'since': limit_str},
+            r_cl = requests.get(BASE_GIT_URL,
+                                params={'state': 'closed', 
+                                        'since': git_limit_str,
+                                        'per_page': 100,
+                                        'page': page},
                                 auth=(user.git_name, user.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
@@ -279,7 +285,6 @@ def api_calls(request):
             gclosed_list.extend(r_cl.json)
             if r_cl.json:
                 page += 1
-                full_url = '%s%s' % (BASE_GIT_URL, page)
             else:
                 break
         
@@ -291,23 +296,29 @@ def api_calls(request):
 
     try:  # Zendesk API calls to get tickets
         
-        zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
-                                               #API token authorization
+        zen_name_tk = user.zen_name + '/token' # Zendesk user email set up for
+                                               # API token authorization.
         # Get Zendesk tickets
         zticket_list = []
         page = 1
-        BASE_ZEN_URL = '%s/api/v2/tickets.json?page=' % (user.zen_url)
-        full_url = '%s%s' % (BASE_ZEN_URL, page)
+        BASE_ZEN_URL = '%s/api/v2/search.json' % (user.zen_url)
+        SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
+                        ticket_type:problem' % (zen_limit_str)
 
         while True:
-            r_zt = requests.get(full_url, auth=(zen_name_tk, user.zen_token))
+            r_zt = requests.get(BASE_ZEN_URL, 
+                                params={'query': SEARCH_QUERY,
+                                        'sort_by': 'updated_at',
+                                        'sort_order': 'desc',
+                                        'per_page': 100,
+                                        'page': page},
+                                auth=(zen_name_tk, user.zen_token))
             if 'error' in r_zt.json:
                 raise Exception('Error in accessing Zendesk API - %s: %s' %
                                 (r_zt.json['error'], r_zt.json['description']))
-            zticket_list.extend(r_zt.json['tickets'])
+            zticket_list.extend(r_zt.json['results'])
             if r_zt.json['next_page'] is not None:
                 page += 1
-                full_url = '%s%s' % (BASE_ZEN_URL, page)
             else:
                 break
         
@@ -456,7 +467,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
 
         # The app will only display Zendesk tickets with no association up to
         # this far away from the current date.
-        nt_limit = timedelta(weeks=1)
+        nt_limit = timedelta(weeks=2)
         
         # Iterate through the Zendesk tickets using their data to classify them
         # as being tracked, needing attention, or not being tracked. If the
