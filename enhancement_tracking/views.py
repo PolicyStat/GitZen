@@ -241,16 +241,17 @@ def api_calls(request):
     # gathering tickets. Currently, this limit is 180 days.
     date_limit = datetime.now() - timedelta(days=180)
     limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
-    ztic_start_page = 22
 
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
         gopen_list = []
         page = 1
-        url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
+        BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues?page=' % \
+                            (user.git_org, user.git_repo)
+        full_url = '%s%s' % (BASE_GIT_URL, page)
+
         while True:
-            r_op = requests.get(url,
+            r_op = requests.get(full_url,
                                 params={'state': 'open', 'since': limit_str},
                                 auth=(user.git_name, user.git_pass))
             if r_op.status_code != 200:
@@ -259,18 +260,17 @@ def api_calls(request):
             gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
-                url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
+                full_url = '%s%s' % (BASE_GIT_URL, page)
             else:
                 break
         
         # Get GitHub closed tickets
         gclosed_list = []
         page = 1
-        url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
+        full_url = '%s%s' % (BASE_GIT_URL, page)
+
         while True:
-            r_cl = requests.get(url,
+            r_cl = requests.get(full_url,
                                 params={'state': 'closed', 'since': limit_str},
                                 auth=(user.git_name, user.git_pass))
             if r_op.status_code != 200:
@@ -279,8 +279,7 @@ def api_calls(request):
             gclosed_list.extend(r_cl.json)
             if r_cl.json:
                 page += 1
-                url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
+                full_url = '%s%s' % (BASE_GIT_URL, page)
             else:
                 break
         
@@ -292,23 +291,23 @@ def api_calls(request):
 
     try:  # Zendesk API calls to get tickets
         
-        # TODO: Rewrite the ticket requests from the Zendesk API utilizing its
-        # search feature to request only the tickets relevant to enhancements.
         zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
                                                #API token authorization
         # Get Zendesk tickets
         zticket_list = []
-        page = ztic_start_page
-        url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
+        page = 1
+        BASE_ZEN_URL = '%s/api/v2/tickets.json?page=' % (user.zen_url)
+        full_url = '%s%s' % (BASE_ZEN_URL, page)
+
         while True:
-            r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
+            r_zt = requests.get(full_url, auth=(zen_name_tk, user.zen_token))
             if 'error' in r_zt.json:
-                raise Exception('Error in accessing Zendesk API - %s' %
-                                (r_zt.json['error']))
+                raise Exception('Error in accessing Zendesk API - %s: %s' %
+                                (r_zt.json['error'], r_zt.json['description']))
             zticket_list.extend(r_zt.json['tickets'])
             if r_zt.json['next_page'] is not None:
                 page += 1
-                url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
+                full_url = '%s%s' % (BASE_ZEN_URL, page)
             else:
                 break
         
