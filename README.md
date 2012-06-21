@@ -124,8 +124,16 @@ dictionary as this "value" pair, the number value for the "id" key is the ID
 number that must be entered into the "Zendesk Ticket Association Field ID" field
 in the new user form.
 
-8. Check to see that all fields under the "New User" heading are filled out
+8. For the "Age Limit (in days) for the Tickets" field in the new user form,
+enter a limit (in days) for the age of the tickets used in the application.
+Only tickets from Zendesk and GitHub that were last updated between the current
+time and this age limit away from the current time will be monitored in the
+application. It should be noted that the higher this age limit is set, the
+longer it will take to load the application on login, so for this reason, it is
+recommended that the age limit is not set higher than one year (365 days) to
+avoid load times that are too long for Heroku. 
+
+9. Check to see that all fields under the "New User" heading are filled out
 accurately, and then click the "Create User" button to create a user with the
 given information. A confirmation page should come up after this process that
 will have a link to return to the login screen.
-
