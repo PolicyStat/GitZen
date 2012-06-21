@@ -28,6 +28,7 @@ class NewForm(forms.Form):
     zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput)
     zen_url = forms.CharField(max_length=100)
     zen_fieldid = forms.CharField(max_length=50)
+    age_limit = forms.IntegerField()
 
 class ChangeForm(forms.Form):
     """Form for changing the data of an existing user."""
@@ -48,6 +49,7 @@ class ChangeForm(forms.Form):
                                required=False)
     zen_url = forms.CharField(max_length=100, required=False)
     zen_fieldid = forms.CharField(max_length=50, required=False)
+    age_limit = forms.IntegerField(required=False)
 
 
 def user_login(request):
@@ -97,6 +99,7 @@ def user_login(request):
                     user.zen_token = data['zen_token']
                     user.zen_url = data['zen_url']
                     user.zen_fieldid = data['zen_fieldid']
+                    user.age_limit = data['age_limit']
                     user.save()
 
                     return HttpResponseRedirect(reverse('confirm', args=[1]))
@@ -152,6 +155,8 @@ def change(request):
                 user.zen_url = data['zen_url']
             if data['zen_fieldid']:
                 user.zen_fieldid = data['zen_fieldid']
+            if data['age_limit']:
+                user.age_limit = data['age_limit']
             user.save()
 
             return HttpResponseRedirect(reverse('confirm', args=[2]))
@@ -237,9 +242,9 @@ def api_calls(request):
     user = request.user
     working = {}
 
-    # These lines set the limit for how far back the API calls go when
-    # gathering tickets. Currently, this limit is 180 days.
-    date_limit = datetime.now() - timedelta(days=180)
+    # This line sets the limit for how far back the API calls go when
+    # gathering tickets.
+    date_limit = datetime.now() - timedelta(days=user.age_limit)
 
     # Git and Zen require the date_limit to be formatted differently
     git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
