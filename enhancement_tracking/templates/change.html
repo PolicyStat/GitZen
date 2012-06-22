@@ -67,6 +67,11 @@ User password.</p>
 		<label for="id_zen_fieldid">Zendesk Ticket Association Field ID:</label>
 		{{ changeform.zen_fieldid }}
 	</div>
+	<div class="fieldWrapper">
+		{{ changeform.age_limit.errors }}
+		<label for="id_age_limit">Age Limit (in days) for the Tickets:</label>
+		{{ changeform.age_limit }}
+	</div>
     <p><input name="change" type="submit" value="Submit Changes" /></p>
 </form>
 

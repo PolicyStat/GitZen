@@ -3,52 +3,24 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.core.urlresolvers import reverse
-from django import forms
 from enhancement_tracking.models import GZUser
+from enhancement_tracking.forms import LogForm, NewForm, ChangeForm
 import requests
 from datetime import datetime, timedelta
 
-class LogForm(forms.Form):
-    """Form for login of an existing user."""
+# Constatn URL strings for accessing the GitHub API. The first %s is the
+# organization/user name and the second %s is the repository name.
+BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
 
-    username = forms.CharField(max_length=75)
-    password = forms.CharField(max_length=75, widget=forms.PasswordInput)
+# Constant URL string for accessing the Zendesk API. The %s is the custom URL
+# for the specific company whose tickets are being accessed.
+BASE_ZEN_URL = '%s/api/v2/search.json'
 
-class NewForm(forms.Form):
-    """Form for creating a new user."""
-
-    username = forms.CharField(max_length=75)
-    password = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    affirmpass = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    git_name = forms.CharField(max_length=75)
-    git_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    git_org = forms.CharField(max_length=75)
-    git_repo = forms.CharField(max_length=75)
-    zen_name = forms.CharField(max_length=75)
-    zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    zen_url = forms.CharField(max_length=100)
-    zen_fieldid = forms.CharField(max_length=50)
-
-class ChangeForm(forms.Form):
-    """Form for changing the data of an existing user."""
-
-    old_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    new_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    aff_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    git_name = forms.CharField(max_length=75, required=False)
-    git_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
-                               required=False)
-    git_org = forms.CharField(max_length=75, required=False)
-    git_repo = forms.CharField(max_length=75, required=False)
-    zen_name = forms.CharField(max_length=75, required=False)
-    zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    zen_url = forms.CharField(max_length=100, required=False)
-    zen_fieldid = forms.CharField(max_length=50, required=False)
-
+# Constant search query used to access Zendesk tickets form its API. The %s is
+# the oldest date (in the format YYYY/MM/DD) a ticket can be and still be
+# included in the results.
+SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
+                ticket_type:problem'
 
 def user_login(request):
     """Processes the requests from the login page. 
@@ -97,6 +69,7 @@ def user_login(request):
                     user.zen_token = data['zen_token']
                     user.zen_url = data['zen_url']
                     user.zen_fieldid = data['zen_fieldid']
+                    user.age_limit = data['age_limit']
                     user.save()
 
                     return HttpResponseRedirect(reverse('confirm', args=[1]))
@@ -152,6 +125,8 @@ def change(request):
                 user.zen_url = data['zen_url']
             if data['zen_fieldid']:
                 user.zen_fieldid = data['zen_fieldid']
+            if data['age_limit']:
+                user.age_limit = data['age_limit']
             user.save()
 
             return HttpResponseRedirect(reverse('confirm', args=[2]))
@@ -237,21 +212,24 @@ def api_calls(request):
     user = request.user
     working = {}
 
-    # These lines set the limit for how far back the API calls go when
-    # gathering tickets. Currently, this limit is 180 days.
-    date_limit = datetime.now() - timedelta(days=180)
-    limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
-    ztic_start_page = 22
+    # This line sets the limit for how far back the API calls go when
+    # gathering tickets.
+    date_limit = datetime.now() - timedelta(days=user.age_limit)
+
+    # Git and Zen require the date_limit to be formatted differently
+    git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
+    zen_limit_str = datetime.strftime(date_limit, '%Y-%m-%d')
 
     try:  # GitHub API calls to get all open and closed tickets
         # Get GitHub open tickets
         gopen_list = []
         page = 1
-        url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
         while True:
-            r_op = requests.get(url,
-                                params={'state': 'open', 'since': limit_str},
+            r_op = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
+                                params={'state': 'open', 
+                                        'since': git_limit_str,
+                                        'per_page': 100,
+                                        'page': page},
                                 auth=(user.git_name, user.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
@@ -259,19 +237,18 @@ def api_calls(request):
             gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
-                url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
             else:
                 break
         
         # Get GitHub closed tickets
         gclosed_list = []
         page = 1
-        url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
         while True:
-            r_cl = requests.get(url,
-                                params={'state': 'closed', 'since': limit_str},
+            r_cl = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
+                                params={'state': 'closed', 
+                                        'since': git_limit_str,
+                                        'per_page': 100,
+                                        'page': page},
                                 auth=(user.git_name, user.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
@@ -279,8 +256,6 @@ def api_calls(request):
             gclosed_list.extend(r_cl.json)
             if r_cl.json:
                 page += 1
-                url = 'https://api.github.com/repos/%s/%s/issues?page=%s' % \
-                            (user.git_org, user.git_repo, page)
             else:
                 break
         
@@ -291,24 +266,25 @@ def api_calls(request):
         working['git'] = False
 
     try:  # Zendesk API calls to get tickets
-        
-        # TODO: Rewrite the ticket requests from the Zendesk API utilizing its
-        # search feature to request only the tickets relevant to enhancements.
-        zen_name_tk = user.zen_name + '/token' #Zendesk user email set up for
-                                               #API token authorization
+        zen_name_tk = user.zen_name + '/token' # Zendesk user email set up for
+                                               # API token authorization.
         # Get Zendesk tickets
         zticket_list = []
-        page = ztic_start_page
-        url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
+        page = 1
         while True:
-            r_zt = requests.get(url, auth=(zen_name_tk, user.zen_token))
+            r_zt = requests.get(BASE_ZEN_URL % user.zen_url, 
+                                params={'query': SEARCH_QUERY % zen_limit_str,
+                                        'sort_by': 'updated_at',
+                                        'sort_order': 'desc',
+                                        'per_page': 100,
+                                        'page': page},
+                                auth=(zen_name_tk, user.zen_token))
             if 'error' in r_zt.json:
-                raise Exception('Error in accessing Zendesk API - %s' %
-                                (r_zt.json['error']))
-            zticket_list.extend(r_zt.json['tickets'])
+                raise Exception('Error in accessing Zendesk API - %s: %s' %
+                                (r_zt.json['error'], r_zt.json['description']))
+            zticket_list.extend(r_zt.json['results'])
             if r_zt.json['next_page'] is not None:
                 page += 1
-                url = '%s/api/v2/tickets.json?page=%s' % (user.zen_url, page)
             else:
                 break
         
@@ -455,10 +431,6 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         status['need_attention'] = True
         status['not_tracking'] = True
 
-        # The app will only display Zendesk tickets with no association up to
-        # this far away from the current date.
-        nt_limit = timedelta(weeks=1)
-        
         # Iterate through the Zendesk tickets using their data to classify them
         # as being tracked, needing attention, or not being tracked. If the
         # ticket does not fit into any of these catagories, it is deleted form
@@ -479,15 +451,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             # Check if it has no associated  GitHub ticket
             if a_num is None or a_num.split('-')[0] != 'gh':
-                # Check if date is in the not tracking delta range
-                if datetime.now() > z_date + nt_limit:
-                    for i in range(len(filtered_lists['ztics'])):
-                        if filtered_lists['ztics'][i]['id'] == \
-                           e_data['z_id']:
-                            filtered_lists['ztics'].pop(i)
-                            break
-                else:
-                    not_tracking.append(e_data)
+                not_tracking.append(e_data)
             
             else:
                 # Add GitHub data to enhancement data object

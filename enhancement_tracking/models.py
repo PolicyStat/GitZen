@@ -11,5 +11,6 @@ class GZUser(User):
     zen_token = EncryptedCharField(max_length=75)
     zen_url = models.CharField(max_length=100)
     zen_fieldid = models.CharField(max_length=50)
+    age_limit = models.IntegerField(null=True)
 
     objects = UserManager()

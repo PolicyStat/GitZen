@@ -83,6 +83,11 @@
 		<label for="id_zen_fieldid">Zendesk Ticket Association Field ID:</label>
 		{{ newform.zen_fieldid }}
 	</div>
+	<div class="fieldWrapper">
+		{{ newform.age_limit.errors }}
+		<label for="id_age_limit">Age Limit (in days) for the Tickets:</label>
+		{{ newform.age_limit }}
+	</div>
     <p><input name="new" type="submit" value="Create User" /></p>
 </form>
 
