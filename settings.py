@@ -121,11 +121,13 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
-AUTHENTICATION_BACKENDS = (
-    'enhancement_tracking.auth_backends.GZUserModelBackend',
-)
+#AUTHENTICATION_BACKENDS = (
+#    'enhancement_tracking.auth_backends.GZUserModelBackend',
+#)
 
-CUSTOM_USER_MODEL = 'enhancement_tracking.GZUser'
+AUTH_PROFILE_MODULE = 'enhancement_tracking.GZUserProfile'
+
+#CUSTOM_USER_MODEL = 'enhancement_tracking.GZUser'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -150,7 +152,7 @@ LOGGING = {
     }
 }
 
-import dj_database_url
-DATABASES = {
-    'default': dj_database_url.config(default='postgres://localhost')
-    }
+#import dj_database_url
+#DATABASES = {
+#    'default': dj_database_url.config(default='postgres://localhost')
+#    }

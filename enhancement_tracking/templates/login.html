@@ -26,69 +26,10 @@
 <br/>
 
 <h2>New User</h2>
-<form class="well" method="post">{% csrf_token %}
-    {{ newform.non_field_errors }}
-    <div class="fieldWrapper">
-        {{ newform.username.errors }}
-        <label for="id_username">Username:</label>
-        {{ newform.username }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.password.errors }}
-        <label for="id_password">Password:</label>
-        {{ newform.password }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.affirmpass.errors }}
-        <label for="id_affirmpass">Affirm Password:</label>
-        {{ newform.affirmpass }}
-    </div>    
-    <div class="fieldWrapper">
-        {{ newform.git_name.errors }}
-        <label for="id_git_name">GitHub Username:</label>
-        {{ newform.git_name }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.git_pass.errors }}
-        <label for="id_git_pass">GitHub Password:</label>
-        {{ newform.git_pass }}
-	</div>
-    <div class="fieldWrapper">
-        {{ newform.git_org.errors }}
-        <label for="id_git_org">GitHub Organization:</label>
-        {{ newform.git_org }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.git_repo.errors }}
-        <label for="id_git_repo">GitHub Repository:</label>
-        {{ newform.git_repo }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.zen_name.errors }}
-        <label for="id_zen_name">Zendesk User Email:</label>
-        {{ newform.zen_name }}
-	</div>
-	<div class="fieldWrapper">
-        {{ newform.zen_token.errors }}
-        <label for="id_zen_token">Zendesk API Token:</label>
-        {{ newform.zen_token }}
-    </div>
-    <div class="fieldWrapper">
-        {{ newform.zen_url.errors }}
-        <label for="id_zen_url">Zendesk URL:</label>
-        {{ newform.zen_url }}
-    </div>
-	<div class="fieldWrapper">
-		{{ newform.zen_fieldid.errors }}
-		<label for="id_zen_fieldid">Zendesk Ticket Association Field ID:</label>
-		{{ newform.zen_fieldid }}
-	</div>
-	<div class="fieldWrapper">
-		{{ newform.age_limit.errors }}
-		<label for="id_age_limit">Age Limit (in days) for the Tickets:</label>
-		{{ newform.age_limit }}
-	</div>
-    <p><input name="new" type="submit" value="Create User" /></p>
+<form class="well" method="post">
+	{{ uform.as_p }}
+	{{ pform.as_p }}
+	<p><input name="new" type="submit" value="Create User" /></p>
 </form>
 
 {% endblock %}

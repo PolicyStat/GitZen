@@ -35,39 +35,27 @@ def user_login(request):
                     return HttpResponseRedirect(reverse('home'))
                 else:
                     return HttpResponseRedirect(reverse('nope', args=[1]))
-            newform = NewForm()
+            uform = UserForm()
+            pform = UserProfileForm()
 
         elif 'new' in request.POST:  # Process new user form
-            newform = NewForm(request.POST)
-            if newform.is_valid():
-                data = newform.cleaned_data
-                if data['password'] == data['affirmpass']:
-                    user = GZUser.objects.create_user(
-                        username=data['username'],
-                        password=data['password'],
-                        email='',
-                    )
-                    user.git_name = data['git_name']
-                    user.git_pass = data['git_pass']
-                    user.git_org = data['git_org']
-                    user.git_repo = data['git_repo']
-                    user.zen_name = data['zen_name']
-                    user.zen_token = data['zen_token']
-                    user.zen_url = data['zen_url']
-                    user.zen_fieldid = data['zen_fieldid']
-                    user.age_limit = data['age_limit']
-                    user.save()
+            uform = UserForm(request.POST)
+            pform = UserProfileForm(request.POST)
+            if uform.is_valid() and pform.is_valid():
+                user = uform.save()
+                profile = pform.save(commit=False)
+                profile.user = user
+                profile.save()
 
-                    return HttpResponseRedirect(reverse('confirm', args=[1]))
-                else:
-                    return HttpResponseRedirect(reverse('nope', args=[2]))
+                return HttpResponseRedirect(reverse('confirm', args=[1]))
             logform = LogForm()
     else:
         logform = LogForm()
-        newform = NewForm()
+        uform = UserForm()
+        pform = UserProfileForm()
 
     return render_to_response('login.html', {'logform': logform,
-                                'newform': newform,}, 
+                                'uform': uform, 'pform': pform}, 
                               context_instance=RequestContext(request))
 
 def change(request):
@@ -158,15 +146,16 @@ def home(request):
     Parameters:
         request - The request object that contains the current user's data.
     """
+    profile = request.user.get_profile()
     api_lists = {} # Stores lists from API calls and their status
     filtered_lists = {} # Stores lists of the filtered API data
     render_data = {} # Data to be rendered to the home page
     
     api_lists = api_calls(request)
-    filtered_lists = filter_lists(request.user.zen_fieldid, api_lists)
+    filtered_lists = filter_lists(profile.zen_fieldid, api_lists)
 
     api_status = api_lists['status']['git'] and api_lists['status']['zen']
-    render_data = build_enhancement_data(request.user.zen_fieldid,
+    render_data = build_enhancement_data(profile.zen_fieldid,
                                          filtered_lists, api_status)
 
     # Combine the status dictionaries from the API data and association lists
@@ -174,8 +163,8 @@ def home(request):
                                  api_lists['status'].items())
 
     # Add additional user data to be rendered to the home page
-    render_data['repo'] = request.user.git_repo
-    render_data['zen_url'] = request.user.zen_url
+    render_data['repo'] = profile.git_repo
+    render_data['zen_url'] = profile.zen_url
     
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
@@ -195,12 +184,12 @@ def api_calls(request):
             'git' - True if Git call was successful, False if not
             'zen' - True if Zen call was successful, False if not
     """
-    user = request.user
+    profile = request.user.get_profile()
     working = {}
 
     # This line sets the limit for how far back the API calls go when
     # gathering tickets.
-    date_limit = datetime.now() - timedelta(days=user.age_limit)
+    date_limit = datetime.now() - timedelta(days=profile.age_limit)
 
     # Git and Zen require the date_limit to be formatted differently
     git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
@@ -211,7 +200,7 @@ def api_calls(request):
         gopen_list = []
         page = 1
         BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues' % \
-                            (user.git_org, user.git_repo)
+                            (profile.git_org, profile.git_repo)
 
         while True:
             r_op = requests.get(BASE_GIT_URL,
@@ -219,7 +208,7 @@ def api_calls(request):
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page},
-                                auth=(user.git_name, user.git_pass))
+                                auth=(profile.git_name, profile.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -239,7 +228,7 @@ def api_calls(request):
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page},
-                                auth=(user.git_name, user.git_pass))
+                                auth=(profile.git_name, profile.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -257,12 +246,12 @@ def api_calls(request):
 
     try:  # Zendesk API calls to get tickets
         
-        zen_name_tk = user.zen_name + '/token' # Zendesk user email set up for
-                                               # API token authorization.
+        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
+                                                  # for API token authorization.
         # Get Zendesk tickets
         zticket_list = []
         page = 1
-        BASE_ZEN_URL = '%s/api/v2/search.json' % (user.zen_url)
+        BASE_ZEN_URL = '%s/api/v2/search.json' % (profile.zen_url)
         SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
                         ticket_type:problem' % (zen_limit_str)
 
@@ -273,7 +262,7 @@ def api_calls(request):
                                         'sort_order': 'desc',
                                         'per_page': 100,
                                         'page': page},
-                                auth=(zen_name_tk, user.zen_token))
+                                auth=(zen_name_tk, profile.zen_token))
             if 'error' in r_zt.json:
                 raise Exception('Error in accessing Zendesk API - %s: %s' %
                                 (r_zt.json['error'], r_zt.json['description']))
@@ -327,7 +316,7 @@ def filter_lists(zen_fieldid, data_lists):
         for t in data_lists['ztickets']:
             a_field = {}
             for f in t['fields']:
-                if f['id'] == int(zen_fieldid):
+                if f['id'] == zen_fieldid:
                     a_field = f
                     break
 
@@ -353,7 +342,7 @@ def filter_lists(zen_fieldid, data_lists):
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
-                if f['id'] == int(zen_fieldid):
+                if f['id'] == zen_fieldid:
                     if f['value'] is not None:
                         a_num = f['value'].split('-')
                     else:
@@ -438,7 +427,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
 
             # Add Zendesk data to enhancement data object
             for f in t['fields']:
-                if f['id'] == int(zen_fieldid):
+                if f['id'] == zen_fieldid:
                     a_num = f['value']
                     break
             e_data = {} # Enhancement data object
