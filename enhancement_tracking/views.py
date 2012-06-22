@@ -3,54 +3,10 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.core.urlresolvers import reverse
-from django import forms
 from enhancement_tracking.models import GZUser
+from enhancement_tracking.forms import LogForm, NewForm, ChangeForm
 import requests
 from datetime import datetime, timedelta
-
-class LogForm(forms.Form):
-    """Form for login of an existing user."""
-
-    username = forms.CharField(max_length=75)
-    password = forms.CharField(max_length=75, widget=forms.PasswordInput)
-
-class NewForm(forms.Form):
-    """Form for creating a new user."""
-
-    username = forms.CharField(max_length=75)
-    password = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    affirmpass = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    git_name = forms.CharField(max_length=75)
-    git_pass = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    git_org = forms.CharField(max_length=75)
-    git_repo = forms.CharField(max_length=75)
-    zen_name = forms.CharField(max_length=75)
-    zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput)
-    zen_url = forms.CharField(max_length=100)
-    zen_fieldid = forms.CharField(max_length=50)
-    age_limit = forms.IntegerField()
-
-class ChangeForm(forms.Form):
-    """Form for changing the data of an existing user."""
-
-    old_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    new_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    aff_pass = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    git_name = forms.CharField(max_length=75, required=False)
-    git_pass = forms.CharField(max_length=75, widget=forms.PasswordInput, 
-                               required=False)
-    git_org = forms.CharField(max_length=75, required=False)
-    git_repo = forms.CharField(max_length=75, required=False)
-    zen_name = forms.CharField(max_length=75, required=False)
-    zen_token = forms.CharField(max_length=75, widget=forms.PasswordInput,
-                               required=False)
-    zen_url = forms.CharField(max_length=100, required=False)
-    zen_fieldid = forms.CharField(max_length=50, required=False)
-    age_limit = forms.IntegerField(required=False)
-
 
 def user_login(request):
     """Processes the requests from the login page. 
