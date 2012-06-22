@@ -8,6 +8,20 @@ from enhancement_tracking.forms import LogForm, NewForm, ChangeForm
 import requests
 from datetime import datetime, timedelta
 
+# Constatn URL strings for accessing the GitHub API. The first %s is the
+# organization/user name and the second %s is the repository name.
+BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
+
+# Constant URL string for accessing the Zendesk API. The %s is the custom URL
+# for the specific company whose tickets are being accessed.
+BASE_ZEN_URL = '%s/api/v2/search.json'
+
+# Constant search query used to access Zendesk tickets form its API. The %s is
+# the oldest date (in the format YYYY/MM/DD) a ticket can be and still be
+# included in the results.
+SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
+                ticket_type:problem'
+
 def user_login(request):
     """Processes the requests from the login page. 
     
@@ -210,11 +224,8 @@ def api_calls(request):
         # Get GitHub open tickets
         gopen_list = []
         page = 1
-        BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues' % \
-                            (user.git_org, user.git_repo)
-
         while True:
-            r_op = requests.get(BASE_GIT_URL,
+            r_op = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
                                 params={'state': 'open', 
                                         'since': git_limit_str,
                                         'per_page': 100,
@@ -232,9 +243,8 @@ def api_calls(request):
         # Get GitHub closed tickets
         gclosed_list = []
         page = 1
-
         while True:
-            r_cl = requests.get(BASE_GIT_URL,
+            r_cl = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
                                 params={'state': 'closed', 
                                         'since': git_limit_str,
                                         'per_page': 100,
@@ -256,19 +266,14 @@ def api_calls(request):
         working['git'] = False
 
     try:  # Zendesk API calls to get tickets
-        
         zen_name_tk = user.zen_name + '/token' # Zendesk user email set up for
                                                # API token authorization.
         # Get Zendesk tickets
         zticket_list = []
         page = 1
-        BASE_ZEN_URL = '%s/api/v2/search.json' % (user.zen_url)
-        SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
-                        ticket_type:problem' % (zen_limit_str)
-
         while True:
-            r_zt = requests.get(BASE_ZEN_URL, 
-                                params={'query': SEARCH_QUERY,
+            r_zt = requests.get(BASE_ZEN_URL % user.zen_url, 
+                                params={'query': SEARCH_QUERY % zen_limit_str,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
                                         'per_page': 100,
@@ -426,10 +431,6 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         status['need_attention'] = True
         status['not_tracking'] = True
 
-        # The app will only display Zendesk tickets with no association up to
-        # this far away from the current date.
-        nt_limit = timedelta(weeks=2)
-        
         # Iterate through the Zendesk tickets using their data to classify them
         # as being tracked, needing attention, or not being tracked. If the
         # ticket does not fit into any of these catagories, it is deleted form
@@ -450,15 +451,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             # Check if it has no associated  GitHub ticket
             if a_num is None or a_num.split('-')[0] != 'gh':
-                # Check if date is in the not tracking delta range
-                if datetime.now() > z_date + nt_limit:
-                    for i in range(len(filtered_lists['ztics'])):
-                        if filtered_lists['ztics'][i]['id'] == \
-                           e_data['z_id']:
-                            filtered_lists['ztics'].pop(i)
-                            break
-                else:
-                    not_tracking.append(e_data)
+                not_tracking.append(e_data)
             
             else:
                 # Add GitHub data to enhancement data object
