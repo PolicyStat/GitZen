@@ -3,8 +3,8 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.core.urlresolvers import reverse
-from enhancement_tracking.models import GZUser
-from enhancement_tracking.forms import LogForm, NewForm, ChangeForm
+from enhancement_tracking.forms import LogForm, UserForm, UserProfileForm, \
+                                        ChangeForm
 import requests
 from datetime import datetime, timedelta
 
