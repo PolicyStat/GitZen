@@ -3,11 +3,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from enhancement_tracking.models import GZUserProfile
 
-class LogForm(Form):
-    """Form for login of an existing user.""" 
-    username = CharField(max_length=30)
-    password = CharField(max_length=75, widget=PasswordInput)
-
 class UserForm(UserCreationForm):
     """User form for creating a new user. Extends django's provided
     UserCreationForm, but removes the help_text from the fields."""

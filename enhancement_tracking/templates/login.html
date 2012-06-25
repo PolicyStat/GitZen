@@ -9,17 +9,7 @@
 
 <h2>Existing User</h2>
 <form class="well" method="post">{% csrf_token %}
-    {{ logform.non_field_errors }}
-    <div class="fieldWrapper">
-        {{ logform.username.errors }}
-        <label for="id_username">Username:</label>
-        {{ logform.username }}
-    </div>
-    <div class="fieldWrapper">
-        {{ logform.password.errors }}
-        <label for="id_password">Password:</label>
-        {{ logform.password }}
-    </div>
+	{{ logform.as_p }}
     <p><input name="log" type="submit" value="Login"/></p>
 </form>
 

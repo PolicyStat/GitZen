@@ -2,9 +2,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.core.urlresolvers import reverse
-from enhancement_tracking.forms import LogForm, UserForm, UserProfileForm, \
-                                        ChangeForm
+from enhancement_tracking.forms import UserForm, UserProfileForm, ChangeForm
 import requests
 from datetime import datetime, timedelta
 
@@ -37,24 +37,16 @@ def user_login(request):
 
     if request.method == 'POST':
         if 'log' in request.POST:  # Process login form
-            logform = LogForm(request.POST)
+            logform = AuthenticationForm(data=request.POST)
             if logform.is_valid():
-                user = authenticate(
-                    username=logform.cleaned_data['username'],
-                    password=logform.cleaned_data['password'],
-                )
-
-                if user is not None:
-                    login(request, user)
-                    return HttpResponseRedirect(reverse('home'))
-                else:
-                    return HttpResponseRedirect(reverse('nope', args=[1]))
+                login(request, logform.get_user())
+                return HttpResponseRedirect(reverse('home'))
             uform = UserForm()
             pform = UserProfileForm()
 
         elif 'new' in request.POST:  # Process new user form
-            uform = UserForm(request.POST)
-            pform = UserProfileForm(request.POST)
+            uform = UserForm(data=request.POST)
+            pform = UserProfileForm(data=request.POST)
             if uform.is_valid() and pform.is_valid():
                 user = uform.save()
                 profile = pform.save(commit=False)
@@ -62,9 +54,9 @@ def user_login(request):
                 profile.save()
 
                 return HttpResponseRedirect(reverse('confirm', args=[1]))
-            logform = LogForm()
+            logform = AuthenticationForm()
     else:
-        logform = LogForm()
+        logform = AuthenticationForm()
         uform = UserForm()
         pform = UserProfileForm()
 
