@@ -2,9 +2,10 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
-from enhancement_tracking.forms import UserForm, UserProfileForm, ChangeForm
+from enhancement_tracking.forms import UserForm, UserProfileForm, \
+                                        ProfileChangeForm
 import requests
 from datetime import datetime, timedelta
 
@@ -67,7 +68,7 @@ def user_login(request):
 def change(request):
     """Processes the requests from the Change Account Data page.
 
-    All of the fields on the change form are optional so that the user can
+    All of the fields on the change forms are optional so that the user can
     change only the account data that they want changed.
 
     Parameters:
@@ -76,46 +77,27 @@ def change(request):
     """
 
     if request.method == 'POST':
-        changeform = ChangeForm(request.POST)
-        if changeform.is_valid():
-            data = changeform.cleaned_data
-            user = request.user
-
-            if data['new_pass']:
-                if user.check_password(data['old_pass']):
-                    if data['new_pass'] == data['aff_pass']:
-                        user.set_password(data['new_pass'])
-                    else:
-                        return HttpResponseRedirect(reverse('nope', args=[4]))
-                else:
-                    return HttpResponseRedirect(reverse('nope', args=[3]))
-            if data['git_name']:
-                user.git_name = data['git_name']
-            if data['git_pass']:
-                user.git_key = data['git_pass']
-            if data['git_org']:
-                user.git_key = data['git_org']
-            if data['git_repo']:
-                user.git_repo = data['git_repo']
-            if data['zen_name']:
-                user.zen_name = data['zen_name']
-            if data['zen_token']:
-                user.zen_token = data['zen_token']
-            if data['zen_url']:
-                user.zen_url = data['zen_url']
-            if data['zen_fieldid']:
-                user.zen_fieldid = data['zen_fieldid']
-            if data['age_limit']:
-                user.age_limit = data['age_limit']
-            user.save()
-
-            return HttpResponseRedirect(reverse('confirm', args=[2]))
+        if 'password' in request.POST: # Process password change form
+            pwform = PasswordChangeForm(user=request.user, data=request.POST)
+            if pwform.is_valid():
+                pwform.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            prform = ProfileChangeForm()
+        
+        elif 'profile' in request.POST: # Process profile change form
+            prform = ProfileChangeForm(data=request.POST,
+                                       instance=request.user.get_profile())
+            if prform.is_valid():
+                prform.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            pwform = PasswordChangeForm(user=request.user)
     else:
-        changeform = ChangeForm()
+        pwform = PasswordChangeForm(user=request.user)
+        prform = ProfileChangeForm()
     
     return render_to_response('change.html', 
-                                {'changeform': changeform,},
-                                context_instance=RequestContext(request))
+                              {'pwform': pwform, 'prform': prform},
+                              context_instance=RequestContext(request))
 
 
 def nope(request, nope_num):
@@ -206,7 +188,8 @@ def api_calls(request):
         gopen_list = []
         page = 1
         while True:
-            r_op = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
+            r_op = requests.get(BASE_GIT_URL % (profile.git_org, 
+                                                profile.git_repo),
                                 params={'state': 'open', 
                                         'since': git_limit_str,
                                         'per_page': 100,
@@ -225,7 +208,8 @@ def api_calls(request):
         gclosed_list = []
         page = 1
         while True:
-            r_cl = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
+            r_cl = requests.get(BASE_GIT_URL % (profile.git_org,
+                                                profile.git_repo),
                                 params={'state': 'closed', 
                                         'since': git_limit_str,
                                         'per_page': 100,
@@ -247,13 +231,13 @@ def api_calls(request):
         working['git'] = False
 
     try:  # Zendesk API calls to get tickets
-        zen_name_tk = user.zen_name + '/token' # Zendesk user email set up for
-                                               # API token authorization.
+        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
+                                                  # for API token authorization.
         # Get Zendesk tickets
         zticket_list = []
         page = 1
         while True:
-            r_zt = requests.get(BASE_ZEN_URL % user.zen_url, 
+            r_zt = requests.get(BASE_ZEN_URL % profile.zen_url, 
                                 params={'query': SEARCH_QUERY % zen_limit_str,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
