@@ -324,11 +324,12 @@ def filter_lists(zen_fieldid, data_lists):
 
         git_tics.extend(data_lists['gopen'])
 
-        # Tickets are sorted into order by their issue number
+        # Tickets are sorted into order by their issue/id number
         git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
+        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
 
     filtered_lists = {
-        'ztics': zen_tics,
+        'ztics': zen_tics_sorted,
         'ztics_full': zen_tics_full,
         'gtics': git_tics_sorted
     }
