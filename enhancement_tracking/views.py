@@ -99,20 +99,6 @@ def change(request):
                               {'pwform': pwform, 'prform': prform},
                               context_instance=RequestContext(request))
 
-
-def nope(request, nope_num):
-    """Renders the error page if there is an issue in the submitted data from
-    the different forms.
-
-    Parameters:
-        request - The request object sent with the call to render the page.
-        nope_num - The number to identify which error message should be 
-                    displayed on the page.
-    """
-    return render_to_response('nope.html', 
-                                {'nope_num': nope_num,},
-                              context_instance=RequestContext(request))
-
 def confirm(request, con_num):
     """Renders the confirmation page to confirm the successful submission of
     data from the different forms.
@@ -125,7 +111,6 @@ def confirm(request, con_num):
     return render_to_response('confirm.html',
                               {'con_num': con_num,},
                               context_instance=RequestContext(request))
-
 
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
