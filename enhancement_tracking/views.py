@@ -2,9 +2,10 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
-from enhancement_tracking.models import GZUser
-from enhancement_tracking.forms import LogForm, NewForm, ChangeForm
+from enhancement_tracking.forms import UserForm, UserProfileForm, \
+                                        ProfileChangeForm
 import requests
 from datetime import datetime, timedelta
 
@@ -37,57 +38,37 @@ def user_login(request):
 
     if request.method == 'POST':
         if 'log' in request.POST:  # Process login form
-            logform = LogForm(request.POST)
+            logform = AuthenticationForm(data=request.POST)
             if logform.is_valid():
-                user = authenticate(
-                    username=logform.cleaned_data['username'],
-                    password=logform.cleaned_data['password'],
-                )
-
-                if user is not None:
-                    login(request, user)
-                    return HttpResponseRedirect(reverse('home'))
-                else:
-                    return HttpResponseRedirect(reverse('nope', args=[1]))
-            newform = NewForm()
+                login(request, logform.get_user())
+                return HttpResponseRedirect(reverse('home'))
+            uform = UserForm()
+            pform = UserProfileForm()
 
         elif 'new' in request.POST:  # Process new user form
-            newform = NewForm(request.POST)
-            if newform.is_valid():
-                data = newform.cleaned_data
-                if data['password'] == data['affirmpass']:
-                    user = GZUser.objects.create_user(
-                        username=data['username'],
-                        password=data['password'],
-                        email='',
-                    )
-                    user.git_name = data['git_name']
-                    user.git_pass = data['git_pass']
-                    user.git_org = data['git_org']
-                    user.git_repo = data['git_repo']
-                    user.zen_name = data['zen_name']
-                    user.zen_token = data['zen_token']
-                    user.zen_url = data['zen_url']
-                    user.zen_fieldid = data['zen_fieldid']
-                    user.age_limit = data['age_limit']
-                    user.save()
+            uform = UserForm(data=request.POST)
+            pform = UserProfileForm(data=request.POST)
+            if uform.is_valid() and pform.is_valid():
+                user = uform.save()
+                profile = pform.save(commit=False)
+                profile.user = user
+                profile.save()
 
-                    return HttpResponseRedirect(reverse('confirm', args=[1]))
-                else:
-                    return HttpResponseRedirect(reverse('nope', args=[2]))
-            logform = LogForm()
+                return HttpResponseRedirect(reverse('confirm', args=[1]))
+            logform = AuthenticationForm()
     else:
-        logform = LogForm()
-        newform = NewForm()
+        logform = AuthenticationForm()
+        uform = UserForm()
+        pform = UserProfileForm()
 
     return render_to_response('login.html', {'logform': logform,
-                                'newform': newform,}, 
+                                'uform': uform, 'pform': pform}, 
                               context_instance=RequestContext(request))
 
 def change(request):
     """Processes the requests from the Change Account Data page.
 
-    All of the fields on the change form are optional so that the user can
+    All of the fields on the change forms are optional so that the user can
     change only the account data that they want changed.
 
     Parameters:
@@ -96,59 +77,26 @@ def change(request):
     """
 
     if request.method == 'POST':
-        changeform = ChangeForm(request.POST)
-        if changeform.is_valid():
-            data = changeform.cleaned_data
-            user = request.user
-
-            if data['new_pass']:
-                if user.check_password(data['old_pass']):
-                    if data['new_pass'] == data['aff_pass']:
-                        user.set_password(data['new_pass'])
-                    else:
-                        return HttpResponseRedirect(reverse('nope', args=[4]))
-                else:
-                    return HttpResponseRedirect(reverse('nope', args=[3]))
-            if data['git_name']:
-                user.git_name = data['git_name']
-            if data['git_pass']:
-                user.git_key = data['git_pass']
-            if data['git_org']:
-                user.git_key = data['git_org']
-            if data['git_repo']:
-                user.git_repo = data['git_repo']
-            if data['zen_name']:
-                user.zen_name = data['zen_name']
-            if data['zen_token']:
-                user.zen_token = data['zen_token']
-            if data['zen_url']:
-                user.zen_url = data['zen_url']
-            if data['zen_fieldid']:
-                user.zen_fieldid = data['zen_fieldid']
-            if data['age_limit']:
-                user.age_limit = data['age_limit']
-            user.save()
-
-            return HttpResponseRedirect(reverse('confirm', args=[2]))
+        if 'password' in request.POST: # Process password change form
+            pwform = PasswordChangeForm(user=request.user, data=request.POST)
+            if pwform.is_valid():
+                pwform.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            prform = ProfileChangeForm()
+        
+        elif 'profile' in request.POST: # Process profile change form
+            prform = ProfileChangeForm(data=request.POST,
+                                       instance=request.user.get_profile())
+            if prform.is_valid():
+                prform.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            pwform = PasswordChangeForm(user=request.user)
     else:
-        changeform = ChangeForm()
+        pwform = PasswordChangeForm(user=request.user)
+        prform = ProfileChangeForm()
     
     return render_to_response('change.html', 
-                                {'changeform': changeform,},
-                                context_instance=RequestContext(request))
-
-
-def nope(request, nope_num):
-    """Renders the error page if there is an issue in the submitted data from
-    the different forms.
-
-    Parameters:
-        request - The request object sent with the call to render the page.
-        nope_num - The number to identify which error message should be 
-                    displayed on the page.
-    """
-    return render_to_response('nope.html', 
-                                {'nope_num': nope_num,},
+                              {'pwform': pwform, 'prform': prform},
                               context_instance=RequestContext(request))
 
 def confirm(request, con_num):
@@ -164,7 +112,6 @@ def confirm(request, con_num):
                               {'con_num': con_num,},
                               context_instance=RequestContext(request))
 
-
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
     page of the app with this data.
@@ -172,15 +119,16 @@ def home(request):
     Parameters:
         request - The request object that contains the current user's data.
     """
+    profile = request.user.get_profile()
     api_lists = {} # Stores lists from API calls and their status
     filtered_lists = {} # Stores lists of the filtered API data
     render_data = {} # Data to be rendered to the home page
     
     api_lists = api_calls(request)
-    filtered_lists = filter_lists(request.user.zen_fieldid, api_lists)
+    filtered_lists = filter_lists(profile.zen_fieldid, api_lists)
 
     api_status = api_lists['status']['git'] and api_lists['status']['zen']
-    render_data = build_enhancement_data(request.user.zen_fieldid,
+    render_data = build_enhancement_data(profile.zen_fieldid,
                                          filtered_lists, api_status)
 
     # Combine the status dictionaries from the API data and association lists
@@ -188,8 +136,8 @@ def home(request):
                                  api_lists['status'].items())
 
     # Add additional user data to be rendered to the home page
-    render_data['repo'] = request.user.git_repo
-    render_data['zen_url'] = request.user.zen_url
+    render_data['repo'] = profile.git_repo
+    render_data['zen_url'] = profile.zen_url
     
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
@@ -209,12 +157,12 @@ def api_calls(request):
             'git' - True if Git call was successful, False if not
             'zen' - True if Zen call was successful, False if not
     """
-    user = request.user
+    profile = request.user.get_profile()
     working = {}
 
     # This line sets the limit for how far back the API calls go when
     # gathering tickets.
-    date_limit = datetime.now() - timedelta(days=user.age_limit)
+    date_limit = datetime.now() - timedelta(days=profile.age_limit)
 
     # Git and Zen require the date_limit to be formatted differently
     git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
@@ -225,12 +173,13 @@ def api_calls(request):
         gopen_list = []
         page = 1
         while True:
-            r_op = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
+            r_op = requests.get(BASE_GIT_URL % (profile.git_org, 
+                                                profile.git_repo),
                                 params={'state': 'open', 
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page},
-                                auth=(user.git_name, user.git_pass))
+                                auth=(profile.git_name, profile.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -244,12 +193,13 @@ def api_calls(request):
         gclosed_list = []
         page = 1
         while True:
-            r_cl = requests.get(BASE_GIT_URL % (user.git_org, user.git_repo),
+            r_cl = requests.get(BASE_GIT_URL % (profile.git_org,
+                                                profile.git_repo),
                                 params={'state': 'closed', 
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page},
-                                auth=(user.git_name, user.git_pass))
+                                auth=(profile.git_name, profile.git_pass))
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -266,19 +216,19 @@ def api_calls(request):
         working['git'] = False
 
     try:  # Zendesk API calls to get tickets
-        zen_name_tk = user.zen_name + '/token' # Zendesk user email set up for
-                                               # API token authorization.
+        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
+                                                  # for API token authorization.
         # Get Zendesk tickets
         zticket_list = []
         page = 1
         while True:
-            r_zt = requests.get(BASE_ZEN_URL % user.zen_url, 
+            r_zt = requests.get(BASE_ZEN_URL % profile.zen_url, 
                                 params={'query': SEARCH_QUERY % zen_limit_str,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
                                         'per_page': 100,
                                         'page': page},
-                                auth=(zen_name_tk, user.zen_token))
+                                auth=(zen_name_tk, profile.zen_token))
             if 'error' in r_zt.json:
                 raise Exception('Error in accessing Zendesk API - %s: %s' %
                                 (r_zt.json['error'], r_zt.json['description']))
@@ -332,7 +282,7 @@ def filter_lists(zen_fieldid, data_lists):
         for t in data_lists['ztickets']:
             a_field = {}
             for f in t['fields']:
-                if f['id'] == int(zen_fieldid):
+                if f['id'] == zen_fieldid:
                     a_field = f
                     break
 
@@ -358,7 +308,7 @@ def filter_lists(zen_fieldid, data_lists):
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
-                if f['id'] == int(zen_fieldid):
+                if f['id'] == zen_fieldid:
                     if f['value'] is not None:
                         a_num = f['value'].split('-')
                     else:
@@ -374,11 +324,12 @@ def filter_lists(zen_fieldid, data_lists):
 
         git_tics.extend(data_lists['gopen'])
 
-        # Tickets are sorted into order by their issue number
+        # Tickets are sorted into order by their issue/id number
         git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
+        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
 
     filtered_lists = {
-        'ztics': zen_tics,
+        'ztics': zen_tics_sorted,
         'ztics_full': zen_tics_full,
         'gtics': git_tics_sorted
     }
@@ -439,7 +390,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
 
             # Add Zendesk data to enhancement data object
             for f in t['fields']:
-                if f['id'] == int(zen_fieldid):
+                if f['id'] == zen_fieldid:
                     a_num = f['value']
                     break
             e_data = {} # Enhancement data object

@@ -74,7 +74,7 @@ command
 
 2. Located under the heading "New User", begin filling out the information to
 create a new user by first assigning them a username and password and filling
-the "Username", "Password", and "Affirm Password" fields with this information.
+the "Username", "Password", and "Confirm Password" fields with this information.
 
 3. In order to use GitHub ticket information in GitZen, each user must provide a
 set of access information from a GitHub account linked to the repository from

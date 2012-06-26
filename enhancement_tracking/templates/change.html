@@ -10,69 +10,18 @@ optional. Changing the User password requires entering of the previous
 User password.</p>
 <br/>
 
+<h2>Change Password</h2>
 <form class="well" method="post">{% csrf_token %}
-    {{ changeform.non_field_errors }}
-    <div class="fieldWrapper">
-        {{ changeform.old_pass.errors }}
-        <label for="id_old_pass">Old Password:</label>
-        {{ changeform.old_pass }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.new_pass.errors }}
-        <label for="id_new_pass">New Password:</label>
-        {{ changeform.new_pass }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.aff_pass.errors }}
-        <label for="id_aff_pass">Affirm New Password:</label>
-        {{ changeform.aff_pass }}
-    </div>    
-    <div class="fieldWrapper">
-        {{ changeform.git_name.errors }}
-        <label for="id_git_name">GitHub Username:</label>
-        {{ changeform.git_name }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.git_pass.errors }}
-        <label for="id_git_pass">GitHub Password:</label>
-        {{ changeform.git_pass }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.git_org.errors }}
-        <label for="id_git_org">GitHub Organization:</label>
-        {{ changeform.git_org }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.git_repo.errors }}
-        <label for="id_git_repo">GitHub Repository:</label>
-        {{ changeform.git_repo }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.zen_name.errors }}
-        <label for="id_zen_name">Zendesk User Email:</label>
-        {{ changeform.zen_name }}
-    </div>
-    <div class="fieldWrapper">
-        {{ changeform.zen_token.errors }}
-        <label for="id_zen_token">Zendesk API Token:</label>
-        {{ changeform.zen_token }}
-    </div> 
-    <div class="fieldWrapper">
-        {{ changeform.zen_url.errors }}
-        <label for="id_zen_url">Zendesk URL:</label>
-        {{ changeform.zen_url }}
-    </div>
-	<div class="fieldWrapper">
-		{{ changeform.zen_fieldid.errors }}
-		<label for="id_zen_fieldid">Zendesk Ticket Association Field ID:</label>
-		{{ changeform.zen_fieldid }}
-	</div>
-	<div class="fieldWrapper">
-		{{ changeform.age_limit.errors }}
-		<label for="id_age_limit">Age Limit (in days) for the Tickets:</label>
-		{{ changeform.age_limit }}
-	</div>
-    <p><input name="change" type="submit" value="Submit Changes" /></p>
+	{{ pwform.as_p }}
+	<p><input name="password" type="submit" value="Submit Change" /></p>
+</form>
+
+<br/>
+
+<h2>Change Profile</h2>
+<form class="well" method="post">{% csrf_token %}
+	{{ prform.as_p }}
+	<p><input name="profile" type="submit" value="Submit Changes" /></p>
 </form>
 
 {% endblock %}
