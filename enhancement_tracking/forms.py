@@ -18,7 +18,6 @@ class UserProfileForm(ModelForm):
         model = GZUserProfile
         exclude = ('user', 'git_token')
         widgets = {
-            'git_pass': PasswordInput(),
             'zen_token': PasswordInput()
         }
 
