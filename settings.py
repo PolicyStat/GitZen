@@ -86,6 +86,12 @@ STATICFILES_FINDERS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 't+r0ueiift2w6u+essid1!^c=-pya$pbszctl4+k^vs=s)^25x'
 
+# Consumer key for OAuth access of the GitHub API
+CLIENT_ID = 'ad0c98cf08bdab86a19c'
+
+# Consumer secret for OAuth access of the GitHub API
+CLIENT_SECRET = '96d7fda0551ccf2160f670922d23da843c1a75df'
+
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',

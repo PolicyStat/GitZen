@@ -7,9 +7,11 @@
 
 	<p>
 	{% if con_num == '1' %}
-		Your account was successfully created.
+		Your account was successfully created, but you must authorize GitZen on
+		GitHub on the linked page to allow the application to access your
+		repository data.
 		<br/>
-		<a href="{% url login %}">Return to Login</a>
+		<a href="{{ auth_url }}">GitHub Authorization Page</a>
 	{% else %}
 		{% if con_num == '2' %}
 			Your account has been updated with the entered information.

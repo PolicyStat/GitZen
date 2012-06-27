@@ -16,7 +16,7 @@ class UserProfileForm(ModelForm):
     """User profile form for adding data to a new user's profile."""
     class Meta:
         model = GZUserProfile
-        exclude = ('user',)
+        exclude = ('user', 'git_token')
         widgets = {
             'git_pass': PasswordInput(),
             'zen_token': PasswordInput()

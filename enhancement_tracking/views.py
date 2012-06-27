@@ -6,12 +6,21 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
 from enhancement_tracking.forms import UserForm, UserProfileForm, \
                                         ProfileChangeForm
+from settings import CONSUMER_KEY, CONSUMER_SECRET
 import requests
+from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 
-# Constatn URL strings for accessing the GitHub API. The first %s is the
+# Constant URL string for accessing the GitHub API. The first %s is the
 # organization/user name and the second %s is the repository name.
 BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
+
+# Constant OAuth handler and authorization URL for access to GitHub's OAuth.
+OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://gitub.com/',
+                        reverse('git_confirm'),
+                        authorization_url='login/oauth/authorize',
+                        token_url='login/oauth/access_token')
+GIT_AUTH_URL = OAUTH2_HANDLER.authorization_url('repo')
 
 # Constant URL string for accessing the Zendesk API. The %s is the custom URL
 # for the specific company whose tickets are being accessed.
@@ -54,7 +63,8 @@ def user_login(request):
                 profile.user = user
                 profile.save()
 
-                return HttpResponseRedirect(reverse('confirm', args=[1]))
+                request.session['profile'] = profile
+                return HttpResponseRedirect(reverse('confirm', args[1]))
             logform = AuthenticationForm()
     else:
         logform = AuthenticationForm()
@@ -109,7 +119,19 @@ def confirm(request, con_num):
                     displayed on the page.
     """
     return render_to_response('confirm.html',
-                              {'con_num': con_num,},
+                              {'con_num': con_num, 'auth_url': GIT_AUTH_URL},
+                              context_instance=RequestContext(request))
+
+def git_confirm(request):
+    profile = request.session['profile']
+    code = request.GET.get('code', '')
+    response = OAUTH2_HANDLER.get_token(code)
+
+    profile.git_token = response['access_token']
+    profile.save()
+    del request.session['profile']
+    
+    return render_to_response('git_confirm.html',
                               context_instance=RequestContext(request))
 
 def home(request):
@@ -175,11 +197,12 @@ def api_calls(request):
         while True:
             r_op = requests.get(BASE_GIT_URL % (profile.git_org, 
                                                 profile.git_repo),
-                                params={'state': 'open', 
+                                params={'access_token': profile.git_token,
+                                        'state': 'open', 
                                         'since': git_limit_str,
                                         'per_page': 100,
-                                        'page': page},
-                                auth=(profile.git_name, profile.git_pass))
+                                        'page': page}
+                               )
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -195,11 +218,12 @@ def api_calls(request):
         while True:
             r_cl = requests.get(BASE_GIT_URL % (profile.git_org,
                                                 profile.git_repo),
-                                params={'state': 'closed', 
+                                params={'access_token': profile.git_token,
+                                        'state': 'closed', 
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page},
-                                auth=(profile.git_name, profile.git_pass))
+                               )
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
