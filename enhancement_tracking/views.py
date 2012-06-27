@@ -6,7 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
 from enhancement_tracking.forms import UserForm, UserProfileForm, \
                                         ProfileChangeForm
-from settings import CONSUMER_KEY, CONSUMER_SECRET
+from settings import CLIENT_ID, CLIENT_SECRET
 import requests
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
