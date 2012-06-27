@@ -17,7 +17,7 @@ BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://gitub.com/',
-                        reverse('git_confirm'),
+                        redirect_uri='http://gitzen.herokuapp.com/git_confirm',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorization_url('repo')
