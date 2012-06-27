@@ -62,7 +62,9 @@ def user_login(request):
                 profile = pform.save(commit=False)
                 profile.user = user
                 profile.save()
-
+                
+                # Store the profile in the session so the GitHub access token
+                # can be added to it through OAuth on the next pages.
                 request.session['profile'] = profile
                 return HttpResponseRedirect(reverse('confirm', args=[1]))
             logform = AuthenticationForm()
@@ -123,6 +125,16 @@ def confirm(request, con_num):
                               context_instance=RequestContext(request))
 
 def git_confirm(request):
+    """Finishes the OAuth2 access web flow for the user that was just created in
+    the user_login function. Adds the access token to the user profile that was
+    added to the session when the user was created. This data is deleted from
+    the session afterwards.
+
+    Parameters:
+        request - The request object that should contain the returned code from
+                    GitHub in its GET parameters in addition to the user profile
+                    that the access token should be added to.
+    """
     profile = request.session['profile']
     code = request.GET.get('code', '')
     response = OAUTH2_HANDLER.get_token(code)
@@ -430,6 +442,9 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             else:
                 # Add GitHub data to enhancement data object
+                # TODO: The app broke here when I tried an age limit of 123 days
+                # from 06/27/2012 despite that it has worked at any other age
+                # limit I have tried. Investigate later.
                 for i in filtered_lists['gtics']:
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
