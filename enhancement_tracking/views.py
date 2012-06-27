@@ -16,11 +16,11 @@ from datetime import datetime, timedelta
 BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
-OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://gitub.com/',
+OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
                         redirect_uri='http://gitzen.herokuapp.com/git_confirm',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
-GIT_AUTH_URL = OAUTH2_HANDLER.authorization_url('repo')
+GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 
 # Constant URL string for accessing the Zendesk API. The %s is the custom URL
 # for the specific company whose tickets are being accessed.
@@ -64,7 +64,7 @@ def user_login(request):
                 profile.save()
 
                 request.session['profile'] = profile
-                return HttpResponseRedirect(reverse('confirm', args[1]))
+                return HttpResponseRedirect(reverse('confirm', args=[1]))
             logform = AuthenticationForm()
     else:
         logform = AuthenticationForm()
