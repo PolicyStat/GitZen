@@ -348,6 +348,9 @@ def filter_lists(zen_fieldid, data_lists):
                         'subject': t['subject'],
                     })
     
+        # Tickets are sorted into order by their ID number
+        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
+    
     # GitHub list filtering
     git_tics_sorted = []
     if data_lists['status']['git']:
@@ -375,9 +378,8 @@ def filter_lists(zen_fieldid, data_lists):
 
         git_tics.extend(data_lists['gopen'])
 
-        # Tickets are sorted into order by their issue/id number
+        # Tickets are sorted into order by their issue number
         git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
-        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
 
     filtered_lists = {
         'ztics': zen_tics_sorted,
