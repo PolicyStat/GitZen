@@ -140,6 +140,7 @@ def git_confirm(request):
     response = OAUTH2_HANDLER.get_token(code)
 
     profile.git_token = response['access_token'][0]
+    assert False
     profile.save()
     del request.session['profile']
     
