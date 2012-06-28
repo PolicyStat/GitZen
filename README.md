@@ -76,15 +76,14 @@ command
 create a new user by first assigning them a username and password and filling
 the "Username", "Password", and "Confirm Password" fields with this information.
 
-3. In order to use GitHub ticket information in GitZen, each user must provide a
-set of access information from a GitHub account linked to the repository from
-which the ticket information should be monitored. This access information
-consists of a GitHub username, password, organization name, and repository name
-associated with the desired ticket information, and those access parameters
-should be filled into the "GitHub Username", "GitHub Password", "GitHub
-Organization", and "GitHub Repository" fields in the new user form respectively.
-If the repository is under a user account rather than an organization, provide
-the username of that account in the organization field instead.
+3. In order to use GitHub ticket information in GitZen, each user must provide
+information on the GitHub repository from which ticket information should be
+monitored. This access information consists of a GitHub organization name and
+repository name associated with the desired ticket information, and those
+parameters should be filled into the "GitHub Organization" and "GitHub
+Repository" fields in the new user form respectively. If the repository is
+under a user account rather than an organization, provide the username of that
+account in the organization field instead.
 
 4. In order to use Zendesk ticket information in GitZen, each user must provide
 a set of access information from a Zendesk account linked to the tickets that
@@ -135,5 +134,11 @@ avoid load times that are too long for Heroku.
 
 9. Check to see that all fields under the "New User" heading are filled out
 accurately, and then click the "Create User" button to create a user with the
-given information. A confirmation page should come up after this process that
-will have a link to return to the login screen.
+given information.
+
+10. Once the account has been created, the next page will instruct you to
+authorize GitZen on GitHub for the newly created user by following the
+hyperlink. Click this link to start the authorization process, and after it is
+completed (either automatically or by following the GitHub instructions), a
+confirmation page will come up with a link back to the login page where one can
+login to the newly created GitZen account. 
