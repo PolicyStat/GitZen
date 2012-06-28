@@ -24,4 +24,16 @@ User password.</p>
 	<p><input name="profile" type="submit" value="Submit Changes" /></p>
 </form>
 
+<h2>Change GitHub Authorization</h2>
+<form class="well">
+	<p class="center" style="width:50%">
+		If you want to revoke GitZen's access to GitHub, go under the
+		applications settings of the account settings of the GitHub user who
+		authorized the access and click the "revoke" button for GitZen. If you
+		want to authorize or renew authorization of GitZen's access to Github,
+		click the link bellow.
+	</p>
+	<a href="{{ AUTH_URL }}">GitHub Authorization</a>
+</form>
+
 {% endblock %}
