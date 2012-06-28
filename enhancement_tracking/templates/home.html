@@ -183,8 +183,7 @@
 				{% for i in git_tics %}
 					<tr>
 						<td>
-							<a href='https://github.com/{{ repo }}
-								/issues/{{ i.number }}'>{{ i.number }}</a>
+							<a href="{{ i.html_url }}">{{ i.number }}</a>
 						</td>
 						<td>
 							{{ i.title }}
