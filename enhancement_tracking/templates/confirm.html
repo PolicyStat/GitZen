@@ -9,7 +9,11 @@
 	{% if con_num == '1' %}
 		Your account was successfully created, but you must authorize GitZen on
 		GitHub on the linked page to allow the application to access your
-		repository data.
+		repository data. If you have already authorized GitZen on your GitHub
+		account for a previous GitZen user, GitHub will automatically authorize
+		the user just created to access your account after clicking the
+		following link if you are logged into GitHub, and you should be
+		redirected straight to the confirmation page.
 		<br/>
 		<a href="{{ auth_url }}">GitHub Authorization Page</a>
 	{% else %}
