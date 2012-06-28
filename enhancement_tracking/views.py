@@ -136,15 +136,20 @@ def git_confirm(request):
                     that the access token should be added to.
     """
     profile = request.session['profile']
-    code = request.GET.get('code', '')
-    response = OAUTH2_HANDLER.get_token(code)
 
-    profile.git_token = response['access_token'][0]
-    assert False
+    if 'error' in request.GET:
+        profile.git_token = ''
+        access = False
+    else:
+        code = request.GET['code']
+        response = OAUTH2_HANDLER.get_token(code)
+        profile.git_token = response['access_token'][0]
+        access = True
+    
     profile.save()
     del request.session['profile']
-    
-    return render_to_response('git_confirm.html',
+
+    return render_to_response('git_confirm.html', {'access': access},
                               context_instance=RequestContext(request))
 
 def home(request):
