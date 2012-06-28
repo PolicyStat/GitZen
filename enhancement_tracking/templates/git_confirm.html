@@ -19,5 +19,9 @@
 			Account Settings" after logging into the application.
 		</p>
 	{% endif %}
-	<a href="{% url login %}">Return to Login</a>
+	{% if new_auth %}
+		<a href="{% url login %}">Return to Login</a>
+	{% else %}
+		<a href="{% url home %}">Return to Home</a>
+	{% endif %}
 {% endblock %}

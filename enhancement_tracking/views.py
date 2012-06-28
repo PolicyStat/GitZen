@@ -108,7 +108,8 @@ def change(request):
         prform = ProfileChangeForm()
     
     return render_to_response('change.html', 
-                              {'pwform': pwform, 'prform': prform},
+                              {'pwform': pwform, 'prform': prform,
+                               'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
 def confirm(request, con_num):
@@ -125,17 +126,23 @@ def confirm(request, con_num):
                               context_instance=RequestContext(request))
 
 def git_confirm(request):
-    """Finishes the OAuth2 access web flow for the user that was just created in
-    the user_login function. Adds the access token to the user profile that was
-    added to the session when the user was created. This data is deleted from
-    the session afterwards.
+    """Finishes the OAuth2 access web flow after the user goes to the
+    GIT_AUTH_URL in either the user login or change forms. Adds the access token
+    to the user profile. For a newly created user, their profile was added to
+    the session when the user was created. This data is deleted from the
+    session afterwards.
 
     Parameters:
         request - The request object that should contain the returned code from
                     GitHub in its GET parameters in addition to the user profile
                     that the access token should be added to.
     """
-    profile = request.session['profile']
+    if 'profile' in request.session: # Authorizing for a new user
+        profile = request.session['profile']
+        new_auth = True
+    else: # Changing Authorization for an existing user
+        profile = request.user.get_profile()
+        new_auth = False
 
     if 'error' in request.GET:
         profile.git_token = ''
@@ -147,9 +154,11 @@ def git_confirm(request):
         access = True
     
     profile.save()
-    del request.session['profile']
+    if new_auth:
+        del request.session['profile']
 
-    return render_to_response('git_confirm.html', {'access': access},
+    return render_to_response('git_confirm.html', 
+                              {'access': access, 'new_auth': new_auth},
                               context_instance=RequestContext(request))
 
 def home(request):
