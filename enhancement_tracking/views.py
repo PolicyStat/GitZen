@@ -467,9 +467,6 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             else:
                 # Add GitHub data to enhancement data object
-                # TODO: The app broke here when I tried an age limit of 123 days
-                # from 06/27/2012 despite that it has worked at any other age
-                # limit I have tried. Investigate later.
                 for i in filtered_lists['gtics']:
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
