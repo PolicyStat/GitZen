@@ -348,9 +348,6 @@ def filter_lists(zen_fieldid, data_lists):
                         'subject': t['subject'],
                     })
     
-        # Tickets are sorted into order by their ID number
-        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
-    
     # GitHub list filtering
     git_tics_sorted = []
     if data_lists['status']['git']:
@@ -370,15 +367,29 @@ def filter_lists(zen_fieldid, data_lists):
                     break
             if a_num[0] == 'gh':
                 on_zen.append(int(a_num[1]))
-
-        for t in data_lists['gclosed']:
-            if t['number'] in on_zen:
-                git_tics.append(t)
+        
+        # Remove duplicates from the list
+        on_zen = list(set(on_zen))
+        
+        for n in on_zen:
+            issue = [i for i in data_lists['gclosed'] if i['number'] == n] 
+            if issue:
+                git_tics.append(issue[0])
+            else:
+                issue = [i for i in data_lists['gopen'] if i['number'] == n]
+                if issue:
+                    pass
+                else:
+                    zen_tics = _rm_from_diclist(zen_tics, 'id', n)
+                    zen_tics_full = _rm_from_diclist(zen_tics_full, 'id', n)
         del on_zen
 
         git_tics.extend(data_lists['gopen'])
-
-        # Tickets are sorted into order by their issue number
+    
+    # Tickets are sorted into order by their issue/id number
+    if zen_tics:
+        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
+    if git_tics:
         git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
 
     filtered_lists = {
@@ -484,16 +495,12 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
                 # are closed). These tickets are deleted from their lists.
                 elif e_data['g_status'] != 'open' and \
                         e_data['z_status'] != 'open':
-                    for i in range(len(filtered_lists['gtics'])):
-                        if filtered_lists['gtics'][i]['number'] == \
-                           e_data['g_id']:
-                            filtered_lists['gtics'].pop(i)
-                            break
-                    for i in range(len(filtered_lists['ztics'])):
-                        if filtered_lists['ztics'][i]['id'] == \
-                           e_data['z_id']:
-                            filtered_lists['ztics'].pop(i)
-                            break
+                    filtered_lists['gtics'] = \
+                        _rm_from_diclist(filtered_lists['gtics'], 
+                                         'number', e_data['g_id'])
+                    filtered_lists['ztics'] = \
+                        _rm_from_diclist(filtered_lists['ztics'], 
+                                         'id', e_data['z_id'])
                 
                 # Check if the enhancement is in need of attention (One ticket
                 # is open and the other is closed).
@@ -518,3 +525,24 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     }
 
     return built_data
+
+def _rm_from_diclist(diclist, key, value):
+    """Removes an entry from a list of dictionaries if it has a certain value
+    for a certain key. Only removes the first instance of this occurrence.
+
+    Parameters:
+        diclist - A list of dictionaries.
+        key - The key that holds the value that determines if the entry should
+                be removed from the list.
+        value - The value that if matched will result in the dictionary being
+                    removed from the list.
+    
+    Returns the list of dictionaries with the entry that contains the given key
+    value pair removed.
+    """
+    for i in range(len(diclist)):
+        if diclist[i][key] == value:
+            diclist.pop(i)
+            break
+    return diclist
+
