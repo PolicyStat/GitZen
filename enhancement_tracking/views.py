@@ -349,13 +349,12 @@ def filter_lists(zen_fieldid, data_lists):
                     })
     
     # GitHub list filtering
-    git_tics_sorted = []
+    git_tics = []
     if data_lists['status']['git']:
 
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
-        git_tics = []
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
@@ -388,14 +387,14 @@ def filter_lists(zen_fieldid, data_lists):
     
     # Tickets are sorted into order by their issue/id number
     if zen_tics:
-        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
+        zen_tics = sorted(zen_tics, key=lambda k: k['id'])
     if git_tics:
-        git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
+        git_tics = sorted(git_tics, key=lambda k: k['number'])
 
     filtered_lists = {
-        'ztics': zen_tics_sorted,
+        'ztics': zen_tics,
         'ztics_full': zen_tics_full,
-        'gtics': git_tics_sorted
+        'gtics': git_tics
     }
 
     return filtered_lists
@@ -501,7 +500,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
                     filtered_lists['ztics'] = \
                         _rm_from_diclist(filtered_lists['ztics'], 
                                          'id', e_data['z_id'])
-                
+        
                 # Check if the enhancement is in need of attention (One ticket
                 # is open and the other is closed).
                 else:
