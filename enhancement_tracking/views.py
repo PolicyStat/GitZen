@@ -367,7 +367,7 @@ def filter_lists(zen_fieldid, data_lists):
             if a_num[0] == 'gh':
                 on_zen[t['id']] = int(a_num[1])
         
-        for z_id, g_id in on_zen:
+        for z_id, g_id in on_zen.items():
             issue = [i for i in data_lists['gclosed'] if i['number'] == g_id] 
             if issue:
                 if issue[0] not in git_tics:
