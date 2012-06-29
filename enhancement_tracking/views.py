@@ -355,7 +355,7 @@ def filter_lists(zen_fieldid, data_lists):
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
-        on_zen = []
+        on_zen = {}
         for t in zen_tics_full:
             for f in t['fields']:
                 if f['id'] == zen_fieldid:
@@ -365,22 +365,20 @@ def filter_lists(zen_fieldid, data_lists):
                         a_num = ['']
                     break
             if a_num[0] == 'gh':
-                on_zen.append(int(a_num[1]))
+                on_zen[t['id']] = int(a_num[1])
         
-        # Remove duplicates from the list
-        on_zen = list(set(on_zen))
-        
-        for n in on_zen:
-            issue = [i for i in data_lists['gclosed'] if i['number'] == n] 
+        for z_id, g_id in on_zen:
+            issue = [i for i in data_lists['gclosed'] if i['number'] == g_id] 
             if issue:
-                git_tics.append(issue[0])
+                if issue[0] not in git_tics:
+                    git_tics.append(issue[0])
             else:
-                issue = [i for i in data_lists['gopen'] if i['number'] == n]
+                issue = [i for i in data_lists['gopen'] if i['number'] == g_id]
                 if issue:
                     pass
                 else:
-                    zen_tics = _rm_from_diclist(zen_tics, 'id', n)
-                    zen_tics_full = _rm_from_diclist(zen_tics_full, 'id', n)
+                    zen_tics = _rm_from_diclist(zen_tics, 'id', z_id)
+                    zen_tics_full = _rm_from_diclist(zen_tics_full, 'id', z_id)
         del on_zen
 
         git_tics.extend(data_lists['gopen'])
