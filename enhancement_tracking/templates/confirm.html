@@ -5,19 +5,30 @@
 {% block body %}
 	<h2>Confirmation</h2>
 
-	<p>
 	{% if con_num == '1' %}
-		Your account was successfully created.
-		<br/>
-		<a href="{% url login %}">Return to Login</a>
+		<p class="center" style="width:50%;">
+			Your account was successfully created, but you must authorize GitZen
+			on GitHub on the linked page to allow the application to access your
+			repository data. 
+		</p>
+		<p class="center" style="width:50%;">
+			If you have already authorized GitZen on your GitHub account for a
+			previous GitZen user, GitHub will automatically authorize the user
+			just created to access your account after clicking the following
+			link if you are logged into GitHub, and you should be redirected
+			straight to the confirmation page.
+		</p>
+		<a href="{{ auth_url }}">GitHub Authorization</a>
 	{% else %}
 		{% if con_num == '2' %}
-			Your account has been updated with the entered information.
-			<br/>
+			<p>
+				Your account has been updated with the entered information.
+			</p>
 			<a href="{% url home %}">Return to Homepage</a>
 		{% else %}
-			You should not be viewing this page.
+			<p>
+				You should not be viewing this page.
+			</p>
 		{% endif %}
 	{% endif %}
-	</p>
 {% endblock %}

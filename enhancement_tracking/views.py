@@ -6,12 +6,21 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
 from enhancement_tracking.forms import UserForm, UserProfileForm, \
                                         ProfileChangeForm
+from settings import CLIENT_ID, CLIENT_SECRET
 import requests
+from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 
-# Constatn URL strings for accessing the GitHub API. The first %s is the
+# Constant URL string for accessing the GitHub API. The first %s is the
 # organization/user name and the second %s is the repository name.
 BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
+
+# Constant OAuth handler and authorization URL for access to GitHub's OAuth.
+OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
+                        redirect_uri='http://gitzen.herokuapp.com/git_confirm',
+                        authorization_url='login/oauth/authorize',
+                        token_url='login/oauth/access_token')
+GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 
 # Constant URL string for accessing the Zendesk API. The %s is the custom URL
 # for the specific company whose tickets are being accessed.
@@ -53,7 +62,10 @@ def user_login(request):
                 profile = pform.save(commit=False)
                 profile.user = user
                 profile.save()
-
+                
+                # Store the profile in the session so the GitHub access token
+                # can be added to it through OAuth on the next pages.
+                request.session['profile'] = profile
                 return HttpResponseRedirect(reverse('confirm', args=[1]))
             logform = AuthenticationForm()
     else:
@@ -96,7 +108,8 @@ def change(request):
         prform = ProfileChangeForm()
     
     return render_to_response('change.html', 
-                              {'pwform': pwform, 'prform': prform},
+                              {'pwform': pwform, 'prform': prform,
+                               'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
 def confirm(request, con_num):
@@ -109,7 +122,43 @@ def confirm(request, con_num):
                     displayed on the page.
     """
     return render_to_response('confirm.html',
-                              {'con_num': con_num,},
+                              {'con_num': con_num, 'auth_url': GIT_AUTH_URL},
+                              context_instance=RequestContext(request))
+
+def git_confirm(request):
+    """Finishes the OAuth2 access web flow after the user goes to the
+    GIT_AUTH_URL in either the user login or change forms. Adds the access token
+    to the user profile. For a newly created user, their profile was added to
+    the session when the user was created. This data is deleted from the
+    session afterwards.
+
+    Parameters:
+        request - The request object that should contain the returned code from
+                    GitHub in its GET parameters in addition to the user profile
+                    that the access token should be added to.
+    """
+    if 'profile' in request.session: # Authorizing for a new user
+        profile = request.session['profile']
+        new_auth = True
+    else: # Changing Authorization for an existing user
+        profile = request.user.get_profile()
+        new_auth = False
+
+    if 'error' in request.GET:
+        profile.git_token = ''
+        access = False
+    else:
+        code = request.GET['code']
+        response = OAUTH2_HANDLER.get_token(code)
+        profile.git_token = response['access_token'][0]
+        access = True
+    
+    profile.save()
+    if new_auth:
+        del request.session['profile']
+
+    return render_to_response('git_confirm.html', 
+                              {'access': access, 'new_auth': new_auth},
                               context_instance=RequestContext(request))
 
 def home(request):
@@ -175,11 +224,12 @@ def api_calls(request):
         while True:
             r_op = requests.get(BASE_GIT_URL % (profile.git_org, 
                                                 profile.git_repo),
-                                params={'state': 'open', 
+                                params={'access_token': profile.git_token,
+                                        'state': 'open', 
                                         'since': git_limit_str,
                                         'per_page': 100,
-                                        'page': page},
-                                auth=(profile.git_name, profile.git_pass))
+                                        'page': page}
+                               )
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -195,11 +245,12 @@ def api_calls(request):
         while True:
             r_cl = requests.get(BASE_GIT_URL % (profile.git_org,
                                                 profile.git_repo),
-                                params={'state': 'closed', 
+                                params={'access_token': profile.git_token,
+                                        'state': 'closed', 
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page},
-                                auth=(profile.git_name, profile.git_pass))
+                               )
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
@@ -297,6 +348,9 @@ def filter_lists(zen_fieldid, data_lists):
                         'subject': t['subject'],
                     })
     
+        # Tickets are sorted into order by their ID number
+        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
+    
     # GitHub list filtering
     git_tics_sorted = []
     if data_lists['status']['git']:
@@ -324,9 +378,8 @@ def filter_lists(zen_fieldid, data_lists):
 
         git_tics.extend(data_lists['gopen'])
 
-        # Tickets are sorted into order by their issue/id number
+        # Tickets are sorted into order by their issue number
         git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
-        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
 
     filtered_lists = {
         'ztics': zen_tics_sorted,
@@ -406,6 +459,9 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             else:
                 # Add GitHub data to enhancement data object
+                # TODO: The app broke here when I tried an age limit of 123 days
+                # from 06/27/2012 despite that it has worked at any other age
+                # limit I have tried. Investigate later.
                 for i in filtered_lists['gtics']:
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
