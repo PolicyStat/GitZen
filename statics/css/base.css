@@ -1,4 +1,4 @@
-/* Base CSS used on all pages of the Association application. */
+/* Base CSS used on all pages of the Enhancement Tracking application. */
 
 h1, h2, h3, p, a, div 
 {
@@ -25,3 +25,8 @@ a.closed, td.closed
 	margin-right:auto;
 }
 
+.table-center
+{
+	margin: 0 auto !important;
+	float: none !important;
+}
