@@ -16,7 +16,7 @@
 <div class="span6">
     <h3>Currently Tracking</h3>
     {% if tracking %}
-		<table class="table span6 center">
+		<table class="table span6 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -60,7 +60,7 @@
 <div class="span6">
 	<h3>Need Attention</h3>
     {% if need_attention %}
-		<table class="table span6 center">
+		<table class="table span6 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -125,7 +125,7 @@
 	"gh-###" where the "###" is the GitHub issue number of the associated
 	issue.</p>
 
-	<table class="table table-striped span9 center">
+	<table class="table table-striped span9 table-center">
 		<thead>
 			<tr>
 				<th>Zendesk Ticket</th>
@@ -156,7 +156,7 @@
 <div class="span9">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
     {% if not_tracking %}
-	<table class="table table-striped span9 center">
+	<table class="table table-striped span9 table-center">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
@@ -210,7 +210,7 @@
 <div class="span6">
 	<h3>GitHub Tickets</h3>
 	{% if status.git %}
-		<table class="table table-striped span6 center">
+		<table class="table table-striped span6 table-center">
 			<thead>
 				<tr>
 					<th>Issue</th>
@@ -239,7 +239,7 @@
 			</tbody>
 		</table>
 	{% else %}
-		<p align="center">There was an Error connecting to GitHub. Try
+		<p>There was an Error connecting to GitHub. Try
 		adjusting your account settings.</p> 
 	{% endif %}
 </div>
@@ -247,7 +247,7 @@
 <div class="span6">
 	<h3>Zendesk Tickets</h3>
 	{% if status.zen %}
-		<table class="table table-striped span6 center">
+		<table class="table table-striped span6 table-center">
 			<thead>
 				<tr>
 					<th>ID</th>
@@ -275,7 +275,7 @@
 			</tbody>
 		</table>
     {% else %}
-		<p align="center">There was an Error connecting to Zendesk. Try
+		<p>There was an Error connecting to Zendesk. Try
 		adjusting your account settings.</p> 
 	{% endif %}
 </div>

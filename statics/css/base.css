@@ -25,3 +25,8 @@ a.closed, td.closed
 	margin-right:auto;
 }
 
+.table-center
+{
+	margin: 0 auto !important;
+	float: none !important;
+}
