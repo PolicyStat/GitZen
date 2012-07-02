@@ -113,9 +113,9 @@
     {% else %}
         <p>There are currently no Enhancements in need of attention.</p>
     {% endif %}
-    <br/>
 </div>
 </div>
+<br/>
 
 {% if broken_enh %}
 <div class="row">
@@ -138,7 +138,7 @@
 		{% for e in broken_enh %}
 			<tr>
 				<td>
-					<a href="{{ zen_url }}/tickets/
+					<a class="open" href="{{ zen_url }}/tickets/
 						{{ e.z_id }}">Z{{ e.z_id }}</a>
 				</td>
 				<td>{{ e.z_subject }}</td>
@@ -150,13 +150,14 @@
 	</table>
 </div>
 </div>
+<br/>
 {% endif %}
 
 <div class="row">
-<div class="span8 offset2">		
+<div class="span12">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
     {% if not_tracking %}
-	<table class="table table-striped span8 offset2 table-center">
+	<table class="table table-striped span12 table-center">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
