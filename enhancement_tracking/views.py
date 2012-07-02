@@ -174,7 +174,7 @@ def home(request):
     render_data = {} # Data to be rendered to the home page
     
     api_lists = api_calls(request)
-    filtered_git = filter_git_tickets(api_lists)
+    filtered_git = filter_git_tickets(profile.zen_fieldid, api_lists)
     filtered_lists = {
         'ztics': api_lists['ztics'],
         'gtics': filtered_git
@@ -284,7 +284,7 @@ def api_calls(request):
 # TODO: Rewrite the filtering of GitHub tickets so that it only accesses the
 # tickets from the API that are associated with some Zendesk ticket. This
 # process will probably end up replacing this function.
-def filter_git_tickets(data_lists):
+def filter_git_tickets(zen_fieldid, data_lists):
     """Filters GitHub data to remove the data not needed in the app.
     
     Parameters:
