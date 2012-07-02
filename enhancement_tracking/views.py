@@ -30,7 +30,7 @@ BASE_ZEN_URL = '%s/api/v2/search.json'
 # the oldest date (in the format YYYY/MM/DD) a ticket can be and still be
 # included in the results.
 SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
-                ticket_type:problem'
+        ticket_type:problem status:open'
 
 def user_login(request):
     """Processes the requests from the login page. 
