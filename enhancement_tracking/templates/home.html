@@ -117,9 +117,46 @@
 </div>
 </div>
 
+{% if broken_enh %}
+<div class="row">
+<div class="span9">
+	<h3>Requested Enhancements with an Improper GitHub Association</h3>
+	<p>The listing in the GitHub Association field should be in the format
+	"gh-###" where the "###" is the GitHub issue number of the associated
+	issue.</p>
+
+	<table class="table table-striped span9 center">
+		<thead>
+			<tr>
+				<th>Zendesk Ticket</th>
+				<th>Subject</th>
+				<th>Last Updated</th>
+				<th>Association Field Data</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for e in broken_enh %}
+			<tr>
+				<td>
+					<a href="{{ zen_url }}/tickets/
+						{{ e.z_id }}">Z{{ e.z_id }}</a>
+				</td>
+				<td>{{ e.z_subject }}</td>
+				<td>{{ e.z_date }}</td>
+				<td>{{ e.broken_assoc }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+</div>
+{% endif %}
+
+<div class="row">
+<div class="span9">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
     {% if not_tracking %}
-		<table class="table table-striped center" style="width:70%">
+	<table class="table table-striped span9 center">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
@@ -161,6 +198,8 @@
 	<p>There was an Error connecting to either GitHub or Zendesk. Try adjusting
 		your account settings.</p>
 {% endif %}
+</div>
+</div>
 
 <br/>
 

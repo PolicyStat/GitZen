@@ -355,7 +355,7 @@ def filter_lists(zen_fieldid, data_lists):
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
-        on_zen = {}
+        on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
                 if f['id'] == zen_fieldid:
@@ -365,24 +365,15 @@ def filter_lists(zen_fieldid, data_lists):
                         a_num = ['']
                     break
             if a_num[0] == 'gh':
-                on_zen[t['id']] = int(a_num[1])
-        
-        for z_id, g_id in on_zen.items():
-            issue = [i for i in data_lists['gclosed'] if i['number'] == g_id] 
-            if issue:
-                if issue[0] not in git_tics:
-                    git_tics.append(issue[0])
-            else:
-                issue = [i for i in data_lists['gopen'] if i['number'] == g_id]
-                if issue:
-                    pass
-                else:
-                    zen_tics = _rm_from_diclist(zen_tics, 'id', z_id)
-                    zen_tics_full = _rm_from_diclist(zen_tics_full, 'id', z_id)
+                on_zen.append(int(a_num[1]))
+
+        for t in data_lists['gclosed']:
+            if t['number'] in on_zen:
+                git_tics.append(t)
         del on_zen
 
         git_tics.extend(data_lists['gopen'])
-    
+
     # Tickets are sorted into order by their issue/id number
     if zen_tics:
         zen_tics = sorted(zen_tics, key=lambda k: k['id'])
@@ -419,15 +410,20 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
+        'broken_enh' - List of Zendesk tickets that have improper data in their
+                            GitHub issue association field. This could be the
+                            result of a typo or some other user error.
         'not_tracking' - List of Zendesk tickets requesting an enhancement that
                             have no associated ticket in GitHub.
         'status' - Dictionary with the status of building the enhancement lists
                     with the following keys and values:
-            'tracking' - True if the open association list was built
-                            successfully, False if not.
-            'need_attention' - True if the half-open association list was built
+            'tracking' - True if the tracking list was built successfully, 
+                            False if not.
+            'need_attention' - True if the need attention list was built
                                 successfully, False if not.
-            'not_tracking' - True if the no association list was built
+            'broken_enh' - True if the broken enhancements list was built
+                                successfully, False if not. 
+            'not_tracking' - True if the not tracking list was built
                                 successfully, False if not.
     """
     
@@ -436,11 +432,14 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
                         # is closed, the other needs attention.
+    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
+                             # GitHub issue association field.
     not_tracking = [] # Requested enhancements from Zendesk tickets that have no
                       # associatied GitHub ticket assigned to them.
     if api_status:
         status['tracking'] = True
         status['need_attention'] = True
+        status['broken_enh'] = True
         status['not_tracking'] = True
 
         # Iterate through the Zendesk tickets using their data to classify them
@@ -457,6 +456,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             e_data = {} # Enhancement data object
             e_data['z_id'] = t['id']
             e_data['z_status'] = t['status']
+            e_data['z_subject'] = t['subject']
             z_date = datetime.strptime(t['updated_at'], 
                                         "%Y-%m-%dT%H:%M:%SZ")
             e_data['z_date'] = z_date.strftime('%m/%d/%Y @ %H:%M')
@@ -467,10 +467,16 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             else:
                 # Add GitHub data to enhancement data object
+                git_issue = {}
                 for i in filtered_lists['gtics']:
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
                         break
+                # Check if it has a broken GitHub association field
+                if not git_issue:
+                    e_data['broken_assoc'] = a_num
+                    broken_enhancements.append(e_data)
+                    continue
                 e_data['g_id'] = git_issue['number']
                 e_data['g_labels'] = [i['name'] for i in git_issue['labels']]
                 e_data['g_url'] = git_issue['html_url']
@@ -489,13 +495,17 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
                 # are closed). These tickets are deleted from their lists.
                 elif e_data['g_status'] != 'open' and \
                         e_data['z_status'] != 'open':
-                    filtered_lists['gtics'] = \
-                        _rm_from_diclist(filtered_lists['gtics'], 
-                                         'number', e_data['g_id'])
-                    filtered_lists['ztics'] = \
-                        _rm_from_diclist(filtered_lists['ztics'], 
-                                         'id', e_data['z_id'])
-        
+                    for i in range(len(filtered_lists['gtics'])):
+                        if filtered_lists['gtics'][i]['number'] == \
+                           e_data['g_id']:
+                            filtered_lists['gtics'].pop(i)
+                            break
+                    for i in range(len(filtered_lists['ztics'])):
+                        if filtered_lists['ztics'][i]['id'] == \
+                           e_data['z_id']:
+                            filtered_lists['ztics'].pop(i)
+                            break
+                
                 # Check if the enhancement is in need of attention (One ticket
                 # is open and the other is closed).
                 else:
@@ -507,6 +517,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     else:
         status['tracking'] = False
         status['need_attention'] = False
+        status['broken_enh'] = False
         status['not_tracking'] = False
     
     built_data = {
@@ -514,29 +525,9 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         'zen_tics': filtered_lists['ztics'],
         'tracking': tracking,
         'need_attention': need_attention,
+        'broken_enh': broken_enhancements,
         'not_tracking': not_tracking,
         'status': status
     }
 
     return built_data
-
-def _rm_from_diclist(diclist, key, value):
-    """Removes an entry from a list of dictionaries if it has a certain value
-    for a certain key. Only removes the first instance of this occurrence.
-
-    Parameters:
-        diclist - A list of dictionaries.
-        key - The key that holds the value that determines if the entry should
-                be removed from the list.
-        value - The value that if matched will result in the dictionary being
-                    removed from the list.
-    
-    Returns the list of dictionaries with the entry that contains the given key
-    value pair removed.
-    """
-    for i in range(len(diclist)):
-        if diclist[i][key] == value:
-            diclist.pop(i)
-            break
-    return diclist
-
