@@ -176,7 +176,7 @@ def home(request):
     api_lists = api_calls(request)
     filtered_git = filter_git_tickets(api_lists)
     filtered_lists = {
-        'ztics': api_lists['ztickets'],
+        'ztics': api_lists['ztics'],
         'gtics': filtered_git
     }
 
@@ -202,9 +202,8 @@ def api_calls(request):
         request - The request object that contains the current user's data.
 
     Returns a dictionary with the following keys and values:
-        'gtickets' - List of all of the open and closed tickets in the 
-                        GitHub repo.
-        'ztickets' - List of all of the tickets on the Zendesk account.
+        'gtics' - List of all of the open and closed tickets in the GitHub repo.
+        'ztics' - List of all of the tickets on the Zendesk account.
         'status' - Dictionary with the status of the API calls for GitHub and
                     Zendesk with the following keys and values:
             'git' - True if Git call was successful, False if not.
@@ -275,8 +274,8 @@ def api_calls(request):
         working['zen'] = False
     
     api_lists = {
-        'gtickets': gticket_list,
-        'ztickets': zticket_list,
+        'gtics': gticket_list,
+        'ztics': zticket_list,
         'status': working
     }
 
