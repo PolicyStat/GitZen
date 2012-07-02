@@ -125,7 +125,7 @@ def confirm(request, con_num):
                               {'con_num': con_num, 'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
-def git_confirm(request):
+def git_oauth_confirm(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the user login or change forms. Adds the access token
     to the user profile. For a newly created user, their profile was added to
@@ -348,17 +348,13 @@ def filter_lists(zen_fieldid, data_lists):
                         'subject': t['subject'],
                     })
     
-        # Tickets are sorted into order by their ID number
-        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
-    
     # GitHub list filtering
-    git_tics_sorted = []
+    git_tics = []
     if data_lists['status']['git']:
 
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
-        git_tics = []
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
@@ -378,13 +374,16 @@ def filter_lists(zen_fieldid, data_lists):
 
         git_tics.extend(data_lists['gopen'])
 
-        # Tickets are sorted into order by their issue number
-        git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
+    # Tickets are sorted into order by their issue/id number
+    if zen_tics:
+        zen_tics = sorted(zen_tics, key=lambda k: k['id'])
+    if git_tics:
+        git_tics = sorted(git_tics, key=lambda k: k['number'])
 
     filtered_lists = {
-        'ztics': zen_tics_sorted,
+        'ztics': zen_tics,
         'ztics_full': zen_tics_full,
-        'gtics': git_tics_sorted
+        'gtics': git_tics
     }
 
     return filtered_lists
