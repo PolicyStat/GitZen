@@ -125,7 +125,7 @@ def confirm(request, con_num):
                               {'con_num': con_num, 'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
-def git_confirm(request):
+def git_oauth_confirm(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the user login or change forms. Adds the access token
     to the user profile. For a newly created user, their profile was added to
