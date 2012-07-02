@@ -119,13 +119,13 @@
 
 {% if broken_enh %}
 <div class="row">
-<div class="span9">
+<div class="span8 offset2">
 	<h3>Requested Enhancements with an Improper GitHub Association</h3>
 	<p>The listing in the GitHub Association field should be in the format
 	"gh-###" where the "###" is the GitHub issue number of the associated
 	issue.</p>
 
-	<table class="table table-striped span9 table-center">
+	<table class="table table-striped span8 offset2 table-center">
 		<thead>
 			<tr>
 				<th>Zendesk Ticket</th>
@@ -153,10 +153,10 @@
 {% endif %}
 
 <div class="row">
-<div class="span9">		
+<div class="span8 offset2">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
     {% if not_tracking %}
-	<table class="table table-striped span9 table-center">
+	<table class="table table-striped span8 offset2 table-center">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
