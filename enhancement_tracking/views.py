@@ -381,7 +381,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         # as being tracked, needing attention, or not being tracked. If the
         # ticket does not fit into any of these catagories, it is deleted form
         # the list to be returned.
-        for t in dict(filtered_lists['ztics'].items()):
+        for t in list(filtered_lists['ztics']):
 
             # Add Zendesk data to enhancement data object
             for f in t['fields']:
