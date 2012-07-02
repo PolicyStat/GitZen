@@ -456,6 +456,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             e_data = {} # Enhancement data object
             e_data['z_id'] = t['id']
             e_data['z_status'] = t['status']
+            e_data['z_subject'] = t['subject']
             z_date = datetime.strptime(t['updated_at'], 
                                         "%Y-%m-%dT%H:%M:%SZ")
             e_data['z_date'] = z_date.strftime('%m/%d/%Y @ %H:%M')
