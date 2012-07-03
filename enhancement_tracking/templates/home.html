@@ -16,7 +16,7 @@
 <div class="span6">
     <h3>Currently Tracking</h3>
     {% if tracking %}
-		<table class="table span6 center">
+		<table class="table span6 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -54,13 +54,12 @@
     {% else %}
         <p>There are currently no Enhancements being tracked.</p>
     {% endif %}
-    <br/>
 </div>
 
 <div class="span6">
 	<h3>Need Attention</h3>
     {% if need_attention %}
-		<table class="table span6 center">
+		<table class="table span6 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -113,13 +112,51 @@
     {% else %}
         <p>There are currently no Enhancements in need of attention.</p>
     {% endif %}
-    <br/>
 </div>
 </div>
+<br/>
 
+{% if broken_enh %}
+<div class="row">
+<div class="span8 offset2">
+	<h3>Requested Enhancements with an Improper GitHub Association</h3>
+	<p>The listing in the GitHub Association field should be in the format
+	"gh-###" where the "###" is the GitHub issue number of the associated
+	issue.</p>
+
+	<table class="table table-striped span8 offset2 table-center">
+		<thead>
+			<tr>
+				<th>Zendesk Ticket</th>
+				<th>Subject</th>
+				<th>Last Updated</th>
+				<th>Association Field Data</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for e in broken_enh %}
+			<tr>
+				<td>
+					<a class="open" href="{{ zen_url }}/tickets/
+						{{ e.z_id }}">Z{{ e.z_id }}</a>
+				</td>
+				<td>{{ e.z_subject }}</td>
+				<td>{{ e.z_date }}</td>
+				<td>{{ e.broken_assoc }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+</div>
+<br/>
+{% endif %}
+
+<div class="row">
+<div class="span12">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
     {% if not_tracking %}
-		<table class="table table-striped center" style="width:70%">
+	<table class="table table-striped span12 table-center">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
@@ -161,6 +198,8 @@
 	<p>There was an Error connecting to either GitHub or Zendesk. Try adjusting
 		your account settings.</p>
 {% endif %}
+</div>
+</div>
 
 <br/>
 
@@ -171,7 +210,7 @@
 <div class="span6">
 	<h3>GitHub Tickets</h3>
 	{% if status.git %}
-		<table class="table table-striped span6 center">
+		<table class="table table-striped span6 table-center">
 			<thead>
 				<tr>
 					<th>Issue</th>
@@ -200,7 +239,7 @@
 			</tbody>
 		</table>
 	{% else %}
-		<p align="center">There was an Error connecting to GitHub. Try
+		<p>There was an Error connecting to GitHub. Try
 		adjusting your account settings.</p> 
 	{% endif %}
 </div>
@@ -208,7 +247,7 @@
 <div class="span6">
 	<h3>Zendesk Tickets</h3>
 	{% if status.zen %}
-		<table class="table table-striped span6 center">
+		<table class="table table-striped span6 table-center">
 			<thead>
 				<tr>
 					<th>ID</th>
@@ -236,7 +275,7 @@
 			</tbody>
 		</table>
     {% else %}
-		<p align="center">There was an Error connecting to Zendesk. Try
+		<p>There was an Error connecting to Zendesk. Try
 		adjusting your account settings.</p> 
 	{% endif %}
 </div>
