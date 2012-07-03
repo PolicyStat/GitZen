@@ -12,7 +12,7 @@ from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 
 # Constant URL string for accessing the GitHub API. The first %s is the
-# organization/user name and the second %s is the repository name.
+# organization/user name, and the second %s is the repository name.
 BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
@@ -22,15 +22,21 @@ OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 
-# Constant URL string for accessing the Zendesk API. The %s is the custom URL
-# for the specific company whose tickets are being accessed.
-BASE_ZEN_URL = '%s/api/v2/search.json'
+# Constant URL string for searching for tickets through the Zendesk API. The %s
+# is the custom URL subdomain for the specific company whose tickets are being
+# accessed.
+SEARCH_ZEN_URL = '%s/api/v2/search.json'
 
 # Constant search query used to access Zendesk tickets form its API. The %s is
 # the oldest date (in the format YYYY/MM/DD) a ticket can be and still be
 # included in the results.
-SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
+ZTIC_SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
         ticket_type:problem status:open'
+
+# Constant URL string for accessing Zendesk users through the Zendesk API. The
+# first %s if the custom URL subdomain for the specific company whose users are
+# being accessed, and the second %s is the ID number of the user being accessed.
+USER_ZEN_URL = '%s/api/v2/users/%s.json'
 
 def user_login(request):
     """Processes the requests from the login page. 
@@ -168,31 +174,32 @@ def home(request):
     Parameters:
         request - The request object that contains the current user's data.
     """
-    profile = request.user.get_profile()
-    zen_tics = [] # List of the open problem or incident tickets in Zendesk
+    profile = request.user.get_profile() # Current user profile
+    zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
+                                      # Zendesk tickets that contains their 
+                                      # associated GitHub issue number.
+    render_data = {} # Data to be rendered to the home page
+
+    zen_tics = [] # List of the open problem or incident tickets in Zendesk.
     zen_users = [] # List of the users associated with the Zendesk tickets in
                    # zen_tics.
     git_tics = [] # List of the GitHub tickets associated with the Zendesk
                   # tickets in zen_tics.
-    render_data = {} # Data to be rendered to the home page
-   
-    zen_tics, zen_status = get_zen_tickets(request)
-    if status:
-        user_ids, git_nums = get_id_lists(zen_tics, profile.zen_fieldid)
+    # Status booleans for each of the previous three lists. They will be set as
+    # True if the cooresponding list was successfully gathered.
+    ztic_status = False
+    zuser_status = False
+    gtic_status = False
 
+    zen_tics, ztic_status = get_zen_tickets(profile)
+    if ztic_status:
+        user_ids, git_nums = get_id_lists(zen_tics, zen_fieldid)
+        zen_users, zuser_status = get_zen_users(profile, user_ids)
+        git_tics, gtic_status = get_git_tickets(profile, git_nums)
 
-    filtered_lists = {
-        'ztics': api_lists['ztics'],
-        'gtics': filtered_git
-    }
-
-    api_status = api_lists['status']['git'] and api_lists['status']['zen']
-    render_data = build_enhancement_data(profile.zen_fieldid,
-                                         filtered_lists, api_status)
-
-    # Combine the status dictionaries from the API data and association lists
-    render_data['status'] = dict(render_data['status'].items() +
-                                 api_lists['status'].items())
+    api_status = ztic_status and zuser_status and gtic_status
+    render_data = build_enhancement_data(zen_tics, zen_users, git_tics, 
+                                         zen_fieldid, api_status)
 
     # Add additional user data to be rendered to the home page
     render_data['zen_url'] = profile.zen_url
@@ -200,49 +207,47 @@ def home(request):
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
 
-def get_zen_tickets(request):
+def get_zen_tickets(profile):
     """Gets all of the open problem and incident Zendesk tickets using the
     Zendesk API.
 
     Parameters:
-        request - The request object that contains the current user's profile
-                    data necessary to access the tickets on their Zendesk 
-                    account.
+        profile - The profile object that contains the current user's data 
+                    necessary to access the tickets on their Zendesk account.
 
     Returns a tuple of two values with the first value being the gathered list
     of Zendesk tickets and with the second value being the status of that list
     (True if the API calls were all successful, False if not).
     """
+    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
+                                              # API token authorization.
+    zticket_list = []
+    page = 1
 
     try:
-        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
-                                                  # for API token authorization.
-        # Get Zendesk tickets
-        zticket_list = []
-        page = 1
         while True:
-            r_zt = requests.get(BASE_ZEN_URL % profile.zen_url, 
-                                params={'query': SEARCH_QUERY % zen_limit_str,
+            r_zt = requests.get(SEARCH_ZEN_URL % profile.zen_url, 
+                                params={'query': ZTIC_SEARCH_QUERY % \
+                                            zen_limit_str,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
                                         'per_page': 100,
                                         'page': page},
                                 auth=(zen_name_tk, profile.zen_token))
-            if 'error' in r_zt.json:
-                raise Exception('Error in accessing Zendesk API - %s: %s' %
-                                (r_zt.json['error'], r_zt.json['description']))
+            if r_zt.status_code != 200:
+                raise Exception('Error in accessing Zendesk API - %s' % \
+                                r_zt.json['error'])
             zticket_list.extend(r_zt.json['results'])
             if r_zt.json['next_page'] is not None:
                 page += 1
             else:
                 break
         
-        zen_status = True
+        ztic_status = True
     except:
-        zticket_list = []
-        zen_status = False
+        ztic_status = False
 
-    return (zticket_list, zen_status)
+    return (zticket_list, ztic_status)
 
 def get_id_lists(zen_tics, zen_fieldid):
     """Gets lists of the Zendesk user IDs and the GitHub issue numbers that are
@@ -280,6 +285,40 @@ def get_id_lists(zen_tics, zen_fieldid):
     git_nums = list(set(git_nums)) # Remove duplicates
 
     return (user_ids, git_nums)
+
+def get_zen_users(profile, user_ids):
+    """Gets the full Zendesk user records for each user ID number in the passed
+    list.
+
+    Parameters:
+        profile - The profile object that contains the current user's data
+                    necessary to access the users on their Zendesk account.  
+        user_ids - A list of Zendesk user IDs whose full user records are 
+                    desired.
+
+    Returns a tuple of two values with the first being a list with a Zendesk
+    user record for each of the ID numbers passed to the function and with the
+    second being the status of that list (True if the API calls were all
+    successful, False if not).
+    """
+    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
+                                              # API token authorization.
+    zuser_list = []
+
+    try:
+        for id_num in user_ids:
+            r_zu = requests.get(USER_ZEN_URL % (profile.zen_url, id_num),
+                                auth=(zen_name_tk, profile.zen_token))
+            if r_zu.status_code != 200:
+                raise Exception('Error in accessing Zendesk API - %s' % \
+                                r_zu.json['error'])
+            zuser_list.extend(r_zu.json['user'])
+        
+        zuser_status = True
+    except:
+        zuser_status = False
+
+    return (zuser_list, zuser_status)
 
 def api_calls(request):
     """Makes API calls to GitHub and Zendesk to gather the data used in the app.
