@@ -169,10 +169,13 @@ def home(request):
         request - The request object that contains the current user's data.
     """
     profile = request.user.get_profile()
-    api_lists = {} # Stores lists from API calls and their status
-    filtered_lists = {} # Stores lists of the filtered API data
+    zen_tics = [] # List of the open problem or incident tickets in Zendesk
     render_data = {} # Data to be rendered to the home page
-    
+   
+    zen_tics, zen_status = get_zen_tickets(request)
+    if status:
+        git_ids, user_ids = get_id_lists(zen_tics, profile.zen_fieldid)
+
     api_lists = api_calls(request)
     filtered_git = filter_git_tickets(profile.zen_fieldid, api_lists)
     filtered_lists = {
@@ -193,6 +196,87 @@ def home(request):
     
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
+
+def get_zen_tickets(request):
+    """Gets all of the open problem and incident Zendesk tickets using the
+    Zendesk API.
+
+    Parameters:
+        request - The request object that contains the current user's profile
+                    data necessary to access the tickets on their Zendesk 
+                    account.
+
+    Returns a tuple of two values with the first value being the gathered list
+    of Zendesk tickets and with the second value being the status of that list
+    (True if the API calls were all successful, False if not).
+    """
+
+    try:
+        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
+                                                  # for API token authorization.
+        # Get Zendesk tickets
+        zticket_list = []
+        page = 1
+        while True:
+            r_zt = requests.get(BASE_ZEN_URL % profile.zen_url, 
+                                params={'query': SEARCH_QUERY % zen_limit_str,
+                                        'sort_by': 'updated_at',
+                                        'sort_order': 'desc',
+                                        'per_page': 100,
+                                        'page': page},
+                                auth=(zen_name_tk, profile.zen_token))
+            if 'error' in r_zt.json:
+                raise Exception('Error in accessing Zendesk API - %s: %s' %
+                                (r_zt.json['error'], r_zt.json['description']))
+            zticket_list.extend(r_zt.json['results'])
+            if r_zt.json['next_page'] is not None:
+                page += 1
+            else:
+                break
+        
+        zen_status = True
+    except:
+        zticket_list = []
+        zen_status = False
+
+    return (zticket_list, zen_status)
+
+def get_id_lists(zen_tics, zen_fieldid):
+    """Gets a list of the GitHub issue numbers and the Zendesk user IDs that are
+    associated with the passed list of Zendesk tickets.
+
+    Parameters:
+        zen_tics - A list of Zendesk tickets whose associated GitHub issue
+                    numbers and Zendesk user IDs are desired.
+        zen_fieldid - The ID number of the custom field in Zendesk tickets that
+                        holds its associated GitHub issue number.
+
+    Returns a tuple of two value with the first being the gathered list of
+    associated GitHub issue numbers and with the second being the gathered list
+    of associated Zendesk user IDs.
+    """
+
+    # Get GitHub issue numbers that are associated with the Zendesk tickets.
+    git_nums = []
+    for t in zen_tics:
+        for f in t['fields']:
+            if f['id'] == zen_fieldid:
+                if f['value'] is not None:
+                    a_num = f['value'].split('-') # Association number
+                else:
+                    a_num = ['']
+                break
+        if a_num[0] == 'gh':
+            git_nums.append(int(a_num[1]))
+    git_nums = list(set(git_nums)) # Remove duplicates
+
+    # Get Zendesk user IDs that are associated with Zendesk tickets.
+    user_ids = []
+    for t in zen_tics:
+        user_ids.append(t['requester_id'])
+    user_ids = list(set(user_ids)) # Remove duplicates
+    
+    return (git_nums, user_ids)
 
 def api_calls(request):
     """Makes API calls to GitHub and Zendesk to gather the data used in the app.
