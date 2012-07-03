@@ -83,16 +83,8 @@
 						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
 					{% endif %}
 					</td>
-					{% if a.closed == 'z' %}
-						<td class="closed">{{ a.z_date }}</td>
-					{% else %}
-						<td class="open">{{ a.z_date }}</td>
-					{% endif %}
-					{% if a.closed == 'g' %}
-						<td class="closed">{{ a.g_date }}</td>
-					{% else %}
-						<td class="open">{{ a.g_date }}</td>
-					{% endif %}
+					<td class="open">{{ a.z_date }}</td>
+					<td class="closed">{{ a.g_date }}</td>
 					<td>
 					{% if a.g_labels %}
 						{% for l in a.g_labels %}
