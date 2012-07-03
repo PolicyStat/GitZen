@@ -189,7 +189,6 @@ def home(request):
                                  api_lists['status'].items())
 
     # Add additional user data to be rendered to the home page
-    render_data['repo'] = profile.git_repo
     render_data['zen_url'] = profile.zen_url
     
     return render_to_response('home.html', render_data,
@@ -221,12 +220,14 @@ def api_calls(request):
     zen_limit_str = datetime.strftime(date_limit, '%Y-%m-%d')
 
     try:  # GitHub API calls to get all open and closed tickets
-        gticket_list = []
+        # Get open tickets
+        gopen_list = []
         page = 1
         while True:
             r_op = requests.get(BASE_GIT_URL % (profile.git_org, 
                                                 profile.git_repo),
-                                params={'access_token': profile.git_token, 
+                                params={'access_token': profile.git_token,
+                                        'state': 'open', 
                                         'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page}
@@ -234,12 +235,34 @@ def api_calls(request):
             if r_op.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' %
                                 (r_op.json['message']))
-            gticket_list.extend(r_op.json)
+            gopen_list.extend(r_op.json)
             if r_op.json:
                 page += 1
             else:
                 break
         
+        # Get closed tickets
+        gclosed_list = []
+        page = 1
+        while True: 
+            r_cl = requests.get(BASE_GIT_URL % (profile.git_org, 
+                                                profile.git_repo),
+                                params={'access_token': profile.git_token,
+                                        'state': 'closed',
+                                        'since': git_limit_str,
+                                        'per_page': 100,
+                                        'page': page}
+                               )
+            if r_cl.status_code != 200:
+                raise Exception('Error in accessing GitHub API - %s' %
+                                (r_op.json['message']))
+            gclosed_list.extend(r_cl.json)
+            if r_cl.json:
+                page += 1
+            else:
+                break
+    
+        gticket_list = gopen_list + gclosed_list
         working['git'] = True
     except:
         gticket_list = []
