@@ -73,15 +73,9 @@
 			{% for a in need_attention %}
 				<tr>
 					<td>
-					{% if a.closed == 'g' %}
 						<a class="open" href="{{ zen_url }}/tickets/
 							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
 						<a class="closed" href="{{ a.g_url }}">G{{ a.g_id }}</a>
-					{% else %}
-						<a class="closed" href="{{ zen_url }}/tickets/
-							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
-					{% endif %}
 					</td>
 					<td class="open">{{ a.z_date }}</td>
 					<td class="closed">{{ a.g_date }}</td>
