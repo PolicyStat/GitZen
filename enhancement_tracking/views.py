@@ -125,7 +125,7 @@ def confirm(request, con_num):
                               {'con_num': con_num, 'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
-def git_confirm(request):
+def git_oauth_confirm(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the user login or change forms. Adds the access token
     to the user profile. For a newly created user, their profile was added to
@@ -348,17 +348,13 @@ def filter_lists(zen_fieldid, data_lists):
                         'subject': t['subject'],
                     })
     
-        # Tickets are sorted into order by their ID number
-        zen_tics_sorted = sorted(zen_tics, key=lambda k: k['id'])
-    
     # GitHub list filtering
-    git_tics_sorted = []
+    git_tics = []
     if data_lists['status']['git']:
 
         # Filters the list of closed GitHub tickets to remove the ones that are
         # not associated with any Zendesk ticket. This filtered list is then
         # combined with all of the open GitHub tickets.
-        git_tics = []
         on_zen = []
         for t in zen_tics_full:
             for f in t['fields']:
@@ -378,13 +374,16 @@ def filter_lists(zen_fieldid, data_lists):
 
         git_tics.extend(data_lists['gopen'])
 
-        # Tickets are sorted into order by their issue number
-        git_tics_sorted = sorted(git_tics, key=lambda k: k['number'])
+    # Tickets are sorted into order by their issue/id number
+    if zen_tics:
+        zen_tics = sorted(zen_tics, key=lambda k: k['id'])
+    if git_tics:
+        git_tics = sorted(git_tics, key=lambda k: k['number'])
 
     filtered_lists = {
-        'ztics': zen_tics_sorted,
+        'ztics': zen_tics,
         'ztics_full': zen_tics_full,
-        'gtics': git_tics_sorted
+        'gtics': git_tics
     }
 
     return filtered_lists
@@ -411,15 +410,20 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
+        'broken_enh' - List of Zendesk tickets that have improper data in their
+                            GitHub issue association field. This could be the
+                            result of a typo or some other user error.
         'not_tracking' - List of Zendesk tickets requesting an enhancement that
                             have no associated ticket in GitHub.
         'status' - Dictionary with the status of building the enhancement lists
                     with the following keys and values:
-            'tracking' - True if the open association list was built
-                            successfully, False if not.
-            'need_attention' - True if the half-open association list was built
+            'tracking' - True if the tracking list was built successfully, 
+                            False if not.
+            'need_attention' - True if the need attention list was built
                                 successfully, False if not.
-            'not_tracking' - True if the no association list was built
+            'broken_enh' - True if the broken enhancements list was built
+                                successfully, False if not. 
+            'not_tracking' - True if the not tracking list was built
                                 successfully, False if not.
     """
     
@@ -428,11 +432,14 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
                         # is closed, the other needs attention.
+    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
+                             # GitHub issue association field.
     not_tracking = [] # Requested enhancements from Zendesk tickets that have no
                       # associatied GitHub ticket assigned to them.
     if api_status:
         status['tracking'] = True
         status['need_attention'] = True
+        status['broken_enh'] = True
         status['not_tracking'] = True
 
         # Iterate through the Zendesk tickets using their data to classify them
@@ -449,6 +456,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             e_data = {} # Enhancement data object
             e_data['z_id'] = t['id']
             e_data['z_status'] = t['status']
+            e_data['z_subject'] = t['subject']
             z_date = datetime.strptime(t['updated_at'], 
                                         "%Y-%m-%dT%H:%M:%SZ")
             e_data['z_date'] = z_date.strftime('%m/%d/%Y @ %H:%M')
@@ -459,13 +467,16 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             
             else:
                 # Add GitHub data to enhancement data object
-                # TODO: The app broke here when I tried an age limit of 123 days
-                # from 06/27/2012 despite that it has worked at any other age
-                # limit I have tried. Investigate later.
+                git_issue = {}
                 for i in filtered_lists['gtics']:
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
                         break
+                # Check if it has a broken GitHub association field
+                if not git_issue:
+                    e_data['broken_assoc'] = a_num
+                    broken_enhancements.append(e_data)
+                    continue
                 e_data['g_id'] = git_issue['number']
                 e_data['g_labels'] = [i['name'] for i in git_issue['labels']]
                 e_data['g_url'] = git_issue['html_url']
@@ -506,6 +517,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     else:
         status['tracking'] = False
         status['need_attention'] = False
+        status['broken_enh'] = False
         status['not_tracking'] = False
     
     built_data = {
@@ -513,6 +525,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         'zen_tics': filtered_lists['ztics'],
         'tracking': tracking,
         'need_attention': need_attention,
+        'broken_enh': broken_enhancements,
         'not_tracking': not_tracking,
         'status': status
     }
