@@ -181,12 +181,12 @@ def home(request):
     render_data = {} # Data to be rendered to the home page
 
     zen_tics = [] # List of the open problem or incident tickets in Zendesk.
-    zen_users = [] # List of the users associated with the Zendesk tickets in
-                   # zen_tics.
+    zen_user_ref = {} # Dictionary reference of the user IDs and user names
+                      # associated with the Zendesk tickets in zen_tics.
     git_tics = [] # List of the GitHub tickets associated with the Zendesk
                   # tickets in zen_tics.
-    # Status booleans for each of the previous three lists. They will be set as
-    # True if the cooresponding list was successfully gathered.
+    # Status booleans for each of the previous three collections. They will be
+    # set as True if the cooresponding collection was successfully gathered.
     ztic_status = False
     zuser_status = False
     gtic_status = False
@@ -194,11 +194,11 @@ def home(request):
     zen_tics, ztic_status = get_zen_tickets(profile)
     if ztic_status:
         user_ids, git_nums = get_id_lists(zen_tics, zen_fieldid)
-        zen_users, zuser_status = get_zen_users(profile, user_ids)
+        zen_user_ref, zuser_status = get_zen_users(profile, user_ids)
         git_tics, gtic_status = get_git_tickets(profile, git_nums)
 
     api_status = ztic_status and zuser_status and gtic_status
-    render_data = build_enhancement_data(zen_tics, zen_users, git_tics, 
+    render_data = build_enhancement_data(zen_tics, zen_user_ref, git_tics, 
                                          zen_fieldid, api_status)
 
     # Add additional user data to be rendered to the home page
@@ -295,14 +295,14 @@ def get_zen_users(profile, user_ids):
         user_ids - A list of Zendesk user IDs whose full user records are 
                     desired.
 
-    Returns a tuple of two values with the first being a list with a Zendesk
-    user record for each of the ID numbers passed to the function and with the
-    second being the status of that list (True if the API calls were all
-    successful, False if not).
+    Returns a tuple of two values with the first being a dictionary reference
+    table with Zendesk user ID numbers as keys and the cooresponding user names
+    as the values and with the second being the status of that dictionary (True
+    if the API calls were all successful, False if not).
     """
     zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
                                               # API token authorization.
-    zuser_list = []
+    zuser_ref = {} # Dictionary where the
 
     try:
         for id_num in user_ids:
@@ -311,13 +311,13 @@ def get_zen_users(profile, user_ids):
             if r_zu.status_code != 200:
                 raise Exception('Error in accessing Zendesk API - %s' % \
                                 r_zu.json['error'])
-            zuser_list.extend(r_zu.json['user'])
+            zuser_ref[id_num] = r_zu.json['user']['name']
         
         zuser_status = True
     except:
         zuser_status = False
 
-    return (zuser_list, zuser_status)
+    return (zuser_ref, zuser_status)
 
 def get_git_tickets(profile, git_nums):
     """Gets the full GitHub ticket records for each issue number in the passed
@@ -353,167 +353,24 @@ def get_git_tickets(profile, git_nums):
 
     return (gticket_list, gtic_status)
 
-def api_calls(request):
-    """Makes API calls to GitHub and Zendesk to gather the data used in the app.
+def build_enhancement_data(zen_tics, zen_user_ref, git_tics, zen_fieldid,
+                           api_status):
+    """Builds the enhancement tracking tables from the Zendesk and GitHub data.
     
     Parameters:
-        request - The request object that contains the current user's data.
-
-    Returns a dictionary with the following keys and values:
-        'gtics' - List of all of the open and closed tickets in the GitHub repo.
-        'ztics' - List of all of the tickets on the Zendesk account.
-        'status' - Dictionary with the status of the API calls for GitHub and
-                    Zendesk with the following keys and values:
-            'git' - True if Git call was successful, False if not.
-            'zen' - True if Zen call was successful, False if not.
-    """
-    profile = request.user.get_profile()
-    working = {}
-
-    try:  # GitHub API calls to get all open and closed tickets
-        # Get open tickets
-        gopen_list = []
-        page = 1
-        while True:
-            r_op = requests.get(BASE_GIT_URL % (profile.git_org, 
-                                                profile.git_repo),
-                                params={'access_token': profile.git_token,
-                                        'state': 'open', 
-                                        'per_page': 100,
-                                        'page': page}
-                               )
-            if r_op.status_code != 200:
-                raise Exception('Error in accessing GitHub API - %s' %
-                                (r_op.json['message']))
-            gopen_list.extend(r_op.json)
-            if r_op.json:
-                page += 1
-            else:
-                break
-        
-        # Get closed tickets
-        gclosed_list = []
-        page = 1
-        while True: 
-            r_cl = requests.get(BASE_GIT_URL % (profile.git_org, 
-                                                profile.git_repo),
-                                params={'access_token': profile.git_token,
-                                        'state': 'closed',
-                                        'per_page': 100,
-                                        'page': page}
-                               )
-            if r_cl.status_code != 200:
-                raise Exception('Error in accessing GitHub API - %s' %
-                                (r_op.json['message']))
-            gclosed_list.extend(r_cl.json)
-            if r_cl.json:
-                page += 1
-            else:
-                break
-    
-        gticket_list = gopen_list + gclosed_list
-        working['git'] = True
-    except:
-        gticket_list = []
-        working['git'] = False
-
-    try:  # Zendesk API calls to get tickets
-        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
-                                                  # for API token authorization.
-        # Get Zendesk tickets
-        zticket_list = []
-        page = 1
-        while True:
-            r_zt = requests.get(BASE_ZEN_URL % profile.zen_url, 
-                                params={'query': SEARCH_QUERY,
-                                        'sort_by': 'updated_at',
-                                        'sort_order': 'desc',
-                                        'per_page': 100,
-                                        'page': page},
-                                auth=(zen_name_tk, profile.zen_token))
-            if 'error' in r_zt.json:
-                raise Exception('Error in accessing Zendesk API - %s: %s' %
-                                (r_zt.json['error'], r_zt.json['description']))
-            zticket_list.extend(r_zt.json['results'])
-            if r_zt.json['next_page'] is not None:
-                page += 1
-            else:
-                break
-        
-        working['zen'] = True
-    except:
-        zticket_list = []
-        working['zen'] = False
-    
-    api_lists = {
-        'gtics': gticket_list,
-        'ztics': zticket_list,
-        'status': working
-    }
-
-    return api_lists
-
-# TODO: Rewrite the filtering of GitHub tickets so that it only accesses the
-# tickets from the API that are associated with some Zendesk ticket. This
-# process will probably end up replacing this function.
-def filter_git_tickets(zen_fieldid, data_lists):
-    """Filters GitHub data to remove the data not needed in the app.
-    
-    Parameters:
-        data_lists - The dictionary of lists that holds both a list of open
-                        GitHub tickets and a list of closed GitHub tickets as
-                        well as the status information for those lists.
-
-    Returns a filtered GitHub ticket list.
-    """
-
-    git_tics = []
-    if data_lists['status']['git']:
-
-        # Filters the list of closed GitHub tickets to remove the ones that are
-        # not associated with any Zendesk ticket. This filtered list is then
-        # combined with all of the open GitHub tickets.
-        on_zen = []
-        for t in data_lists['ztics']:
-            for f in t['fields']:
-                if f['id'] == zen_fieldid:
-                    if f['value'] is not None:
-                        a_num = f['value'].split('-')
-                    else:
-                        a_num = ['']
-                    break
-            if a_num[0] == 'gh':
-                on_zen.append(int(a_num[1]))
-
-        for t in data_lists['gtics']:
-            if t['number'] in on_zen:
-                git_tics.append(t)
-        del on_zen
-
-        # Tickets are sorted into order by their issue number
-        git_tics = sorted(git_tics, key=lambda k: k['number'])
-
-    return git_tics
-
-def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
-    """Builds the enhancement tracking tables from the Zendesk and GitHub
-    association data.
-    
-    Parameters:
+        zen_tics - A list of open Zendesk tickets to build the enhancement
+                    data from.
+        zen_user_ref - A dictionary reference that can be used to look up
+                        Zendesk user names by their ID number.
+        git_tics - A list of GitHub tickets that cooresponds with the associated
+                    GitHub issue numbers of the Zendesk tickets in zen_tics.
         zen_fieldid - The ID number of the custom field that holds the ticket
                         association value for a given Zendesk ticket.
-        filtered_lists - A dictionary including lists of GitHub tickets, Zendesk
-                            tickets, and a Zendesk user reference table that
-                            have all been filtered and contain only the
-                            entries to be used in building enhancement tracking
-                            data.
         api_status - A boolean that is True if the API lists were successfully
                         gathered, and False if they were not. Needed to
                         determine the status of the enhancement tracking lists.
 
     Returns a dictionary of the built data with the following keys and values:
-        'git_tics' - List of the GitHub tickets used in the app.
-        'zen_tics' - List of the Zendesk tickets used in the app.
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
@@ -522,19 +379,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
                             result of a typo or some other user error.
         'not_tracking' - List of Zendesk tickets requesting an enhancement that
                             have no associated ticket in GitHub.
-        'status' - Dictionary with the status of building the enhancement lists
-                    with the following keys and values:
-            'tracking' - True if the tracking list was built successfully, 
-                            False if not.
-            'need_attention' - True if the need attention list was built
-                                successfully, False if not.
-            'broken_enh' - True if the broken enhancements list was built
-                                successfully, False if not. 
-            'not_tracking' - True if the not tracking list was built
-                                successfully, False if not.
     """
-    
-    status = {}
     tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
@@ -544,25 +389,19 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     not_tracking = [] # Requested enhancements from Zendesk tickets that have no
                       # associatied GitHub ticket assigned to them.
     if api_status:
-        status['tracking'] = True
-        status['need_attention'] = True
-        status['broken_enh'] = True
-        status['not_tracking'] = True
 
         # Iterate through the Zendesk tickets using their data to classify them
-        # as being tracked, needing attention, or not being tracked. If the
-        # ticket does not fit into any of these catagories, it is deleted form
-        # the list to be returned.
-        for t in list(filtered_lists['ztics']):
+        # as being tracked, needing attention, broken, or not being tracked.
+        for t in list(zen_tics):
 
             # Add Zendesk data to enhancement data object
             for f in t['fields']:
                 if f['id'] == zen_fieldid:
-                    a_num = f['value']
+                    a_num = f['value'] # Association number
                     break
             e_data = {} # Enhancement data object
             e_data['z_id'] = t['id']
-            e_data['z_status'] = t['status']
+            e_data['z_user'] = zen_user_ref[t['requester_id']]
             e_data['z_subject'] = t['subject']
             z_date = datetime.strptime(t['updated_at'], 
                                         "%Y-%m-%dT%H:%M:%SZ")
@@ -575,7 +414,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
             else:
                 # Add GitHub data to enhancement data object
                 git_issue = {}
-                for i in filtered_lists['gtics']:
+                for i in git_tics:
                     if i['number'] == int(a_num.split('-')[1]):
                         git_issue = i
                         break
@@ -601,18 +440,12 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
                 # ticket is closed).
                 else:
                     need_attention.append(e_data)
-    else:
-        status['tracking'] = False
-        status['need_attention'] = False
-        status['broken_enh'] = False
-        status['not_tracking'] = False
     
     built_data = {
         'tracking': tracking,
         'need_attention': need_attention,
         'broken_enh': broken_enhancements,
-        'not_tracking': not_tracking,
-        'status': status
+        'not_tracking': not_tracking
     }
 
     return built_data
