@@ -170,14 +170,17 @@ def home(request):
     """
     profile = request.user.get_profile()
     zen_tics = [] # List of the open problem or incident tickets in Zendesk
+    zen_users = [] # List of the users associated with the Zendesk tickets in
+                   # zen_tics.
+    git_tics = [] # List of the GitHub tickets associated with the Zendesk
+                  # tickets in zen_tics.
     render_data = {} # Data to be rendered to the home page
    
     zen_tics, zen_status = get_zen_tickets(request)
     if status:
-        git_ids, user_ids = get_id_lists(zen_tics, profile.zen_fieldid)
+        user_ids, git_nums = get_id_lists(zen_tics, profile.zen_fieldid)
 
-    api_lists = api_calls(request)
-    filtered_git = filter_git_tickets(profile.zen_fieldid, api_lists)
+
     filtered_lists = {
         'ztics': api_lists['ztics'],
         'gtics': filtered_git
@@ -242,7 +245,7 @@ def get_zen_tickets(request):
     return (zticket_list, zen_status)
 
 def get_id_lists(zen_tics, zen_fieldid):
-    """Gets a list of the GitHub issue numbers and the Zendesk user IDs that are
+    """Gets lists of the Zendesk user IDs and the GitHub issue numbers that are
     associated with the passed list of Zendesk tickets.
 
     Parameters:
@@ -252,10 +255,16 @@ def get_id_lists(zen_tics, zen_fieldid):
                         holds its associated GitHub issue number.
 
     Returns a tuple of two value with the first being the gathered list of
-    associated GitHub issue numbers and with the second being the gathered list
-    of associated Zendesk user IDs.
+    associated Zendesk user IDs and with the second being the gathered list
+    of associated GitHub issue numbers.
     """
-
+    
+    # Get Zendesk user IDs that are associated with Zendesk tickets.
+    user_ids = []
+    for t in zen_tics:
+        user_ids.append(t['requester_id'])
+    user_ids = list(set(user_ids)) # Remove duplicates
+    
     # Get GitHub issue numbers that are associated with the Zendesk tickets.
     git_nums = []
     for t in zen_tics:
@@ -270,13 +279,7 @@ def get_id_lists(zen_tics, zen_fieldid):
             git_nums.append(int(a_num[1]))
     git_nums = list(set(git_nums)) # Remove duplicates
 
-    # Get Zendesk user IDs that are associated with Zendesk tickets.
-    user_ids = []
-    for t in zen_tics:
-        user_ids.append(t['requester_id'])
-    user_ids = list(set(user_ids)) # Remove duplicates
-    
-    return (git_nums, user_ids)
+    return (user_ids, git_nums)
 
 def api_calls(request):
     """Makes API calls to GitHub and Zendesk to gather the data used in the app.
