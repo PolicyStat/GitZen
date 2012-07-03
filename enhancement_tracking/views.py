@@ -12,8 +12,9 @@ from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 
 # Constant URL string for accessing the GitHub API. The first %s is the
-# organization/user name, and the second %s is the repository name.
-BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
+# organization/user name, the second %s is the repository name, and the thrid %s
+# is the issue number of the ticket being accessed.
+ISSUE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues/%s'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
@@ -27,11 +28,10 @@ GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 # accessed.
 SEARCH_ZEN_URL = '%s/api/v2/search.json'
 
-# Constant search query used to access Zendesk tickets form its API. The %s is
-# the oldest date (in the format YYYY/MM/DD) a ticket can be and still be
-# included in the results.
-ZTIC_SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
-        ticket_type:problem status:open'
+# Constant search query used to access open Zendesk problem and incident tickets
+# form its API.
+ZTIC_SEARCH_QUERY = 'type:ticket ticket_type:incident ticket_type:problem \
+                        status:open'
 
 # Constant URL string for accessing Zendesk users through the Zendesk API. The
 # first %s if the custom URL subdomain for the specific company whose users are
@@ -227,8 +227,7 @@ def get_zen_tickets(profile):
     try:
         while True:
             r_zt = requests.get(SEARCH_ZEN_URL % profile.zen_url, 
-                                params={'query': ZTIC_SEARCH_QUERY % \
-                                            zen_limit_str,
+                                params={'query': ZTIC_SEARCH_QUERY,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
                                         'per_page': 100,
@@ -320,6 +319,40 @@ def get_zen_users(profile, user_ids):
 
     return (zuser_list, zuser_status)
 
+def get_git_tickets(profile, git_nums):
+    """Gets the full GitHub ticket records for each issue number in the passed
+    list.
+
+    Parameters:
+        profile - The profile object that contains the current user's data
+                    necessary to access the tickets on their GitHub account.  
+        git_nums - A list of GitHub issue numbers whose full ticket records are 
+                    desired.
+
+    Returns a tuple of two values with the first being a list with a GitHub
+    ticket record for each of the issue numbers passed to the function and with
+    the second being the status of that list (True if the API calls were all
+    successful, False if not).
+    """
+    gticket_list = []
+
+    try:
+        for num in git_nums:
+            r_gt = requests.get(ISSUE_GIT_URL % (profile.git_org, 
+                                                profile.git_repo, num),
+                                params={'access_token': profile.git_token}
+                               )
+            if r_gt.status_code != 200:
+                raise Exception('Error in accessing GitHub API - %s' % \
+                                r_gt.json['message'])
+            gticket_list.extend(r_gt.json)
+
+        gtic_status = True
+    except:
+        gtic_status = False
+
+    return (gticket_list, gtic_status)
+
 def api_calls(request):
     """Makes API calls to GitHub and Zendesk to gather the data used in the app.
     
@@ -337,14 +370,6 @@ def api_calls(request):
     profile = request.user.get_profile()
     working = {}
 
-    # This line sets the limit for how far back the API calls go when
-    # gathering tickets.
-    date_limit = datetime.now() - timedelta(days=profile.age_limit)
-
-    # Git and Zen require the date_limit to be formatted differently
-    git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
-    zen_limit_str = datetime.strftime(date_limit, '%Y-%m-%d')
-
     try:  # GitHub API calls to get all open and closed tickets
         # Get open tickets
         gopen_list = []
@@ -354,7 +379,6 @@ def api_calls(request):
                                                 profile.git_repo),
                                 params={'access_token': profile.git_token,
                                         'state': 'open', 
-                                        'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page}
                                )
@@ -375,7 +399,6 @@ def api_calls(request):
                                                 profile.git_repo),
                                 params={'access_token': profile.git_token,
                                         'state': 'closed',
-                                        'since': git_limit_str,
                                         'per_page': 100,
                                         'page': page}
                                )
@@ -402,7 +425,7 @@ def api_calls(request):
         page = 1
         while True:
             r_zt = requests.get(BASE_ZEN_URL % profile.zen_url, 
-                                params={'query': SEARCH_QUERY % zen_limit_str,
+                                params={'query': SEARCH_QUERY,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
                                         'per_page': 100,
