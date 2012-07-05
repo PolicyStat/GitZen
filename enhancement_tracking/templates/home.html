@@ -16,7 +16,7 @@
 <div class="span6">
     <h3>Currently Tracking</h3>
     {% if tracking %}
-		<table class="table span6 center">
+		<table class="table span6 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -26,22 +26,23 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in tracking %}
+			{% for enhancement in tracking %}
 				<tr>
 					<td>
 						<a class="open" href="{{ zen_url }}/tickets/
-						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+						--&gt; <a class="open" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
 					</td>
-				<td class="open">{{ a.z_date }}</td>
-				<td class="open">{{ a.g_date }}</td>
+				<td class="open">{{ enhancement.z_date }}</td>
+				<td class="open">{{ enhancment.g_date }}</td>
 				<td>
-				{% if a.g_labels %}
-					{% for l in a.g_labels %}
+				{% if enhancement.g_labels %}
+					{% for label in enhancement.g_labels %}
 						{% if not forloop.last %}
-							{{ l }},
+							{{ label }},
 						{% else %}
-							{{ l }}
+							{{ label }}
 						{% endif %}
 					{% endfor %}
 				{% else %}
@@ -54,13 +55,12 @@
     {% else %}
         <p>There are currently no Enhancements being tracked.</p>
     {% endif %}
-    <br/>
 </div>
 
 <div class="span6">
 	<h3>Need Attention</h3>
     {% if need_attention %}
-		<table class="table span6 center">
+		<table class="table span6 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -70,36 +70,38 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in need_attention %}
+			{% for enhancement in need_attention %}
 				<tr>
 					<td>
-					{% if a.closed == 'g' %}
+					{% if enhancement.closed == 'g' %}
 						<a class="open" href="{{ zen_url }}/tickets/
-							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="closed" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ enhancement.z_id }}">Z{{ enhacement.z_id }}</a> 
+						--&gt; <a class="closed" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
 					{% else %}
 						<a class="closed" href="{{ zen_url }}/tickets/
-							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+						--&gt; <a class="open" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
 					{% endif %}
 					</td>
-					{% if a.closed == 'z' %}
-						<td class="closed">{{ a.z_date }}</td>
+					{% if enhancement.closed == 'z' %}
+						<td class="closed">{{ enhancement.z_date }}</td>
 					{% else %}
-						<td class="open">{{ a.z_date }}</td>
+						<td class="open">{{ enhancement.z_date }}</td>
 					{% endif %}
-					{% if a.closed == 'g' %}
-						<td class="closed">{{ a.g_date }}</td>
+					{% if enhancement.closed == 'g' %}
+						<td class="closed">{{ enhancement.g_date }}</td>
 					{% else %}
-						<td class="open">{{ a.g_date }}</td>
+						<td class="open">{{ enhancement.g_date }}</td>
 					{% endif %}
 					<td>
-					{% if a.g_labels %}
-						{% for l in a.g_labels %}
+					{% if enhancement.g_labels %}
+						{% for label in enhancement.g_labels %}
 							{% if not forloop.last %}
-								{{ l }},
+								{{ label }},
 							{% else %}
-								{{ l }}
+								{{ label }}
 							{% endif %}
 						{% endfor %}
 					{% else %}
@@ -113,13 +115,51 @@
     {% else %}
         <p>There are currently no Enhancements in need of attention.</p>
     {% endif %}
-    <br/>
 </div>
 </div>
+<br/>
 
+{% if broken_enhancements %}
+<div class="row">
+<div class="span8 offset2">
+	<h3>Requested Enhancements with an Improper GitHub Association</h3>
+	<p>The listing in the GitHub Association field should be in the format
+	"gh-###" where the "###" is the GitHub issue number of the associated
+	issue.</p>
+
+	<table class="table table-striped span8 offset2 table-center">
+		<thead>
+			<tr>
+				<th>Zendesk Ticket</th>
+				<th>Subject</th>
+				<th>Last Updated</th>
+				<th>Association Field Data</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for enhancement in broken_enhancements %}
+			<tr>
+				<td>
+					<a class="open" href="{{ zen_url }}/tickets/
+						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
+				</td>
+				<td>{{ enhancement.z_subject }}</td>
+				<td>{{ enhancement.z_date }}</td>
+				<td>{{ enhancement.broken_assoc }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+</div>
+<br/>
+{% endif %}
+
+<div class="row">
+<div class="span12">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
     {% if not_tracking %}
-		<table class="table table-striped center" style="width:70%">
+	<table class="table table-striped span12 table-center">
 			<thead>
 				<tr>
 					<th>Zendesk Ticket</th>
@@ -134,12 +174,12 @@
 			</thead>
 			<tbody>
 				<tr>
-			{% for a in not_tracking %}
+			{% for enhancement in not_tracking %}
 				<td>
 					<a class="open" href="{{ zen_url }}/tickets/
-						{{ a.z_id }}">Z{{ a.z_id }}</a>
+						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
 				</td>
-				<td>{{ a.z_date }}</td>
+				<td>{{ enhancement.z_date }}</td>
 				<!-- The number parameter for divisibleby will be the number of
 				tickect entries per row. -->
 				{% if not forloop.counter|divisibleby:4 %}
@@ -161,6 +201,8 @@
 	<p>There was an Error connecting to either GitHub or Zendesk. Try adjusting
 		your account settings.</p>
 {% endif %}
+</div>
+</div>
 
 <br/>
 
@@ -171,7 +213,7 @@
 <div class="span6">
 	<h3>GitHub Tickets</h3>
 	{% if status.git %}
-		<table class="table table-striped span6 center">
+		<table class="table table-striped span6 table-center">
 			<thead>
 				<tr>
 					<th>Issue</th>
@@ -179,14 +221,15 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% if git_tics %}
-				{% for i in git_tics %}
+			{% if git_tickets %}
+				{% for ticket in git_tickets %}
 					<tr>
 						<td>
-							<a href="{{ i.html_url }}">{{ i.number }}</a>
+							<a href="{{ ticket.html_url }}"
+								>{{ ticket.number }}</a>
 						</td>
 						<td>
-							{{ i.title }}
+							{{ ticket.title }}
 						</td>
 					</tr>
 				{% endfor %}
@@ -200,7 +243,7 @@
 			</tbody>
 		</table>
 	{% else %}
-		<p align="center">There was an Error connecting to GitHub. Try
+		<p>There was an Error connecting to GitHub. Try
 		adjusting your account settings.</p> 
 	{% endif %}
 </div>
@@ -208,7 +251,7 @@
 <div class="span6">
 	<h3>Zendesk Tickets</h3>
 	{% if status.zen %}
-		<table class="table table-striped span6 center">
+		<table class="table table-striped span6 table-center">
 			<thead>
 				<tr>
 					<th>ID</th>
@@ -216,14 +259,14 @@
 				</tr>
 			</thead>
 			<tbody>
-        	{% if zen_tics %}
-            	{% for t in zen_tics %}
+        	{% if zen_tickets %}
+            	{% for tickets in zen_tickets %}
                 	<tr>
 						<td>
 							<a href="{{ zen_url }}/tickets/
-								{{ t.id }}">{{ t.id }}</a> 
+								{{ ticket.id }}">{{ ticket.id }}</a> 
            				</td>
-                		<td>{{ t.subject }}</td>
+                		<td>{{ ticket.subject }}</td>
                 	</tr>
             	{% endfor %}
         	{% else %}
@@ -236,7 +279,7 @@
 			</tbody>
 		</table>
     {% else %}
-		<p align="center">There was an Error connecting to Zendesk. Try
+		<p>There was an Error connecting to Zendesk. Try
 		adjusting your account settings.</p> 
 	{% endif %}
 </div>
