@@ -180,7 +180,7 @@ def home(request):
                                       # associated GitHub issue number.
     render_data = {} # Data to be rendered to the home page
 
-    zen_ticketss = [] # List of the open problem or incident tickets in Zendesk.
+    zen_tickets = [] # List of the open problem or incident tickets in Zendesk.
     zen_user_reference = {} # Dictionary reference of the user IDs and 
                             # user names associated with the Zendesk tickets in
                             # zen_tickets.
@@ -354,7 +354,7 @@ def get_git_tickets(profile, git_issue_numbers):
             if request_git_tickets.status_code != 200:
                 raise Exception('Error in accessing GitHub API - %s' % \
                                 request_git_tickets.json['message'])
-            git_tickets.extend(request_git_tickets.json)
+            git_tickets.append(request_git_tickets.json)
 
         git_ticket_status = True
     except:
