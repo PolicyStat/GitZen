@@ -26,22 +26,23 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in tracking %}
+			{% for enhancement in tracking %}
 				<tr>
 					<td>
 						<a class="open" href="{{ zen_url }}/tickets/
-						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+						--&gt; <a class="open" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
 					</td>
-				<td class="open">{{ a.z_date }}</td>
-				<td class="open">{{ a.g_date }}</td>
+				<td class="open">{{ enhancement.z_date }}</td>
+				<td class="open">{{ enhancment.g_date }}</td>
 				<td>
-				{% if a.g_labels %}
-					{% for l in a.g_labels %}
+				{% if enhancement.g_labels %}
+					{% for label in enhancement.g_labels %}
 						{% if not forloop.last %}
-							{{ l }},
+							{{ label }},
 						{% else %}
-							{{ l }}
+							{{ label }}
 						{% endif %}
 					{% endfor %}
 				{% else %}
@@ -69,36 +70,38 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in need_attention %}
+			{% for enhancement in need_attention %}
 				<tr>
 					<td>
-					{% if a.closed == 'g' %}
+					{% if enhancement.closed == 'g' %}
 						<a class="open" href="{{ zen_url }}/tickets/
-							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="closed" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ enhancement.z_id }}">Z{{ enhacement.z_id }}</a> 
+						--&gt; <a class="closed" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
 					{% else %}
 						<a class="closed" href="{{ zen_url }}/tickets/
-							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+						--&gt; <a class="open" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
 					{% endif %}
 					</td>
-					{% if a.closed == 'z' %}
-						<td class="closed">{{ a.z_date }}</td>
+					{% if enhancement.closed == 'z' %}
+						<td class="closed">{{ enhancement.z_date }}</td>
 					{% else %}
-						<td class="open">{{ a.z_date }}</td>
+						<td class="open">{{ enhancement.z_date }}</td>
 					{% endif %}
-					{% if a.closed == 'g' %}
-						<td class="closed">{{ a.g_date }}</td>
+					{% if enhancement.closed == 'g' %}
+						<td class="closed">{{ enhancement.g_date }}</td>
 					{% else %}
-						<td class="open">{{ a.g_date }}</td>
+						<td class="open">{{ enhancement.g_date }}</td>
 					{% endif %}
 					<td>
-					{% if a.g_labels %}
-						{% for l in a.g_labels %}
+					{% if enhancement.g_labels %}
+						{% for label in enhancement.g_labels %}
 							{% if not forloop.last %}
-								{{ l }},
+								{{ label }},
 							{% else %}
-								{{ l }}
+								{{ label }}
 							{% endif %}
 						{% endfor %}
 					{% else %}
@@ -116,7 +119,7 @@
 </div>
 <br/>
 
-{% if broken_enh %}
+{% if broken_enhancements %}
 <div class="row">
 <div class="span8 offset2">
 	<h3>Requested Enhancements with an Improper GitHub Association</h3>
@@ -134,15 +137,15 @@
 			</tr>
 		</thead>
 		<tbody>
-		{% for e in broken_enh %}
+		{% for enhancement in broken_enhancements %}
 			<tr>
 				<td>
 					<a class="open" href="{{ zen_url }}/tickets/
-						{{ e.z_id }}">Z{{ e.z_id }}</a>
+						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
 				</td>
-				<td>{{ e.z_subject }}</td>
-				<td>{{ e.z_date }}</td>
-				<td>{{ e.broken_assoc }}</td>
+				<td>{{ enhancement.z_subject }}</td>
+				<td>{{ enhancement.z_date }}</td>
+				<td>{{ enhancement.broken_assoc }}</td>
 			</tr>
 		{% endfor %}
 		</tbody>
@@ -171,12 +174,12 @@
 			</thead>
 			<tbody>
 				<tr>
-			{% for a in not_tracking %}
+			{% for enhancement in not_tracking %}
 				<td>
 					<a class="open" href="{{ zen_url }}/tickets/
-						{{ a.z_id }}">Z{{ a.z_id }}</a>
+						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
 				</td>
-				<td>{{ a.z_date }}</td>
+				<td>{{ enhancement.z_date }}</td>
 				<!-- The number parameter for divisibleby will be the number of
 				tickect entries per row. -->
 				{% if not forloop.counter|divisibleby:4 %}
@@ -218,14 +221,15 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% if git_tics %}
-				{% for i in git_tics %}
+			{% if git_tickets %}
+				{% for ticket in git_tickets %}
 					<tr>
 						<td>
-							<a href="{{ i.html_url }}">{{ i.number }}</a>
+							<a href="{{ ticket.html_url }}"
+								>{{ ticket.number }}</a>
 						</td>
 						<td>
-							{{ i.title }}
+							{{ ticket.title }}
 						</td>
 					</tr>
 				{% endfor %}
@@ -255,14 +259,14 @@
 				</tr>
 			</thead>
 			<tbody>
-        	{% if zen_tics %}
-            	{% for t in zen_tics %}
+        	{% if zen_tickets %}
+            	{% for tickets in zen_tickets %}
                 	<tr>
 						<td>
 							<a href="{{ zen_url }}/tickets/
-								{{ t.id }}">{{ t.id }}</a> 
+								{{ ticket.id }}">{{ ticket.id }}</a> 
            				</td>
-                		<td>{{ t.subject }}</td>
+                		<td>{{ ticket.subject }}</td>
                 	</tr>
             	{% endfor %}
         	{% else %}
