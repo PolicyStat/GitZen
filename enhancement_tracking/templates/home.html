@@ -12,28 +12,30 @@
 <br/>
 
 <!-- TODO: Reformat tables to include the subject of each Zendesk ticket -->
-{% if status.tracking %}
+{% if status %}
 <div class="row">
-<div class="span6">
+<div class="span8 offest2">
     <h3>Currently Tracking</h3>
     {% if tracking %}
-		<table class="table span6 table-center">
+		<table class="table span8 offset2 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
+					<th>Zendesk Subject</th>
 					<th>Last Zen Ticket Update</th>
 					<th>Last Git Ticket Update</th>
 					<th>Git Issue Labels</th>
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in tracking %}
+			{% for e in tracking %}
 				<tr>
 					<td>
 						<a class="open" href="{{ zen_url }}/tickets/
-						{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="open" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+						{{ e.z_id }}">Z{{ e.z_id }}</a> --&gt; 
+						<a class="open" href="{{ e.g_url }}">G{{ e.g_id }}</a>
 					</td>
+				<td>{{ e.z_subject }}</td>
 				<td class="open">{{ a.z_date }}</td>
 				<td class="open">{{ a.g_date }}</td>
 				<td>
@@ -56,27 +58,32 @@
         <p>There are currently no Enhancements being tracked.</p>
     {% endif %}
 </div>
+</div>
+<br/>
 
-<div class="span6">
+<div class="row">
+<div class="span8 offset2">
 	<h3>Need Attention</h3>
     {% if need_attention %}
-		<table class="table span6 table-center">
+		<table class="table span8 offset2 table-center">
 			<thead>
 				<tr>
 					<th>Association</th>
+					<th>Zendesk Subject</th>
 					<th>Last Zen Ticket Update</th>
 					<th>Last Git Ticket Update</th>
 					<th>Git Issue Labels</th>
 				</tr>
 			</thead>
 			<tbody>
-			{% for a in need_attention %}
+			{% for e in need_attention %}
 				<tr>
 					<td>
 						<a class="open" href="{{ zen_url }}/tickets/
-							{{ a.z_id }}">Z{{ a.z_id }}</a> --&gt; 
-						<a class="closed" href="{{ a.g_url }}">G{{ a.g_id }}</a>
+							{{ e.z_id }}">Z{{ e.z_id }}</a> --&gt; 
+						<a class="closed" href="{{ e.g_url }}">G{{ e.g_id }}</a>
 					</td>
+					<td>{{ e.z_subject }}</td>
 					<td class="open">{{ a.z_date }}</td>
 					<td class="closed">{{ a.g_date }}</td>
 					<td>

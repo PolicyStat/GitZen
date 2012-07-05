@@ -201,7 +201,8 @@ def home(request):
     render_data = build_enhancement_data(zen_tics, zen_user_ref, git_tics, 
                                          zen_fieldid, api_status)
 
-    # Add additional user data to be rendered to the home page
+    # Add additional data to be rendered to the home page
+    render_data['status'] = api_status
     render_data['zen_url'] = profile.zen_url
     
     return render_to_response('home.html', render_data,
