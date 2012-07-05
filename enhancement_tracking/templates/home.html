@@ -40,19 +40,6 @@
 					<td>{{ enhancement.z_requester }}</td>
 					<td class="open">{{ enhancement.z_date }}</td>
 					<td class="closed">{{ enhancement.g_date }}</td>
-					<td>
-					{% if enhancement.g_labels %}
-						{% for label in enhancement.g_labels %}
-							{% if not forloop.last %}
-								{{ label }},
-							{% else %}
-								{{ label }}
-							{% endif %}
-						{% endfor %}
-					{% else %}
-						None
-					{% endif %}
-					</td>
 				</tr>
 			{% endfor %}
 			</tbody>
@@ -92,19 +79,6 @@
 					<td>{{ enhancement.z_requester }}</td>
 					<td class="open">{{ enhancement.z_date }}</td>
 					<td class="open">{{ enhancement.g_date }}</td>
-					<td>
-					{% if enhancement.g_labels %}
-						{% for label in enhancement.g_labels %}
-							{% if not forloop.last %}
-								{{ label }},
-							{% else %}
-								{{ label }}
-							{% endif %}
-						{% endfor %}
-					{% else %}
-						None
-					{% endif %}
-					</td>
 				</tr>
 			{% endfor %}
 			</tbody>
