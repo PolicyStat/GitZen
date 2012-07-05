@@ -398,8 +398,9 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                         # is closed, the other needs attention.
     broken_enhancements = [] # Requested enhancements from Zendesk with a broken
                              # GitHub issue association field.
-    unassociated = [] # Requested enhancements from Zendesk tickets that have no
-                      # associatied GitHub ticket assigned to them.
+    unassociated_enhancements = [] # Requested enhancements from Zendesk 
+                                   # tickets that have no associatied GitHub
+                                   # ticket assigned to them.
     if api_status:
 
         # Iterate through the Zendesk tickets using their data to classify them
