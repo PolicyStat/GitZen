@@ -15,6 +15,8 @@
 <div class="row">
 <div class="span12">
 	<h3>Need Attention</h3>
+	<p>Requested enhancements whose GitHub ticket has been closed, but the
+	Zendesk ticket still remains open.</p>
     {% if need_attention %}
 		<table class="table span12 table-center">
 			<thead>
@@ -52,7 +54,9 @@
 
 <div class="row">
 <div class="span12">
-    <h3>Currently Tracking</h3>
+	<h3>Currently Tracking</h3>
+	<p>Requested enhancements whose Zendesk ticket and associated GitHub ticket
+	are still open and being worked on.</p>
     {% if tracking %}
 		<table class="table span12 table-center">
 			<thead>
@@ -128,7 +132,9 @@
 
 <div class="row">
 <div class="span10 offset1">		
-    <h3>Requested Enhancements not Associated with GitHub</h3>
+	<h3>Requested Enhancements not Associated with GitHub</h3>
+	<p>Zendesk tickets requesting an enhancement that have no associated GitHub
+	ticket.</p>
     {% if unassociated_enhancements %}
 	<table class="table table-striped span10 offset1 table-center">
 		<thead>
