@@ -11,6 +11,7 @@
 <h2>Enhancement Tracking</h2>
 <br/>
 
+<!-- TODO: Reformat tables to include the subject of each Zendesk ticket -->
 {% if status.tracking %}
 <div class="row">
 <div class="span6">
@@ -73,28 +74,13 @@
 			{% for enhancement in need_attention %}
 				<tr>
 					<td>
-					{% if enhancement.closed == 'g' %}
 						<a class="open" href="{{ zen_url }}/tickets/
-							{{ enhancement.z_id }}">Z{{ enhacement.z_id }}</a> 
-						--&gt; <a class="closed" href="{{ enhancement.g_url }}"
-							>G{{enhancement.g_id }}</a>
-					{% else %}
-						<a class="closed" href="{{ zen_url }}/tickets/
 							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
-						--&gt; <a class="open" href="{{ enhancement.g_url }}"
-							>G{{enhancement.g_id }}</a>
-					{% endif %}
+						--&gt; <a class="closed" href="{{ enhancement.g_url }}"
+							>G{{ enhancement.g_id }}</a>
 					</td>
-					{% if enhancement.closed == 'z' %}
-						<td class="closed">{{ enhancement.z_date }}</td>
-					{% else %}
-						<td class="open">{{ enhancement.z_date }}</td>
-					{% endif %}
-					{% if enhancement.closed == 'g' %}
-						<td class="closed">{{ enhancement.g_date }}</td>
-					{% else %}
-						<td class="open">{{ enhancement.g_date }}</td>
-					{% endif %}
+					<td class="open">{{ enhancement.z_date }}</td>
+					<td class="closed">{{ enhancement.g_date }}</td>
 					<td>
 					{% if enhancement.g_labels %}
 						{% for label in enhancement.g_labels %}
@@ -122,7 +108,7 @@
 {% if broken_enhancements %}
 <div class="row">
 <div class="span8 offset2">
-	<h3>Requested Enhancements with an Improper GitHub Association</h3>
+	<h3>Requested Enhancements with Improper GitHub Associations</h3>
 	<p>The listing in the GitHub Association field should be in the format
 	"gh-###" where the "###" is the GitHub issue number of the associated
 	issue.</p>
@@ -158,7 +144,7 @@
 <div class="row">
 <div class="span12">		
     <h3>Requested Enhancements not Associated with GitHub</h3>
-    {% if not_tracking %}
+    {% if unassociated_enhancements %}
 	<table class="table table-striped span12 table-center">
 			<thead>
 				<tr>
@@ -174,7 +160,7 @@
 			</thead>
 			<tbody>
 				<tr>
-			{% for enhancement in not_tracking %}
+			{% for enhancement in unassociated_enhancements %}
 				<td>
 					<a class="open" href="{{ zen_url }}/tickets/
 						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
@@ -201,87 +187,6 @@
 	<p>There was an Error connecting to either GitHub or Zendesk. Try adjusting
 		your account settings.</p>
 {% endif %}
-</div>
-</div>
-
-<br/>
-
-<h2>Quick Reference</h2>
-<br/>
-
-<div class="row">
-<div class="span6">
-	<h3>GitHub Tickets</h3>
-	{% if status.git %}
-		<table class="table table-striped span6 table-center">
-			<thead>
-				<tr>
-					<th>Issue</th>
-					<th>Subject</th>
-				</tr>
-			</thead>
-			<tbody>
-			{% if git_tickets %}
-				{% for ticket in git_tickets %}
-					<tr>
-						<td>
-							<a href="{{ ticket.html_url }}"
-								>{{ ticket.number }}</a>
-						</td>
-						<td>
-							{{ ticket.title }}
-						</td>
-					</tr>
-				{% endfor %}
-			{% else %}
-				<tr>
-					<td align="center" colspan="2">
-						There are currently no open GitHub Tickets.
-					</td>
-				</tr>
-			{% endif %}
-			</tbody>
-		</table>
-	{% else %}
-		<p>There was an Error connecting to GitHub. Try
-		adjusting your account settings.</p> 
-	{% endif %}
-</div>
-
-<div class="span6">
-	<h3>Zendesk Tickets</h3>
-	{% if status.zen %}
-		<table class="table table-striped span6 table-center">
-			<thead>
-				<tr>
-					<th>ID</th>
-    				<th>Subject</th>
-				</tr>
-			</thead>
-			<tbody>
-        	{% if zen_tickets %}
-            	{% for tickets in zen_tickets %}
-                	<tr>
-						<td>
-							<a href="{{ zen_url }}/tickets/
-								{{ ticket.id }}">{{ ticket.id }}</a> 
-           				</td>
-                		<td>{{ ticket.subject }}</td>
-                	</tr>
-            	{% endfor %}
-        	{% else %}
-				<tr>
-					<td align="center" colspan="2">
-						There are currently no Zendesk Tickets.
-					</td>
-				</tr>
-			{% endif %}
-			</tbody>
-		</table>
-    {% else %}
-		<p>There was an Error connecting to Zendesk. Try
-		adjusting your account settings.</p> 
-	{% endif %}
 </div>
 </div>
 
