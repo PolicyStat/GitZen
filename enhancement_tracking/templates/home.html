@@ -14,58 +14,6 @@
 {% if status %}
 <div class="row">
 <div class="span12">
-    <h3>Currently Tracking</h3>
-    {% if tracking %}
-		<table class="table span12 table-center">
-			<thead>
-				<tr>
-					<th>Association</th>
-					<th>Zendesk Subject</th>
-					<th>Requester</th>
-					<th>Last Zen Ticket Update</th>
-					<th>Last Git Ticket Update</th>
-					<th>Git Issue Labels</th>
-				</tr>
-			</thead>
-			<tbody>
-			{% for enhancement in tracking %}
-				<tr>
-					<td>
-						<a class="open" href="{{ zen_url }}/tickets/
-							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
-						--&gt; <a class="open" href="{{ enhancement.g_url }}"
-							>G{{enhancement.g_id }}</a>
-					</td>
-					<td>{{ enhancement.z_subject }}</td>
-					<td>{{ enhancement.z_requester }}</td>
-					<td class="open">{{ enhancement.z_date }}</td>
-					<td class="open">{{ enhancment.g_date }}</td>
-					<td>
-					{% if enhancement.g_labels %}
-						{% for label in enhancement.g_labels %}
-							{% if not forloop.last %}
-								{{ label }},
-							{% else %}
-								{{ label }}
-							{% endif %}
-						{% endfor %}
-					{% else %}
-						None
-					{% endif %}
-					</td>
-				</tr>
-			{% endfor %}
-			</tbody>
-		</table>
-    {% else %}
-        <p>There are currently no Enhancements being tracked.</p>
-    {% endif %}
-</div>
-</div>
-<br/>
-
-<div class="row">
-<div class="span12">
 	<h3>Need Attention</h3>
     {% if need_attention %}
 		<table class="table span12 table-center">
@@ -116,15 +64,67 @@
 </div>
 <br/>
 
+<div class="row">
+<div class="span12">
+    <h3>Currently Tracking</h3>
+    {% if tracking %}
+		<table class="table span12 table-center">
+			<thead>
+				<tr>
+					<th>Association</th>
+					<th>Zendesk Subject</th>
+					<th>Requester</th>
+					<th>Last Zen Ticket Update</th>
+					<th>Last Git Ticket Update</th>
+					<th>Git Issue Labels</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for enhancement in tracking %}
+				<tr>
+					<td>
+						<a class="open" href="{{ zen_url }}/tickets/
+							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+						--&gt; <a class="open" href="{{ enhancement.g_url }}"
+							>G{{enhancement.g_id }}</a>
+					</td>
+					<td>{{ enhancement.z_subject }}</td>
+					<td>{{ enhancement.z_requester }}</td>
+					<td class="open">{{ enhancement.z_date }}</td>
+					<td class="open">{{ enhancement.g_date }}</td>
+					<td>
+					{% if enhancement.g_labels %}
+						{% for label in enhancement.g_labels %}
+							{% if not forloop.last %}
+								{{ label }},
+							{% else %}
+								{{ label }}
+							{% endif %}
+						{% endfor %}
+					{% else %}
+						None
+					{% endif %}
+					</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+    {% else %}
+        <p>There are currently no Enhancements being tracked.</p>
+    {% endif %}
+</div>
+</div>
+<br/>
+
 {% if broken_enhancements %}
 <div class="row">
-<div class="span8 offset2">
+<div class="span10 offset1">
 	<h3>Requested Enhancements with Improper GitHub Associations</h3>
 	<p>The listing in the GitHub Association field should be in the format
 	"gh-###" where the "###" is the GitHub issue number of the associated
 	issue.</p>
 
-	<table class="table table-striped span8 offset2 table-center">
+	<table class="table table-striped span10 offset1 table-center">
 		<thead>
 			<tr>
 				<th>Zendesk Ticket</th>
