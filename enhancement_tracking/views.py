@@ -439,8 +439,6 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                     broken_enhancements.append(enhancement_data)
                     continue
                 enhancement_data['g_id'] = git_issue['number']
-                enhancement_data['g_labels'] = [label['name'] for label \
-                                                in git_issue['labels']]
                 enhancement_data['g_url'] = git_issue['html_url']
                 enhancement_data['g_status'] = git_issue['state']
                 g_date = datetime.strptime(git_issue['updated_at'], 
