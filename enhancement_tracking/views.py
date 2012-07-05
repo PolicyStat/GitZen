@@ -402,8 +402,9 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
                         # is closed, the other needs attention.
     broken_enhancements = [] # Requested enhancements from Zendesk with a broken
                              # GitHub issue association field.
-    unassociated = [] # Requested enhancements from Zendesk tickets that have no
-                      # associatied GitHub ticket assigned to them.
+    unassociated_enhancements = [] # Requested enhancements from Zendesk 
+                                   # tickets that have no associatied GitHub
+                                   # ticket assigned to them.
     if api_status:
         status['tracking'] = True
         status['need_attention'] = True
