@@ -251,7 +251,7 @@ def get_zen_tickets(profile):
     except:
         zen_ticket_status = False
 
-    return (zen_tickets, zen_tickets_status)
+    return (zen_tickets, zen_ticket_status)
 
 def get_id_lists(zen_tickets, zen_fieldid):
     """Gets lists of the Zendesk user IDs and the GitHub issue numbers that are
