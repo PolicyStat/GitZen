@@ -413,7 +413,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                     break
             enhancement_data = {} # Enhancement data object
             enhancement_data['z_id'] = ticket['id']
-            enhancement_data['z_status'] = ticket['status']
+            enhancement_data['z_requester'] = \
+                    zen_user_reference[ticket['requester_id']]
             enhancement_data['z_subject'] = ticket['subject']
             z_date = datetime.strptime(ticket['updated_at'],
                                         "%Y-%m-%dT%H:%M:%SZ")
