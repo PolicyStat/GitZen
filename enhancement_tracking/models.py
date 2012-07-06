@@ -18,6 +18,8 @@ class GZUserProfile(models.Model):
     zen_fieldid = models.IntegerField(null=True,
                                       verbose_name='Zendesk Ticket \
                                       Association Field ID')
+    utc_offset = models.IntegerField(null=True, 
+                                     verbose_name='Time Zone (UTC Offset)')
 
     def __str__(self):
         return "%s's profile" % self.user

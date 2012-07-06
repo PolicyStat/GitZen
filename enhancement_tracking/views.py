@@ -178,6 +178,8 @@ def home(request):
     zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
                                       # Zendesk tickets that contains their 
                                       # associated GitHub issue number.
+    utc_offset = profile.utc_offset # The UTC offset for the current user's time
+                                    # zone.
     render_data = {} # Data to be rendered to the home page
 
     zen_tickets = [] # List of the open problem or incident tickets in Zendesk.
@@ -202,7 +204,8 @@ def home(request):
 
     api_status = zen_ticket_status and zen_user_status and git_ticket_status
     render_data = build_enhancement_data(zen_tickets, zen_user_reference,
-                                         git_tickets, zen_fieldid, api_status)
+                                         git_tickets, zen_fieldid, utc_offset,
+                                         api_status)
 
     # Add additional data to be rendered to the home page
     render_data['status'] = api_status
@@ -363,7 +366,7 @@ def get_git_tickets(profile, git_issue_numbers):
     return (git_tickets, git_ticket_status)
 
 def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
-                           zen_fieldid, api_status):
+                           zen_fieldid, utc_offset, api_status):
     """Builds the enhancement tracking tables from the Zendesk and GitHub data.
     
     Parameters:
@@ -376,6 +379,9 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                         in zen_tics.
         zen_fieldid - The ID number of the custom field that holds the ticket
                         association value for a given Zendesk ticket.
+        utc_offset - The UTC offset for the current user's time zone. Used to
+                        format the date and time values for each ticket to the
+                        current user's time zone.
         api_status - A boolean that is True if the API lists were successfully
                         gathered, and False if they were not. Needed to
                         determine the status of the enhancement tracking lists.
@@ -419,7 +425,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['z_subject'] = ticket['subject']
             z_date = datetime.strptime(ticket['updated_at'],
                                         "%Y-%m-%dT%H:%M:%SZ")
-            enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y @ %H:%M')
+            z_date = z_date + timedelta(hours=utc_offset)
+            enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y @ %I:%M %p')
             
             # Check if it has no associated  GitHub ticket
             if association_data is None or \
@@ -443,7 +450,9 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                 enhancement_data['g_status'] = git_issue['state']
                 g_date = datetime.strptime(git_issue['updated_at'], 
                                             "%Y-%m-%dT%H:%M:%SZ")
-                enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y @ %H:%M')
+                g_date = g_date + timedelta(hours=utc_offset)
+                enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y @ \
+                                                             %I:%M %p')
                 
                 # Check if the enhacement should be tracked (Both tickets are
                 # open).
