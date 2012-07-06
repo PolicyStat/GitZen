@@ -3,8 +3,8 @@
 {% block title %}Home{% endblock %}
 
 {% block extra_head %}
-<!-- <link rel="stylesheet" type="text/css" 
-	href="{{ STATIC_URL }}css/dataTables.css"> -->
+<link rel="stylesheet" type="text/css" 
+	href="{{ STATIC_URL }}css/dataTables.css">
 <script type="text/javascript" language="javascript" 
 	src="{{ STATIC_URL }}js/jquery.js"></script>
 <script type="text/javascript" language="javascript"
@@ -20,7 +20,7 @@
 
 	$(document).ready(function() {
 		$('.dataTable').dataTable( {
-			"sDom": "<'row'<'span8'l><'span8'f>r>t<'row'<'span8'i><'span8'p>>",
+			"sDom": "<'row'<'span12'l><'span12'f>r>t<'row'<'span12'i><'span12'p>>",
 			"sPaginationType": "bootstrap"
 		} );
 	} );
