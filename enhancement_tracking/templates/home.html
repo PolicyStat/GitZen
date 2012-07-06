@@ -43,7 +43,7 @@
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
 	Zendesk ticket still remains open.</p>
     {% if need_attention %}
-		<table class="table span12 dataTable table-center">
+		<table class="bordered-table span12 dataTable">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -83,7 +83,7 @@
 	<p>Requested enhancements whose Zendesk ticket and associated GitHub ticket
 	are still open and being worked on.</p>
     {% if tracking %}
-		<table class="table span12 dataTable table-center">
+		<table class="bordered-table span12 dataTable">
 			<thead>
 				<tr>
 					<th>Association</th>
@@ -125,7 +125,7 @@
 	"gh-###" where the "###" is the GitHub issue number of the associated
 	issue.</p>
 
-	<table class="table table-striped span12 dataTable table-center">
+	<table class="bordered-table zebra-striped span12 dataTable">
 		<thead>
 			<tr>
 				<th>Zendesk Ticket</th>
@@ -161,7 +161,7 @@
 	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
 	ticket.</p>
     {% if unassociated_enhancements %}
-	<table class="table table-striped span10 offset1 dataTable table-center">
+	<table class="bordered-table zebra-striped span10 offset1 dataTable">
 		<thead>
 			<tr>
 				<th>Zendesk Ticket</th>
