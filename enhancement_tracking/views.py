@@ -205,7 +205,7 @@ def home(request):
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
 
-def get_zen_tickets(profile):
+def get_zen_tickets(request):
     """Gets all of the open problem and incident Zendesk tickets using the
     Zendesk API.
 
@@ -282,7 +282,7 @@ def get_id_lists(zen_tickets, zen_fieldid):
 
     return (zen_user_ids, git_issue_numbers)
 
-def get_zen_users(profile, zen_user_ids):
+def get_zen_users(request, zen_user_ids):
     """Gets the full Zendesk user records for each user ID number in the passed
     list.
 
@@ -317,7 +317,7 @@ def get_zen_users(profile, zen_user_ids):
 
     return zen_user_reference
 
-def get_git_tickets(profile, git_issue_numbers):
+def get_git_tickets(request, git_issue_numbers):
     """Gets the full GitHub ticket records for each issue number in the passed
     list.
 
