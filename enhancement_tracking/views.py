@@ -198,8 +198,8 @@ def home(request):
     except RequestException as e:
         render_data['api_requests_successful'] = False
         render_data['error_message'] = 'There was an error connecting to the \
-                %s API - %s. Try adjusting your account settings.' % (e.args[1],
-                                                                      e.args[0])
+                %s API: %s. Try adjusting your account settings.' % (e.args[1],
+                                                                     e.args[0])
         return render_to_response('home.html', render_data,
                                     context_instance=RequestContext(request))
         
