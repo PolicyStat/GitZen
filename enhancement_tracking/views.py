@@ -280,9 +280,9 @@ def get_id_lists(zen_tickets, zen_fieldid):
         for field in ticket['fields']:
             if field['id'] == zen_fieldid:
                 if field['value'] is not None:
-                    association_data = field['value']
+                    association_data = field['value'].split('-')
                 break
-        if association_data and association_data.split('-')[0] == 'gh':
+        if association_data and association_data[0] == 'gh':
             git_issue_numbers.append(int(association_data[1]))
     git_issue_numbers = list(set(git_issue_numbers)) # Remove duplicates
 
