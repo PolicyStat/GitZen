@@ -34,7 +34,7 @@
 <h2>Enhancement Tracking</h2>
 <br/>
 
-{% if status %}
+{% if api_requests_successful %}
 <div class="row">
 <div class="span12">
 	<h3>Need Attention</h3>
@@ -203,8 +203,7 @@
 </div>
 </div>
 {% else %}
-	<p>There was an Error connecting to either GitHub or Zendesk. Try adjusting
-		your account settings.</p>
+	<p>{{ error_message }}</p>
 {% endif %}
 
 {% endblock %}
