@@ -351,7 +351,7 @@ def get_git_tickets(request, git_issue_numbers):
     return git_tickets
 
 def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
-                           zen_fieldid, utc_offset, api_status):
+                           zen_fieldid, utc_offset):
     """Builds the enhancement tracking tables from the Zendesk and GitHub data.
     
     Parameters:
