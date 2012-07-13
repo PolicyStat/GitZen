@@ -276,14 +276,13 @@ def get_id_lists(zen_tickets, zen_fieldid):
     # Get GitHub issue numbers that are associated with the Zendesk tickets.
     git_issue_numbers = []
     for ticket in zen_tickets:
+        association_data = []
         for field in ticket['fields']:
             if field['id'] == zen_fieldid:
                 if field['value'] is not None:
                     association_data = field['value'].split('-')
-                else:
-                    association_data = ['']
                 break
-        if association_data[0] == 'gh':
+        if association_data and association_data[0] == 'gh':
             git_issue_numbers.append(int(association_data[1]))
     git_issue_numbers = list(set(git_issue_numbers)) # Remove duplicates
 
