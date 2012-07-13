@@ -191,10 +191,10 @@ def home(request):
                      # tickets in zen_tickets.
     
     try:
-        zen_tickets = get_zen_tickets(request)
+        zen_tickets = get_zen_tickets(profile)
         zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
-        zen_user_reference = get_zen_users(request, zen_user_ids)
-        git_tickets = get_git_tickets(request, git_issue_numbers)
+        zen_user_reference = get_zen_users(profile, zen_user_ids)
+        git_tickets = get_git_tickets(profile, git_issue_numbers)
     except RequestException as e:
         render_data['api_requests_successful'] = False
         render_data['error_message'] = 'There was an error connecting to the \
@@ -213,17 +213,16 @@ def home(request):
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
 
-def get_zen_tickets(request):
+def get_zen_tickets(profile):
     """Gets all of the open problem and incident Zendesk tickets using the
     Zendesk API.
 
     Parameters:
-        request - The request object that contains the current user's data 
+        profile - The profile object that contains the current user's data 
                     necessary to access the tickets on their Zendesk account.
 
     Returns a gathered list of Zendesk tickets.
     """
-    profile = request.user.get_profile()
     zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
                                               # API token authorization.
     zen_tickets = []
@@ -288,12 +287,12 @@ def get_id_lists(zen_tickets, zen_fieldid):
 
     return (zen_user_ids, git_issue_numbers)
 
-def get_zen_users(request, zen_user_ids):
+def get_zen_users(profile, zen_user_ids):
     """Gets the full Zendesk user records for each user ID number in the passed
     list.
 
     Parameters:
-        request - The request object that contains the current user's data
+        profile - The profile object that contains the current user's data
                     necessary to access the users on their Zendesk account.  
         zen_user_ids - A list of Zendesk user IDs whose full user records are 
                         desired.
@@ -301,7 +300,6 @@ def get_zen_users(request, zen_user_ids):
     Returns a dictionary reference table with Zendesk user ID numbers as keys
     and their cooresponding user names as values.
     """
-    profile = request.user.get_profile()
     zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
                                               # API token authorization.
     zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
@@ -321,12 +319,12 @@ def get_zen_users(request, zen_user_ids):
     
     return zen_user_reference
 
-def get_git_tickets(request, git_issue_numbers):
+def get_git_tickets(profile, git_issue_numbers):
     """Gets the full GitHub ticket records for each issue number in the passed
     list.
 
     Parameters:
-        request - The request object that contains the current user's data
+        profile - The profile object that contains the current user's data
                     necessary to access the tickets on their GitHub account.  
         git_issue_numbers - A list of GitHub issue numbers whose full ticket
                                 records are desired.
@@ -334,7 +332,6 @@ def get_git_tickets(request, git_issue_numbers):
     Returns a list with a GitHub ticket record for each of the issue numbers
     passed to the function.
     """
-    profile = request.user.get_profile()
     git_tickets = []
     
     try:
@@ -455,24 +452,3 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
     }
 
     return built_data
-
-def request_unsuccessful(request, responsible_api, error_details):
-    """Renders the home page with the appropriate error message if an API
-    request was unsuccessful.
-
-    Parameters:
-        request - The request object with the necessary context to render the
-                    home page.
-        responsible_api - A string of the name of the API that was
-                            unsuccessfully connected to.
-        error_details - A string of the error message or error details
-                            associated with the unsuccessful API request.
-    """
-    error_message = 'There was an error connecting to the %s API - %s. Try \
-                    adjusting your account settings.' % (responsible_api,
-                                                         error_details)
-    render_data = {'api_requests_successful': False,
-                   'error_message': error_message}
-
-    return render_to_response('home.html', render_data,
-                                context_instance=RequestContext(request))
