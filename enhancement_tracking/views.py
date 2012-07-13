@@ -189,12 +189,20 @@ def home(request):
                             # zen_tickets.
     git_tickets = [] # List of the GitHub tickets associated with the Zendesk
                      # tickets in zen_tickets.
-
-    zen_tickets = get_zen_tickets(request)
-    zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
-    zen_user_reference = get_zen_users(request, zen_user_ids)
-    git_tickets = get_git_tickets(request, git_issue_numbers)
-
+    
+    try:
+        zen_tickets = get_zen_tickets(request)
+        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
+        zen_user_reference = get_zen_users(request, zen_user_ids)
+        git_tickets = get_git_tickets(request, git_issue_numbers)
+    except RequestException as e:
+        render_data['api_requests_successful'] = False
+        render_data['error_message'] = 'There was an error connecting to the \
+                %s API - %s. Try adjusting your account settings.' % (e.args[1],
+                                                                      e.args[0])
+        return render_to_response('home.html', render_data,
+                                    context_instance=RequestContext(request))
+        
     render_data = build_enhancement_data(zen_tickets, zen_user_reference,
                                          git_tickets, zen_fieldid, utc_offset)
 
@@ -220,10 +228,10 @@ def get_zen_tickets(request):
                                               # API token authorization.
     zen_tickets = []
     page = 1
-
+    
     try:
         while True:
-            request_zen_tickets = requests.get(ZEN_SEARCH_URL % \
+            request_zen_tickets = requests.get(ZEN_SEARCH_URL %
                                                profile.zen_url, 
                                 params={'query': ZEN_TICKET_SEARCH_QUERY,
                                         'sort_by': 'updated_at',
@@ -232,16 +240,15 @@ def get_zen_tickets(request):
                                         'page': page},
                                 auth=(zen_name_tk, profile.zen_token))
             if request_zen_tickets.status_code != 200:
-                request_unsuccessful(request, 'Zendesk', 
-                                     request_zen_tickets.json['error'])
+                request_zen_tickets.raise_for_status()
             zen_tickets.extend(request_zen_tickets.json['results'])
             if request_zen_tickets.json['next_page'] is not None:
                 page += 1
             else:
                 break
-        
-    except RequestException as detail:
-        request_unsuccessful(request, 'Zendesk', detail) 
+    except RequestException as e:
+        e.args = (e.args[0], 'Zendesk')
+        raise
 
     return zen_tickets
 
@@ -300,21 +307,19 @@ def get_zen_users(request, zen_user_ids):
                                               # API token authorization.
     zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
                             # names by their ID number.
-
     try:
         for id_number in zen_user_ids:
-            request_zen_user = requests.get(ZEN_USER_URL % \
+            request_zen_user = requests.get(ZEN_USER_URL % 
                                             (profile.zen_url, id_number),
                                 auth=(zen_name_tk, profile.zen_token))
             if request_zen_user.status_code != 200:
-                request_unsuccessful(request, 'Zendesk',
-                                     request_zen_user.json['error'])
+                request_zen_user.raise_for_status()
             zen_user_reference[id_number] = \
                     request_zen_user.json['user']['name']
-        
-    except RequestException as detail:
-        request_unsuccessful(request, 'Zendesk', detail)
-
+    except RequestException as e:
+        e.args = (e.args[0], 'Zendesk')
+        raise
+    
     return zen_user_reference
 
 def get_git_tickets(request, git_issue_numbers):
@@ -332,21 +337,21 @@ def get_git_tickets(request, git_issue_numbers):
     """
     profile = request.user.get_profile()
     git_tickets = []
-
+    
     try:
         for number in git_issue_numbers:
-            request_git_tickets = requests.get(GIT_ISSUE_URL % 
-                                               (profile.git_org, 
-                                                profile.git_repo, number),
-                                params={'access_token': profile.git_token}
-                               )
+            request_git_tickets = requests.get(GIT_ISSUE_URL % \
+                                               (profile.git_org,
+                                               profile.git_repo, number), 
+                                               params={'access_token':
+                                                       profile.git_token}
+                                              )
             if request_git_tickets.status_code != 200:
-                request_unsuccessful(request, 'GitHub', 
-                                     request_git_tickets.json['message'])
+                request_git_tickets.raise_for_status()
             git_tickets.append(request_git_tickets.json)
-
-    except RequestException as detail:
-        request_unsuccessful(request, 'GitHub', detail)
+    except RequestException as e:
+        e.args = (e.args[0], 'GitHub')
+        raise
 
     return git_tickets
 
