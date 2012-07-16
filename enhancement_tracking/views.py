@@ -40,50 +40,56 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident \
 ZEN_USER_URL = '%s/api/v2/users/%s.json'
 
 def user_login(request):
-    """Processes the requests from the login page. 
-    
-    Authenticates the login of an existing user or creates a new user by adding
-    their user data to the database. If any of the fields in the submitted form
-    are not completed properly, the login page will come up again with those
-    fields marked as needing to be properly filled.
+    """Processes the requests from the login page and authenticates the login of
+    an existing user.
 
     Parameters:
         request - The request object that contains the POST data from the login
                     forms.
-    """
-
+    """ 
     if request.method == 'POST':
-        if 'log' in request.POST:  # Process login form
-            logform = AuthenticationForm(data=request.POST)
-            if logform.is_valid():
-                login(request, logform.get_user())
-                return HttpResponseRedirect(reverse('home'))
-            uform = UserForm()
-            pform = UserProfileForm()
-
-        elif 'new' in request.POST:  # Process new user form
-            uform = UserForm(data=request.POST)
-            pform = UserProfileForm(data=request.POST)
-            if uform.is_valid() and pform.is_valid():
-                user = uform.save()
-                profile = pform.save(commit=False)
-                profile.user = user
-                profile.save()
-                
-                # Store the profile in the session so the GitHub access token
-                # can be added to it through OAuth on the next pages.
-                request.session['profile'] = profile
-                return HttpResponseRedirect(reverse('confirm', args=[1]))
-            logform = AuthenticationForm()
+        log_form = AuthenticationForm(data=request.POST)
+        if log_form.is_valid():
+            login(request, log_form.get_user())
+            return HttpResponseRedirect(reverse('home'))
     else:
-        logform = AuthenticationForm()
-        uform = UserForm()
-        pform = UserProfileForm()
+        log_form = AuthenticationForm()
 
-    return render_to_response('login.html', {'logform': logform,
-                                'uform': uform, 'pform': pform}, 
+    return render_to_response('login.html', {'log_form': log_form}, 
                               context_instance=RequestContext(request))
 
+def create_user(request):
+    """Process the requests from the User Creation page.
+    
+    If any of the fields in the submitted form are not completed properly, the
+    User Creation page will come up again with those fields marked as needing to
+    be properly filled.
+
+    Parameters:
+        request - The request object that contains the form data submitted from
+                    the User Creation page.
+    """
+    if request.method == 'POST':
+        user_form = UserForm(data=request.POST)
+        profile_form = UserProfileForm(data=request.POST)
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            profile = profile_form.save(commit=False)
+            profile.user = user
+            profile.save()
+            
+            # Store the profile in the session so the GitHub access token
+            # can be added to it through OAuth on the next pages.
+            request.session['profile'] = profile
+            return HttpResponseRedirect(reverse('confirm', args=[1]))
+     else:
+        user_form = UserForm()
+        profile_form = UserProfileForm()
+
+    return render_to_response('login.html', {'user_form': user_form,
+                              'profile_form': profile_form}, 
+                              context_instance=RequestContext(request))
+            
 def change(request):
     """Processes the requests from the Change Account Data page.
 
