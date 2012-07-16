@@ -86,7 +86,7 @@ def user_creation_form_handler(request):
         user_form = UserForm()
         profile_form = UserProfileForm()
 
-    return render_to_response('create_user.html', {'user_form': user_form,
+    return render_to_response('user_creation.html', {'user_form': user_form,
                               'profile_form': profile_form}, 
                               context_instance=RequestContext(request))
             
