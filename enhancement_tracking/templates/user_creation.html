@@ -5,12 +5,12 @@
 {% block body %}
 
 <h1>User Creation</h1>
-<p style="width:50%">Fill out all of the fields below and click 
+<p>Fill out all of the fields below and click 
 "Submit" to create a new user.</p>
 <br/>
 
 <form class="well" method="post">{% csrf_token %}
-	{{ user_from.as_p }}
+	{{ user_form.as_p }}
 	{{ profile_form.as_p }}
 	<p><input name="new" type="submit" value="Submit" /></p>
 </form>
