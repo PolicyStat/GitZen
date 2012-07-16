@@ -82,7 +82,7 @@ def create_user(request):
             # can be added to it through OAuth on the next pages.
             request.session['profile'] = profile
             return HttpResponseRedirect(reverse('confirm', args=[1]))
-     else:
+    else:
         user_form = UserForm()
         profile_form = UserProfileForm()
 
