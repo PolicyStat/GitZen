@@ -4,13 +4,14 @@ from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
-from enhancement_tracking.forms import UserForm, UserProfileForm, \
-                                        ProfileChangeForm
-from settings import CLIENT_ID, CLIENT_SECRET
 import requests
 from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
+from settings import CLIENT_ID, CLIENT_SECRET
+from enhancement_tracking.forms import UserForm, UserProfileForm, \
+                                        ProfileChangeForm, \
+                                        ZendeskTokenChangeForm
 
 # Constant URL string for accessing the GitHub API. The first %s is the
 # organization/user name, the second %s is the repository name, and the thrid %s
@@ -103,25 +104,40 @@ def change_form_handler(request):
 
     if request.method == 'POST':
         if 'password' in request.POST: # Process password change form
-            pwform = PasswordChangeForm(user=request.user, data=request.POST)
-            if pwform.is_valid():
-                pwform.save()
+            password_change_form = PasswordChangeForm(user=request.user,
+                                                      data=request.POST)
+            if password_change_form.is_valid():
+                password_change_form.save()
                 return HttpResponseRedirect(reverse('confirm', args=[2]))
-            prform = ProfileChangeForm()
+            profile_change_form = ProfileChangeForm()
+            zen_token_change_form = ZendeskTokenChangeForm()
         
         elif 'profile' in request.POST: # Process profile change form
-            prform = ProfileChangeForm(data=request.POST,
-                                       instance=request.user.get_profile())
-            if prform.is_valid():
-                prform.save()
+            profile_change_form = ProfileChangeForm(data=request.POST,
+                                        instance=request.user.get_profile())
+            if profile_change_form.is_valid():
+                profile_change_form.save()
                 return HttpResponseRedirect(reverse('confirm', args=[2]))
-            pwform = PasswordChangeForm(user=request.user)
+            password_change_form = PasswordChangeForm(user=request.user)
+            zen_token_change_form = ZendeskTokenChangeForm()
+
+        elif 'zen_token' in request.POST: # Process Zen API Token change form
+            zen_token_change_form = ZendeskTokenChangeForm(data=request.POST,
+                                        instance=request.user.get_profile())
+            if zen_token_change_form.is_valid():
+                zen_token_change_form.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            password_change_form = PasswordChangeForm(user=request.user)
+            profile_change_form = ProfileChangeForm()
     else:
-        pwform = PasswordChangeForm(user=request.user)
-        prform = ProfileChangeForm()
+        password_change_form = PasswordChangeForm(user=request.user)
+        profile_change_form = ProfileChangeForm()
+        zen_token_change_form = ZendeskTokenChangeForm()
     
     return render_to_response('change.html', 
-                              {'pwform': pwform, 'prform': prform,
+                              {'password_change_form': password_change_form, 
+                               'profile_change_form': profile_change_form,
+                               'zen_token_change_form': zen_token_change_form,
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 

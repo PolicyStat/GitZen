@@ -5,23 +5,27 @@
 {% block body %}
 
 <h1>Change Account Data</h1>
-<p style="width:30%;margin-left:auto;margin-right:auto">All fields are 
-optional. Changing the User password requires entering of the previous 
-User password.</p>
+<p>All fields are optional. Changing the User password requires entering of the
+previous User password.</p>
 <br/>
 
 <h2>Change Password</h2>
 <form class="well" method="post">{% csrf_token %}
-	{{ pwform.as_p }}
+	{{ password_change_form.as_p }}
 	<p><input name="password" type="submit" value="Submit Change" /></p>
 </form>
-
 <br/>
 
 <h2>Change Profile</h2>
 <form class="well" method="post">{% csrf_token %}
-	{{ prform.as_p }}
+	{{ profile_change_form.as_p }}
 	<p><input name="profile" type="submit" value="Submit Changes" /></p>
+</form>
+
+<h2>Change Zendesk API Token</h2>
+<form class="well">{% csrf_token %}
+	{{ zen_token_change_form.as_p }}
+	<p><input name="zen_token" type="submit" value="Sumbit Change" /></p>
 </form>
 
 <h2>Change GitHub Authorization</h2>
