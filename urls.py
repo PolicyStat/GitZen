@@ -5,10 +5,10 @@ from django.conf.urls.defaults import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('enhancement_tracking.views',
-    url(r'^$', 'user_login', name='login'),
-    url(r'^create/$', 'create_user', name='create_user'),
+    url(r'^$', 'user_login_form_handler', name='login'),
+    url(r'^create/$', 'user_creation_form_handler', name='user_creation'),
     url(r'^home/$', 'home', name='home'),
-    url(r'^change/$', 'change', name='change'),
+    url(r'^change/$', 'change_form_handler', name='change'),
     url(r'^git_confirm/$', 'git_oauth_confirm', name='git_confirm'),
     url(r'^confirm/(?P<con_num>\d+)/$', 'confirm', name='confirm'),
 ) 
