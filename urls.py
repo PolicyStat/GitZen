@@ -6,7 +6,7 @@ from django.conf.urls.defaults import patterns, include, url
 
 urlpatterns = patterns('enhancement_tracking.views',
     url(r'^$', 'user_login', name='login'),
-    url(r'^create/$', 'create_user', name='create_user')
+    url(r'^create/$', 'create_user', name='create_user'),
     url(r'^home/$', 'home', name='home'),
     url(r'^change/$', 'change', name='change'),
     url(r'^git_confirm/$', 'git_oauth_confirm', name='git_confirm'),
