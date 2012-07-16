@@ -39,7 +39,7 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident \
 # being accessed, and the second %s is the ID number of the user being accessed.
 ZEN_USER_URL = '%s/api/v2/users/%s.json'
 
-def user_login(request):
+def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
     an existing user.
 
@@ -58,7 +58,7 @@ def user_login(request):
     return render_to_response('login.html', {'log_form': log_form}, 
                               context_instance=RequestContext(request))
 
-def create_user(request):
+def user_creation_form_handler(request):
     """Process the requests from the User Creation page.
     
     If any of the fields in the submitted form are not completed properly, the
@@ -90,7 +90,7 @@ def create_user(request):
                               'profile_form': profile_form}, 
                               context_instance=RequestContext(request))
             
-def change(request):
+def change_form_handler(request):
     """Processes the requests from the Change Account Data page.
 
     All of the fields on the change forms are optional so that the user can
