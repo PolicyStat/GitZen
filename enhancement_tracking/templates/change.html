@@ -12,20 +12,20 @@ previous User password.</p>
 <h2>Change Password</h2>
 <form class="well" method="post">{% csrf_token %}
 	{{ password_change_form.as_p }}
-	<p><input name="password" type="submit" value="Submit Change" /></p>
+	<p><input name="password_input" type="submit" value="Submit Change" /></p>
 </form>
 <br/>
 
 <h2>Change Profile</h2>
 <form class="well" method="post">{% csrf_token %}
 	{{ profile_change_form.as_p }}
-	<p><input name="profile" type="submit" value="Submit Changes" /></p>
+	<p><input name="profile_input" type="submit" value="Submit Changes" /></p>
 </form>
 
 <h2>Change Zendesk API Token</h2>
-<form class="well">{% csrf_token %}
+<form class="well" method="post">{% csrf_token %}
 	{{ zen_token_change_form.as_p }}
-	<p><input name="zen_token" type="submit" value="Sumbit Change" /></p>
+	<p><input name="zen_token_input" type="submit" value="Sumbit Change" /></p>
 </form>
 
 <h2>Change GitHub Authorization</h2>

@@ -12,7 +12,7 @@
 <form class="well" method="post">{% csrf_token %}
 	{{ user_form.as_p }}
 	{{ profile_form.as_p }}
-	<p><input name="new" type="submit" value="Submit" /></p>
+	<p><input name="new_user_input" type="submit" value="Submit" /></p>
 </form>
 
 {% endblock %}

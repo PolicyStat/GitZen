@@ -9,7 +9,7 @@
 
 <form class="well" method="post">{% csrf_token %}
 	{{ log_form.as_p }}
-    <p><input name="log" type="submit" value="Login"/></p>
+    <p><input name="log_input" type="submit" value="Login"/></p>
 </form>
 <a href="{% url user_creation %}">Create New User</a>
 

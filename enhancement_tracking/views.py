@@ -92,18 +92,18 @@ def user_creation_form_handler(request):
                               context_instance=RequestContext(request))
             
 def change_form_handler(request):
-    """Processes the requests from the Change Account Data page.
-
-    All of the fields on the change forms are optional so that the user can
-    change only the account data that they want changed.
+    """Processes the requests from the Change Account Data page. This includes
+    requests from the password change form, profile change form, and Zendesk API
+    token chnage form.
 
     Parameters:
-        request - The request object that contains the POST data from the change
-                    form.
+        request - The request object that contains the POST data from one of the
+                    change forms.
     """
 
     if request.method == 'POST':
-        if 'password' in request.POST: # Process password change form
+        # Process password change form
+        if 'password_input' in request.POST:
             password_change_form = PasswordChangeForm(user=request.user,
                                                       data=request.POST)
             if password_change_form.is_valid():
@@ -111,8 +111,9 @@ def change_form_handler(request):
                 return HttpResponseRedirect(reverse('confirm', args=[2]))
             profile_change_form = ProfileChangeForm()
             zen_token_change_form = ZendeskTokenChangeForm()
-        
-        elif 'profile' in request.POST: # Process profile change form
+
+        # Process profile change form
+        elif 'profile_input' in request.POST:
             profile_change_form = ProfileChangeForm(data=request.POST,
                                         instance=request.user.get_profile())
             if profile_change_form.is_valid():
@@ -120,8 +121,9 @@ def change_form_handler(request):
                 return HttpResponseRedirect(reverse('confirm', args=[2]))
             password_change_form = PasswordChangeForm(user=request.user)
             zen_token_change_form = ZendeskTokenChangeForm()
-
-        elif 'zen_token' in request.POST: # Process Zen API Token change form
+        
+        # Process Zendesk API Token change form
+        elif 'zen_token_input' in request.POST: 
             zen_token_change_form = ZendeskTokenChangeForm(data=request.POST,
                                         instance=request.user.get_profile())
             if zen_token_change_form.is_valid():
