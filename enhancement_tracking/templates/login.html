@@ -9,8 +9,13 @@
 
 <form class="well" method="post">{% csrf_token %}
 	{{ log_form.as_p }}
-    <p><input name="log_input" type="submit" value="Login"/></p>
+	<div class="actions">
+    	<button name="log_input" type="submit"
+			class="btn btn-primary">Login</button>
+		<button type="button" class="btn" 
+			onClick="window.location.href='{% url user_creation %}'">
+			Create New User</button>
+	</div>
 </form>
-<a href="{% url user_creation %}">Create New User</a>
 
 {% endblock %}

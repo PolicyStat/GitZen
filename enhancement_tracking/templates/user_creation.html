@@ -12,7 +12,13 @@
 <form class="well" method="post">{% csrf_token %}
 	{{ user_form.as_p }}
 	{{ profile_form.as_p }}
-	<p><input name="new_user_input" type="submit" value="Submit" /></p>
+	<div class="actions">
+		<button name="new_user_input" type="submit"
+			class="btn btn-primary">Submit</button>
+		<button type="button" class="btn"
+			onClick="window.location.href='{% url login %}'">
+			Cancel</button>
+	</div>
 </form>
 
 {% endblock %}
