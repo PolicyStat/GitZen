@@ -100,8 +100,9 @@ def change_form_handler(request):
         request - The request object that contains the POST data from one of the
                     change forms.
     """
+    profile = request.user.get_profile()
 
-    if request.method == 'POST':
+    if request.POST:
         # Process password change form
         if 'password_input' in request.POST:
             password_change_form = PasswordChangeForm(user=request.user,
@@ -115,7 +116,7 @@ def change_form_handler(request):
         # Process profile change form
         elif 'profile_input' in request.POST:
             profile_change_form = ProfileChangeForm(data=request.POST,
-                                        instance=request.user.get_profile())
+                                                    instance=profile)
             if profile_change_form.is_valid():
                 profile_change_form.save()
                 return HttpResponseRedirect(reverse('confirm', args=[2]))
@@ -125,7 +126,7 @@ def change_form_handler(request):
         # Process Zendesk API Token change form
         elif 'zen_token_input' in request.POST: 
             zen_token_change_form = ZendeskTokenChangeForm(data=request.POST,
-                                        instance=request.user.get_profile())
+                                                           instance=profile)
             if zen_token_change_form.is_valid():
                 zen_token_change_form.save()
                 return HttpResponseRedirect(reverse('confirm', args=[2]))
@@ -133,7 +134,7 @@ def change_form_handler(request):
             profile_change_form = ProfileChangeForm()
     else:
         password_change_form = PasswordChangeForm(user=request.user)
-        profile_change_form = ProfileChangeForm()
+        profile_change_form = ProfileChangeForm(instance=profile)
         zen_token_change_form = ZendeskTokenChangeForm()
     
     return render_to_response('change.html', 

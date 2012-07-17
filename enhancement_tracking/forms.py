@@ -22,27 +22,18 @@ class UserProfileForm(ModelForm):
         }
 
 class ProfileChangeForm(ModelForm):
-    """Form for changing the data of an existing user. All of the fields are set
-    as not required. Changing the git_token and zen_token are handled in
-    seperate forms."""
+    """Form for changing the profile data of an existing user. All of the fields
+    have their intial values set at the field's value for the current user's
+    profile. Changing the git_token and zen_token are handled in seperate
+    forms."""
+    def __init__(self, *args, **kwargs):
+        super(ProfileChangeForm, self).__init__(*args, **kwargs)
+        for key, value in self.fields.items():
+            self.fields[key].initial = getattr(self.instance, key)
+
     class Meta:
         model = GZUserProfile
         exclude = ('user', 'git_token', 'zen_token')
-
-#    def __init__(self, *args, **kwargs):
-#        super(ProfileChangeForm, self).__init__(*args, **kwargs)
-#        for key, field in self.fields.items():
-#            self.fields[key].required = False
-#    
-#    # Override clean to remove the data from the fields that were left blank
-#    def clean(self):
-#        super(ProfileChangeForm, self).clean()
-#        data = self.cleaned_data
-#        for key, field in data.items():
-#            if data[key] is None or data[key] == '':
-#                del data[key]
-#
-#        return data
 
 class ZendeskTokenChangeForm(ModelForm):
     """Form for changing the Zendesk API Token of an existing user."""
