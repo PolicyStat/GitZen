@@ -5,9 +5,12 @@
 {% block body %}
 
 <h1>Change Account Data</h1>
-<p>All fields are optional. Changing the User password requires entering of the
-previous User password.</p>
-<br/>
+<p>
+	All fields are optional. Changing the User password requires entering of the
+	previous User password.
+	<br/>
+	<a href="{% url home %}">Return to Home</a>
+</p>
 
 <h2>Change Password</h2>
 <form class="well" method="post">{% csrf_token %}

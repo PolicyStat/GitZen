@@ -433,7 +433,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         enhancement_data['z_subject'] = ticket['subject']
         z_date = datetime.strptime(ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
         z_date = z_date + timedelta(hours=utc_offset)
-        enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y @ %I:%M %p')
+        enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y')
+        enhancement_data['z_time'] = z_date.strftime('%I:%M %p')
         
         # Check if it has no associated GitHub ticket
         if association_data is None or association_data.split('-')[0] != 'gh':
@@ -457,7 +458,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             g_date = datetime.strptime(git_issue['updated_at'], 
                                        "%Y-%m-%dT%H:%M:%SZ")
             g_date = g_date + timedelta(hours=utc_offset)
-            enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y @ %I:%M %p')
+            enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y')
+            enhancement_data['g_time'] = g_date.strftime('%I:%M %p')
             
             # Check if the enhacement should be tracked (Both tickets are
             # open).

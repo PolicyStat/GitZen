@@ -25,6 +25,16 @@ a.closed, td.closed
 	margin-right:auto;
 }
 
+td.td-centered
+{
+	text-align:center;
+}
+
+th.th-centered
+{
+	text-align:center;
+}
+
 .table-center 
 {
 	margin: 0 auto !important;

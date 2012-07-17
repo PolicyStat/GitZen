@@ -47,26 +47,35 @@
 		dataTable table-center">
 			<thead>
 				<tr>
-					<th>Association</th>
+					<th class="th-centered">Association</th>
 					<th>Zendesk Subject</th>
 					<th>Requester</th>
-					<th>Last Zen Ticket Update</th>
-					<th>Last Git Ticket Update</th>
+					<th class="th-centered">Last Zendesk<br/>Ticket Update</th>
+					<th class="th-centered">Last GitHub<br/>Ticket Update</th>
 				</tr>
 			</thead>
 			<tbody>
 			{% for enhancement in need_attention %}
 				<tr>
-					<td>
+					<td class="td-centered">
 						<a class="open" href="{{ zen_url }}/tickets/
 							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
-						--&gt; <a class="closed" href="{{ enhancement.g_url }}"
+						<br/> 
+						<a class="closed" href="{{ enhancement.g_url }}"
 							>G{{ enhancement.g_id }}</a>
 					</td>
 					<td>{{ enhancement.z_subject }}</td>
 					<td>{{ enhancement.z_requester }}</td>
-					<td class="open">{{ enhancement.z_date }}</td>
-					<td class="closed">{{ enhancement.g_date }}</td>
+					<td class="open td-centered">
+						{{ enhancement.z_date }}
+						<br/>
+						{{ enhancement.z_time }}
+					</td>
+					<td class="closed td-centered">
+						{{ enhancement.g_date }}
+						<br/>
+						{{ enhancement.g_time }}
+					</td>
 				</tr>
 			{% endfor %}
 			</tbody>
@@ -91,26 +100,35 @@
 		dataTable table-center">
 			<thead>
 				<tr>
-					<th>Association</th>
+					<th class="th-centered">Association</th>
 					<th>Zendesk Subject</th>
 					<th>Requester</th>
-					<th>Last Zen Ticket Update</th>
-					<th>Last Git Ticket Update</th>
+					<th class="th-centered">Last Zendesk<br/>Ticket Update</th>
+					<th class="th-centered">Last GitHub<br/>Ticket Update</th>
 				</tr>
 			</thead>
 			<tbody>
 			{% for enhancement in tracking %}
 				<tr>
-					<td>
+					<td class="td-centered">
 						<a class="open" href="{{ zen_url }}/tickets/
 							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
-						--&gt; <a class="open" href="{{ enhancement.g_url }}"
+						<br/>
+						<a class="open" href="{{ enhancement.g_url }}"
 							>G{{enhancement.g_id }}</a>
 					</td>
 					<td>{{ enhancement.z_subject }}</td>
 					<td>{{ enhancement.z_requester }}</td>
-					<td class="open">{{ enhancement.z_date }}</td>
-					<td class="open">{{ enhancement.g_date }}</td>
+					<td class="open td-centered">
+						{{ enhancement.z_date }}
+						<br/>
+						{{ enhancement.z_time }}
+					</td>
+					<td class="open td-centered">
+						{{ enhancement.g_date }}
+						<br/>
+						{{ enhancement.g_time }}
+					</td>
 				</tr>
 			{% endfor %}
 			</tbody>
@@ -136,24 +154,28 @@
 		dataTable table-center">
 		<thead>
 			<tr>
-				<th>Zendesk Ticket</th>
-				<th>Subject</th>
+				<th class="th-centered">Zendesk Ticket</th>
+				<th>Zendesk Subject</th>
 				<th>Requester</th>
-				<th>Last Updated</th>
-				<th>Association Field Data</th>
+				<th class="th-centered">Last Updated</th>
+				<th class="th-centered">Association Field Data</th>
 			</tr>
 		</thead>
 		<tbody>
 		{% for enhancement in broken_enhancements %}
 			<tr>
-				<td>
+				<td class="td-centered">
 					<a class="open" href="{{ zen_url }}/tickets/
 						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
 				</td>
 				<td>{{ enhancement.z_subject }}</td>
 				<td>{{ enhancement.z_requester }}</td>
-				<td>{{ enhancement.z_date }}</td>
-				<td>{{ enhancement.broken_assoc }}</td>
+				<td class="td-centered">
+					{{ enhancement.z_date }}
+					<br/>
+					{{ enhancement.z_time }}
+				</td>
+				<td class="td-centered">{{ enhancement.broken_assoc }}</td>
 			</tr>
 		{% endfor %}
 		</tbody>
@@ -176,28 +198,32 @@
 		dataTable table-center">
 		<thead>
 			<tr>
-				<th>Zendesk Ticket</th>
-				<th>Subject</th>
+				<th class="th-centered">Zendesk Ticket</th>
+				<th>Zendesk Subject</th>
 				<th>Requester</th>
-				<th>Last Updated</th>
+				<th class="th-centered">Last Updated</th>
 			</tr>
 		</thead>
 		<tbody>
 		{% for enhancement in unassociated_enhancements %}
 			<tr>
-				<td>
+				<td class="td-centered">
 					<a class="open" href="{{ zen_url }}/tickets/
 					{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
 				</td>
 				<td>{{ enhancement.z_subject }}</td>
 				<td>{{ enhancement.z_requester }}</td>
-				<td>{{ enhancement.z_date }}</td>
+				<td class="td-centered">
+					{{ enhancement.z_date }}
+					<br/>
+					{{ enhancement.z_time }}
+				</td>
 			</tr>
 		{% endfor %}
 		</tbody>
 	</table>
     {% else %}
-		<p>There are currently no requested Enhancements without GitHub
+		<p>There are currently no requested enhancements without GitHub
 			associations.</p>
 	{% endif %}
 </div>
