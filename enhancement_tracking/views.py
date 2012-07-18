@@ -470,7 +470,18 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             # ticket is closed).
             else:
                 need_attention.append(enhancement_data)
-    
+    """
+    broken_test = {
+        'z_id': '9001',
+        'z_subject': "Test. It's over 9000!",
+        'z_requester': 'Nick McLaughlin',
+        'z_date': '09/09/09',
+        'z_time': '11:11 PM',
+        'broken_assoc': 'gh-1337'
+    }
+    broken_enhancements.append(broken_test)
+    """
+
     built_data = {
         'tracking': tracking,
         'need_attention': need_attention,
