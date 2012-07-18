@@ -40,3 +40,9 @@ th.th-centered
 	margin: 0 auto !important;
 	float: none !important;
 }
+
+.table tbody tr:hover td,
+.table tbody tr:hover th 
+{
+  background-color: #B5B5B5;
+}
