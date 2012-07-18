@@ -46,3 +46,21 @@ th.th-centered
 {
   background-color: #B5B5B5;
 }
+
+.nav-tabs > li, .nav-pills > li 
+{
+    float:none;
+    display:inline-block;
+    *display:inline;
+     zoom:1;
+}
+
+.nav-tabs 
+{
+    text-align:center;
+}
+
+.tab-content
+{
+	overflow: visible;
+}

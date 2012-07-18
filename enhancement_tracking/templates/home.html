@@ -11,6 +11,8 @@
 	src="{{ STATIC_URL }}js/jquery.dataTables.js"></script>
 <script type="text/javascript" language="javascript"
 	src="{{ STATIC_URL }}js/paging.js"></script>
+<script type="text/javascript" language="javascript"
+	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
 <script type="text/javascript">
 	$.extend( $.fn.dataTableExt.oStdClasses, {
 		"sWrapper": "dataTables_wrapper form-inline"
@@ -19,7 +21,9 @@
 	$(document).ready(function() {
 		$('.dataTable').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
-			"sPaginationType": "bootstrap"
+			"sPaginationType": "bootstrap",
+			"iDisplayLength": 5,
+			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]]
 		} );
 	} );
 </script>
@@ -32,26 +36,40 @@
 <br/>
 
 <h2>Enhancement Tracking</h2>
-<br/>
-
 {% if api_requests_successful %}
+<ul class="nav nav-tabs">
+	<li class="active"><a href="#attention" data-toggle="tab"
+		>Need Attention</a></li>
+	<li><a href="#tracking" data-toggle="tab"
+		>Currently Tracking</a></li>
+	<li><a href="#unassociated" data-toggle="tab"
+		>Unassociated Enhancements</a></li>
+	<li><a href="#broken" data-toggle="tab"
+		{%if broken_enhancements %}
+			class="closed"
+		{% endif %}
+	>Broken Enhancements</a></li>
+</ul>
+
+<div class="tab-content">
+
+<div class="tab-pane active" id="attention">
 <div class="row">
 <div class="span12">
-	<h3>Need Attention</h3>
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
 	Zendesk ticket still remains open.</p>
 	<br/>
 
     {% if need_attention %}
-	<table class="table table-striped table-bordered span12 
+	<table class="table table-striped table-bordered span12
 		dataTable table-center">
 			<thead>
 				<tr>
 					<th class="th-centered">Association</th>
 					<th>Zendesk Subject</th>
 					<th>Requester</th>
-					<th class="th-centered">Last Zendesk<br/>Ticket Update</th>
-					<th class="th-centered">Last GitHub<br/>Ticket Update</th>
+					<th class="th-centered">Last Zendesk Ticket Update</th>
+					<th class="th-centered">Last GitHub Ticket Update</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -81,16 +99,15 @@
 			</tbody>
         </table>
     {% else %}
-        <p>There are currently no Enhancements in need of attention.</p>
+        <p>There are currently no enhancements in need of attention.</p>
     {% endif %}
 </div>
 </div>
-<br/>
-<br/>
+</div>
 
+<div class="tab-pane" id="tracking">
 <div class="row">
 <div class="span12">
-	<h3>Currently Tracking</h3>
 	<p>Requested enhancements whose Zendesk ticket and associated GitHub ticket
 	are still open and being worked on.</p>
 	<br/>
@@ -134,23 +151,22 @@
 			</tbody>
 		</table>
     {% else %}
-        <p>There are currently no Enhancements being tracked.</p>
+        <p>There are currently no enhancements being tracked.</p>
     {% endif %}
 </div>
 </div>
-<br/>
-<br/>
+</div>
 
-{% if broken_enhancements %}
+<div class="tab-pane" id="broken">
 <div class="row">
 <div class="span12">
-	<h3>Requested Enhancements with Improper GitHub Associations</h3>
+{% if broken_enhancements %}
 	<p>The listing in the GitHub Association field should be in the format
 	"gh-###" where the "###" is the GitHub issue number of the associated
 	issue.</p>
 	<br/>
 
-	<table class="table table-striped table-bordered span12 
+	<table class="table table-striped table-bordered span12
 		dataTable table-center">
 		<thead>
 			<tr>
@@ -180,21 +196,22 @@
 		{% endfor %}
 		</tbody>
 	</table>
-</div>
-</div>
-<br/>
-<br/>
+{% else %}
+	<p>There are currently no broken enhancements.</p>
 {% endif %}
+</div>
+</div>
+</div>
 
+<div class="tab-pane" id="unassociated">
 <div class="row">
 <div class="span12">		
-	<h3>Requested Enhancements not Associated with GitHub</h3>
 	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
 	ticket.</p>
 	<br/>
 
     {% if unassociated_enhancements %}
-	<table class="table table-striped table-bordered span12 
+	<table class="table table-striped table-bordered span12
 		dataTable table-center">
 		<thead>
 			<tr>
@@ -228,6 +245,9 @@
 	{% endif %}
 </div>
 </div>
+</div>
+</div>
+
 {% else %}
 	<p>{{ error_message }}</p>
 {% endif %}
