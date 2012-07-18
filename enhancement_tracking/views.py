@@ -171,10 +171,10 @@ def git_oauth_confirm(request):
     """
     if 'profile' in request.session: # Authorizing for a new user
         profile = request.session['profile']
-        new_auth = True
+        new_user = True
     else: # Changing Authorization for an existing user
         profile = request.user.get_profile()
-        new_auth = False
+        new_user = False
 
     if 'error' in request.GET:
         profile.git_token = ''
@@ -186,11 +186,11 @@ def git_oauth_confirm(request):
         access = True
     
     profile.save()
-    if new_auth:
+    if new_user:
         del request.session['profile']
 
     return render_to_response('git_confirm.html', 
-                              {'access': access, 'new_auth': new_auth},
+                              {'access': access, 'new_user': new_user},
                               context_instance=RequestContext(request))
 
 def home(request):

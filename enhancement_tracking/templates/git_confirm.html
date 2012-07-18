@@ -6,22 +6,26 @@
 	<h2>GitHub Access Confirmation</h2>
 
 	{% if access %}
-		<p class="center" style="width:50%">
+		<p class="center" style="width:50%;">
 			You have successfully authorized GitZen to access your GitHub
 			repository data.
 		</p>
 	{% else %}
-		<p class="center" style="width:50%">
+		<p class="center" style="width:50%;">
 			GitZen did not receive authorization to access your GitHub
-			repository, so the application will not be able to display GitHub
-			information for this user. If you want to give this user's account
-			access to GitHub, you can authorize their account under "Change
-			Account Settings" after logging into the application.
+			repository, so the application will not be able to function for this
+			user. If you want to give this user's account access to GitHub, you
+			can authorize their account under "Change Account Settings" after
+			logging into the application.
 		</p>
 	{% endif %}
-	{% if new_auth %}
-		<a href="{% url login %}">Return to Login</a>
+	{% if new_user %}
+		<button type="button" class="btn" 
+			onClick="window.location.href='{% url login %}'">
+			Return to Login</button>
 	{% else %}
-		<a href="{% url home %}">Return to Home</a>
+		<button type="button" class="btn" 
+			onClick="window.location.href='{% url home %}'">
+			Return to Home</button>
 	{% endif %}
 {% endblock %}
