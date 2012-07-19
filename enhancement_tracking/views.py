@@ -8,6 +8,7 @@ import requests
 from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
+from time import mktime
 from settings import CLIENT_ID, CLIENT_SECRET
 from enhancement_tracking.forms import UserForm, UserProfileForm, \
                                         ProfileChangeForm, \
@@ -398,23 +399,23 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
+        'unassociated_enhancements' - List of Zendesk tickets requesting an 
+                                        enhancement that have no associated
+                                        ticket in GitHub.
         'broken_enhancements' - List of Zendesk tickets that have improper data
                                     in their GitHub issue association field.
                                     This could be the result of a typo or some
                                     other user error.
-        'unassociated_enhancements' - List of Zendesk tickets requesting an 
-                                        enhancement that have no associated
-                                        ticket in GitHub.
     """
     tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
                         # is closed, the other needs attention.
-    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
-                             # GitHub issue association field.
     unassociated_enhancements = [] # Requested enhancements from Zendesk 
                                    # tickets that have no associatied GitHub
                                    # ticket assigned to them.
+    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
+                             # GitHub issue association field.
 
     # Iterate through the Zendesk tickets using their data to classify them
     # as being tracked, needing attention, broken, or not being tracked.
@@ -431,10 +432,13 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         enhancement_data['z_requester'] = \
                 zen_user_reference[ticket['requester_id']]
         enhancement_data['z_subject'] = ticket['subject']
-        z_date = datetime.strptime(ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
-        z_date = z_date + timedelta(hours=utc_offset)
-        enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y')
-        enhancement_data['z_time'] = z_date.strftime('%I:%M %p')
+        z_datetime = datetime.strptime(ticket['updated_at'],
+                                       "%Y-%m-%dT%H:%M:%SZ")
+        z_datetime = z_datetime + timedelta(hours=utc_offset)
+        enhancement_data['z_date'] = z_datetime.strftime('%m/%d/%Y')
+        enhancement_data['z_time'] = z_datetime.strftime('%I:%M %p')
+        enhancement_data['z_sortable_datetime'] = \
+                mktime(z_datetime.timetuple())
         
         # Check if it has no associated GitHub ticket
         if association_data is None or association_data.split('-')[0] != 'gh':
@@ -455,11 +459,13 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['g_id'] = git_issue['number']
             enhancement_data['g_url'] = git_issue['html_url']
             enhancement_data['g_status'] = git_issue['state']
-            g_date = datetime.strptime(git_issue['updated_at'], 
-                                       "%Y-%m-%dT%H:%M:%SZ")
-            g_date = g_date + timedelta(hours=utc_offset)
-            enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y')
-            enhancement_data['g_time'] = g_date.strftime('%I:%M %p')
+            g_datetime = datetime.strptime(git_issue['updated_at'],
+                                           "%Y-%m-%dT%H:%M:%SZ")
+            g_datetime = g_datetime + timedelta(hours=utc_offset)
+            enhancement_data['g_date'] = g_datetime.strftime('%m/%d/%Y')
+            enhancement_data['g_time'] = g_datetime.strftime('%I:%M %p')
+            enhancement_data['g_sortable_datetime'] = \
+                    mktime(g_datetime.timetuple())
             
             # Check if the enhacement should be tracked (Both tickets are
             # open).
@@ -485,8 +491,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
     built_data = {
         'tracking': tracking,
         'need_attention': need_attention,
-        'broken_enhancements': broken_enhancements,
         'unassociated_enhancements': unassociated_enhancements,
+        'broken_enhancements': broken_enhancements,
     }
 
     return built_data

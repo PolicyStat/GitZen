@@ -38,14 +38,14 @@
 <h2>Enhancement Tracking</h2>
 {% if api_requests_successful %}
 <ul class="nav nav-tabs">
-	<li class="active"><a href="#attention" data-toggle="tab"
+	<li class="active"><a href="#attention_tab" data-toggle="tab"
 		>Need Attention ({{ need_attention|length }})</a></li>
-	<li><a href="#tracking" data-toggle="tab"
+	<li><a href="#tracking_tab" data-toggle="tab"
 		>Currently Tracking ({{ tracking|length }})</a></li>
-	<li><a href="#unassociated" data-toggle="tab"
+	<li><a href="#unassociated_tab" data-toggle="tab"
 		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
 	</li>
-	<li><a href="#broken" data-toggle="tab"
+	<li><a href="#broken_tab" data-toggle="tab"
 		{%if broken_enhancements %}
 			class="attention"
 		{% endif %}
@@ -54,7 +54,7 @@
 
 <div class="tab-content">
 
-<div class="tab-pane active" id="attention">
+<div class="tab-pane active" id="attention_tab">
 <div class="row">
 <div class="span12">
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
@@ -86,11 +86,17 @@
 					<td>{{ enhancement.z_subject }}</td>
 					<td>{{ enhancement.z_requester }}</td>
 					<td class="open td-centered">
+						<span style="display:none;">
+							{{ enhancement.z_sortable_datetime }}
+						</span>
 						{{ enhancement.z_date }}
 						<br/>
 						{{ enhancement.z_time }}
 					</td>
 					<td class="closed td-centered">
+						<span style="display:none;">
+							{{ enhancement.g_sortable_datetime }}
+						</span>
 						{{ enhancement.g_date }}
 						<br/>
 						{{ enhancement.g_time }}
@@ -106,7 +112,7 @@
 </div>
 </div>
 
-<div class="tab-pane" id="tracking">
+<div class="tab-pane" id="tracking_tab">
 <div class="row">
 <div class="span12">
 	<p>Requested enhancements whose Zendesk ticket and associated GitHub ticket
@@ -138,11 +144,17 @@
 					<td>{{ enhancement.z_subject }}</td>
 					<td>{{ enhancement.z_requester }}</td>
 					<td class="open td-centered">
+						<span style="display:none;">
+							{{ enhancement.z_sortable_datetime }}
+						</span>
 						{{ enhancement.z_date }}
 						<br/>
 						{{ enhancement.z_time }}
 					</td>
 					<td class="open td-centered">
+						<span style="display:none;">
+							{{ enhancement.g_sortable_datetime }}
+						</span>
 						{{ enhancement.g_date }}
 						<br/>
 						{{ enhancement.g_time }}
@@ -158,7 +170,54 @@
 </div>
 </div>
 
-<div class="tab-pane" id="broken">
+<div class="tab-pane" id="unassociated_tab">
+<div class="row">
+<div class="span12">		
+	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
+	ticket.</p>
+	<br/>
+
+    {% if unassociated_enhancements %}
+	<table class="table table-striped table-bordered span12
+		dataTable table-center">
+		<thead>
+			<tr>
+				<th class="th-centered">Zendesk Ticket</th>
+				<th>Zendesk Subject</th>
+				<th>Requester</th>
+				<th class="th-centered">Last Updated</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for enhancement in unassociated_enhancements %}
+			<tr>
+				<td class="td-centered">
+					<a class="open" href="{{ zen_url }}/tickets/
+					{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
+				</td>
+				<td>{{ enhancement.z_subject }}</td>
+				<td>{{ enhancement.z_requester }}</td>
+				<td class="td-centered">
+					<span style="display:none;">
+						{{ enhancement.z_sortable_datetime }}
+					</span>
+					{{ enhancement.z_date }}
+					<br/>
+					{{ enhancement.z_time }}
+				</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+    {% else %}
+		<p>There are currently no requested enhancements without GitHub
+			associations.</p>
+	{% endif %}
+</div>
+</div>
+</div>
+
+<div class="tab-pane" id="broken_tab">
 <div class="row">
 <div class="span12">
 {% if broken_enhancements %}
@@ -188,6 +247,9 @@
 				<td>{{ enhancement.z_subject }}</td>
 				<td>{{ enhancement.z_requester }}</td>
 				<td class="td-centered">
+					<span style="display:none;">
+						{{ enhancement.z_sortable_datetime }}
+					</span>
 					{{ enhancement.z_date }}
 					<br/>
 					{{ enhancement.z_time }}
@@ -200,50 +262,6 @@
 {% else %}
 	<p>There are currently no broken enhancements.</p>
 {% endif %}
-</div>
-</div>
-</div>
-
-<div class="tab-pane" id="unassociated">
-<div class="row">
-<div class="span12">		
-	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
-	ticket.</p>
-	<br/>
-
-    {% if unassociated_enhancements %}
-	<table class="table table-striped table-bordered span12
-		dataTable table-center">
-		<thead>
-			<tr>
-				<th class="th-centered">Zendesk Ticket</th>
-				<th>Zendesk Subject</th>
-				<th>Requester</th>
-				<th class="th-centered">Last Updated</th>
-			</tr>
-		</thead>
-		<tbody>
-		{% for enhancement in unassociated_enhancements %}
-			<tr>
-				<td class="td-centered">
-					<a class="open" href="{{ zen_url }}/tickets/
-					{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
-				</td>
-				<td>{{ enhancement.z_subject }}</td>
-				<td>{{ enhancement.z_requester }}</td>
-				<td class="td-centered">
-					{{ enhancement.z_date }}
-					<br/>
-					{{ enhancement.z_time }}
-				</td>
-			</tr>
-		{% endfor %}
-		</tbody>
-	</table>
-    {% else %}
-		<p>There are currently no requested enhancements without GitHub
-			associations.</p>
-	{% endif %}
 </div>
 </div>
 </div>
