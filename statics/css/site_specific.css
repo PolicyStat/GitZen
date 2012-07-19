@@ -9,12 +9,15 @@ a:link, a:visited
 {
 	color:blue;
 }
-
 a.open, td.open 
 {
 	color:green
 }
 a.closed, td.closed 
+{
+	color:red
+}
+a.attention
 {
 	color:red
 }
@@ -44,7 +47,7 @@ th.th-centered
 .table tbody tr:hover td,
 .table tbody tr:hover th 
 {
-  background-color: #B5B5B5;
+  background-color: #C7C7C7;
 }
 
 .nav-tabs > li, .nav-pills > li 

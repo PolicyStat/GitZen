@@ -39,16 +39,17 @@
 {% if api_requests_successful %}
 <ul class="nav nav-tabs">
 	<li class="active"><a href="#attention" data-toggle="tab"
-		>Need Attention</a></li>
+		>Need Attention ({{ need_attention|length }})</a></li>
 	<li><a href="#tracking" data-toggle="tab"
-		>Currently Tracking</a></li>
+		>Currently Tracking ({{ tracking|length }})</a></li>
 	<li><a href="#unassociated" data-toggle="tab"
-		>Unassociated Enhancements</a></li>
+		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
+	</li>
 	<li><a href="#broken" data-toggle="tab"
 		{%if broken_enhancements %}
-			class="closed"
+			class="attention"
 		{% endif %}
-	>Broken Enhancements</a></li>
+		>Broken Enhancements ({{ broken_enhancements|length }})</a></li>
 </ul>
 
 <div class="tab-content">
