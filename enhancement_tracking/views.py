@@ -12,10 +12,10 @@ from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 
-# Constant URL string for accessing the GitHub API. The first %s is the
-# organization/user name, the second %s is the repository name, and the thrid %s
-# is the issue number of the ticket being accessed.
-GIT_ISSUE_URL = 'https://api.github.com/repos/%s/%s/issues/%s'
+# Constant URL string for accessing the GitHub API. It requires a GitHub
+# organization/user, repository, and issue number for the string's formatting.
+GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/\
+        %(repository)s/issues/%(issue_number)i'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
@@ -24,20 +24,21 @@ OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 
-# Constant URL string for searching for tickets through the Zendesk API. The %s
-# is the custom URL subdomain for the specific company whose tickets are being
-# accessed.
-ZEN_SEARCH_URL = '%s/api/v2/search.json'
+# Constant URL string for searching for tickets through the Zendesk API. It
+# requires the custom URL subdomain of the specific company whose information
+# is being accessed for the string's formatting.
+ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
 
 # Constant search query used to access open Zendesk problem and incident tickets
 # form its API.
 ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident \
-                            ticket_type:problem status:open'
+        ticket_type:problem status:open'
 
-# Constant URL string for accessing Zendesk users through the Zendesk API. The
-# first %s if the custom URL subdomain for the specific company whose users are
-# being accessed, and the second %s is the ID number of the user being accessed.
-ZEN_USER_URL = '%s/api/v2/users/%s.json'
+# Constant URL string for accessing Zendesk users through the Zendesk API. It
+# requires the custom URL subdomain for the specific company whose users are
+# being accessed and the ID number of the user being accessed for the string's
+# formatting.
+ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
 
 def user_login(request):
     """Processes the requests from the login page. 
@@ -230,8 +231,8 @@ def get_zen_tickets(profile):
     
     try:
         while True:
-            request_zen_tickets = requests.get(ZEN_SEARCH_URL %
-                                               profile.zen_url, 
+            request_zen_tickets = requests.get(ZEN_SEARCH_URL % \
+                                               {'subdomain': profile.zen_url}, 
                                 params={'query': ZEN_TICKET_SEARCH_QUERY,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
@@ -270,7 +271,7 @@ def get_id_lists(zen_tickets, zen_fieldid):
     zen_user_ids = []
     for ticket in zen_tickets:
         zen_user_ids.append(ticket['requester_id'])
-    zen_user_ids = list(set(zen_user_ids)) # Remove duplicates
+    zen_user_ids = set(zen_user_ids) # Remove duplicates
     
     # Get GitHub issue numbers that are associated with the Zendesk tickets.
     git_issue_numbers = []
@@ -283,7 +284,7 @@ def get_id_lists(zen_tickets, zen_fieldid):
                 break
         if association_data and association_data[0] == 'gh':
             git_issue_numbers.append(int(association_data[1]))
-    git_issue_numbers = list(set(git_issue_numbers)) # Remove duplicates
+    git_issue_numbers = set(git_issue_numbers) # Remove duplicates
 
     return (zen_user_ids, git_issue_numbers)
 
@@ -306,8 +307,9 @@ def get_zen_users(profile, zen_user_ids):
                             # names by their ID number.
     try:
         for id_number in zen_user_ids:
-            request_zen_user = requests.get(ZEN_USER_URL % 
-                                            (profile.zen_url, id_number),
+            request_zen_user = requests.get(ZEN_USER_URL % \
+                                            {'subdomain': profile.zen_url,
+                                             'user_id': id_number},
                                 auth=(zen_name_tk, profile.zen_token))
             if request_zen_user.status_code != 200:
                 request_zen_user.raise_for_status()
@@ -337,8 +339,9 @@ def get_git_tickets(profile, git_issue_numbers):
     try:
         for number in git_issue_numbers:
             request_git_tickets = requests.get(GIT_ISSUE_URL % \
-                                               (profile.git_org,
-                                               profile.git_repo, number), 
+                                               {'organization': profile.git_org,
+                                                'repository': profile.git_repo,
+                                                'issue_number': number}, 
                                                params={'access_token':
                                                        profile.git_token}
                                               )
@@ -393,7 +396,7 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
 
     # Iterate through the Zendesk tickets using their data to classify them
     # as being tracked, needing attention, broken, or not being tracked.
-    for ticket in list(zen_tickets):
+    for ticket in zen_tickets:
 
         # Add Zendesk data to enhancement data object
         association_data = ''
@@ -402,13 +405,13 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                 association_data = field['value']
                 break
         enhancement_data = {} # Enhancement data object
-        enhancement_data['z_id'] = ticket['id']
-        enhancement_data['z_requester'] = \
+        enhancement_data['zen_id'] = ticket['id']
+        enhancement_data['zen_requester'] = \
                 zen_user_reference[ticket['requester_id']]
-        enhancement_data['z_subject'] = ticket['subject']
-        z_date = datetime.strptime(ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
-        z_date = z_date + timedelta(hours=utc_offset)
-        enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y @ %I:%M %p')
+        enhancement_data['zen_subject'] = ticket['subject']
+        zen_date = datetime.strptime(ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
+        zen_date = zen_date + timedelta(hours=utc_offset)
+        enhancement_data['zen_date'] = zen_date.strftime('%m/%d/%Y @ %I:%M %p')
         
         # Check if it has no associated GitHub ticket
         if association_data is None or association_data.split('-')[0] != 'gh':
@@ -426,17 +429,18 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                 enhancement_data['broken_assoc'] = association_number
                 broken_enhancements.append(enhancement_data)
                 continue
-            enhancement_data['g_id'] = git_issue['number']
-            enhancement_data['g_url'] = git_issue['html_url']
-            enhancement_data['g_status'] = git_issue['state']
-            g_date = datetime.strptime(git_issue['updated_at'], 
+            enhancement_data['git_id'] = git_issue['number']
+            enhancement_data['git_url'] = git_issue['html_url']
+            enhancement_data['git_status'] = git_issue['state']
+            git_date = datetime.strptime(git_issue['updated_at'], 
                                        "%Y-%m-%dT%H:%M:%SZ")
-            g_date = g_date + timedelta(hours=utc_offset)
-            enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y @ %I:%M %p')
+            git_date = git_date + timedelta(hours=utc_offset)
+            enhancement_data['git_date'] = \
+                    git_date.strftime('%m/%d/%Y @ %I:%M %p')
             
             # Check if the enhacement should be tracked (Both tickets are
             # open).
-            if enhancement_data['g_status'] == 'open':
+            if enhancement_data['git_status'] == 'open':
                 tracking.append(enhancement_data)
             
             # Check if the enhancement is in need of attention (The GitHub
