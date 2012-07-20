@@ -8,12 +8,14 @@ from enhancement_tracking.forms import UserForm, UserProfileForm, \
                                         ProfileChangeForm
 from settings import CLIENT_ID, CLIENT_SECRET
 import requests
+from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 
-# Constant URL string for accessing the GitHub API. The first %s is the
-# organization/user name and the second %s is the repository name.
-BASE_GIT_URL = 'https://api.github.com/repos/%s/%s/issues'
+# Constant URL string for accessing the GitHub API. It requires a GitHub
+# organization/user, repository, and issue number for the string's formatting.
+GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/' \
+                '%(repository)s/issues/%(issue_number)i'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
@@ -22,15 +24,21 @@ OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 
-# Constant URL string for accessing the Zendesk API. The %s is the custom URL
-# for the specific company whose tickets are being accessed.
-BASE_ZEN_URL = '%s/api/v2/search.json'
+# Constant URL string for searching for tickets through the Zendesk API. It
+# requires the custom URL subdomain of the specific company whose information
+# is being accessed for the string's formatting.
+ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
 
-# Constant search query used to access Zendesk tickets form its API. The %s is
-# the oldest date (in the format YYYY/MM/DD) a ticket can be and still be
-# included in the results.
-SEARCH_QUERY = 'type:ticket updated>%s ticket_type:incident \
-        ticket_type:problem status:open'
+# Constant search query used to access open Zendesk problem and incident tickets
+# form its API.
+ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident ' \
+                        'ticket_type:problem status:open'
+
+# Constant URL string for accessing Zendesk users through the Zendesk API. It
+# requires the custom URL subdomain for the specific company whose users are
+# being accessed and the ID number of the user being accessed for the string's
+# formatting.
+ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
 
 def user_login(request):
     """Processes the requests from the login page. 
@@ -168,210 +176,203 @@ def home(request):
     Parameters:
         request - The request object that contains the current user's data.
     """
-    profile = request.user.get_profile()
-    api_lists = {} # Stores lists from API calls and their status
-    filtered_lists = {} # Stores lists of the filtered API data
+    profile = request.user.get_profile() # Current user profile
+    zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
+                                      # Zendesk tickets that contains their 
+                                      # associated GitHub issue number.
+    utc_offset = profile.utc_offset # The UTC offset for the current user's time
+                                    # zone.
     render_data = {} # Data to be rendered to the home page
+
+    zen_tickets = [] # List of the open problem or incident tickets in Zendesk.
+    zen_user_reference = {} # Dictionary reference of the user IDs and 
+                            # user names associated with the Zendesk tickets in
+                            # zen_tickets.
+    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
+                     # tickets in zen_tickets.
     
-    api_lists = api_calls(request)
-    filtered_git = filter_git_tickets(profile.zen_fieldid, api_lists)
-    filtered_lists = {
-        'ztics': api_lists['ztics'],
-        'gtics': filtered_git
-    }
+    try:
+        zen_tickets = get_zen_tickets(profile)
+        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
+        zen_user_reference = get_zen_users(profile, zen_user_ids)
+        git_tickets = get_git_tickets(profile, git_issue_numbers)
+    except RequestException as e:
+        render_data['api_requests_successful'] = False
+        render_data['error_message'] = 'There was an error connecting to the \
+                %s API: %s. Try adjusting your account settings.' % (e.args[1],
+                                                                     e.args[0])
+        return render_to_response('home.html', render_data,
+                                    context_instance=RequestContext(request))
+        
+    render_data = build_enhancement_data(zen_tickets, zen_user_reference,
+                                         git_tickets, zen_fieldid, utc_offset)
 
-    api_status = api_lists['status']['git'] and api_lists['status']['zen']
-    render_data = build_enhancement_data(profile.zen_fieldid,
-                                         filtered_lists, api_status)
-
-    # Combine the status dictionaries from the API data and association lists
-    render_data['status'] = dict(render_data['status'].items() +
-                                 api_lists['status'].items())
-
-    # Add additional user data to be rendered to the home page
+    # Add additional data to be rendered to the home page
+    render_data['api_requests_successful'] = True
     render_data['zen_url'] = profile.zen_url
     
     return render_to_response('home.html', render_data,
                                 context_instance=RequestContext(request))
 
-def api_calls(request):
-    """Makes API calls to GitHub and Zendesk to gather the data used in the app.
-    
+def get_zen_tickets(profile):
+    """Gets all of the open problem and incident Zendesk tickets using the
+    Zendesk API.
+
     Parameters:
-        request - The request object that contains the current user's data.
+        profile - The profile object that contains the current user's data 
+                    necessary to access the tickets on their Zendesk account.
 
-    Returns a dictionary with the following keys and values:
-        'git_tickets' - List of all of the open and closed tickets in the GitHub
-                            repo.
-        'zen_tickets' - List of all of the tickets on the Zendesk
-                            account.
-        'status' - Dictionary with the status of the API calls for GitHub and
-                    Zendesk with the following keys and values:
-            'git' - True if Git call was successful, False if not.
-            'zen' - True if Zen call was successful, False if not.
+    Returns a gathered list of Zendesk tickets.
     """
-    profile = request.user.get_profile()
-    working = {}
-
-    # This line sets the limit for how far back the API calls go when
-    # gathering tickets.
-    date_limit = datetime.now() - timedelta(days=profile.age_limit)
-
-    # Git and Zen require the date_limit to be formatted differently
-    git_limit_str = datetime.strftime(date_limit, '%Y-%m-%dT%H:%M:%SZ')
-    zen_limit_str = datetime.strftime(date_limit, '%Y-%m-%d')
-
-    try:  # GitHub API calls to get all open and closed tickets
-        # Get GitHub open tickets
-        git_open_tickets = []
-        page = 1
-        while True:
-            request_open_tickets = requests.get(BASE_GIT_URL % 
-                                                (profile.git_org, 
-                                                 profile.git_repo),
-                                params={'access_token': profile.git_token,
-                                        'state': 'open', 
-                                        'since': git_limit_str,
-                                        'per_page': 100,
-                                        'page': page}
-                               )
-            if request_open_tickets.status_code != 200:
-                raise Exception('Error in accessing GitHub API - %s' %
-                                (request_open_tickets.json['message']))
-            git_open_tickets.extend(request_open_tickets.json)
-            if request_open_tickets.json:
-                page += 1
-            else:
-                break
-        
-        # Get GitHub closed tickets
-        git_closed_tickets = []
-        page = 1
-        while True:
-            request_closed_tickets = requests.get(BASE_GIT_URL % 
-                                                (profile.git_org,
-                                                profile.git_repo),
-                                params={'access_token': profile.git_token,
-                                        'state': 'closed',
-                                        'since': git_limit_str,
-                                        'per_page': 100,
-                                        'page': page}
-                               )
-            if request_closed_tickets.status_code != 200:
-                raise Exception('Error in accessing GitHub API - %s' %
-                                (request_closed_tickets.json['message']))
-            git_closed_tickets.extend(request_closed_tickets.json)
-            if request_closed_tickets.json:
-                page += 1
-            else:
-                break
+    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
+                                              # API token authorization.
+    zen_tickets = []
+    page = 1
     
-        git_tickets = git_open_tickets + git_closed_tickets
-        working['git'] = True
-    except:
-        git_tickets = []
-        working['git'] = False
-
-    try:  # Zendesk API calls to get tickets
-        zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up 
-                                                  # for API token authorization.
-        # Get Zendesk tickets
-        zen_tickets = []
-        page = 1
+    try:
         while True:
-            request_zen_tickets = requests.get(BASE_ZEN_URL % profile.zen_url, 
-                                params={'query': SEARCH_QUERY % zen_limit_str,
+            request_zen_tickets = requests.get(ZEN_SEARCH_URL % \
+                                               {'subdomain': profile.zen_url}, 
+                                params={'query': ZEN_TICKET_SEARCH_QUERY,
                                         'sort_by': 'updated_at',
                                         'sort_order': 'desc',
                                         'per_page': 100,
                                         'page': page},
                                 auth=(zen_name_tk, profile.zen_token))
-            if 'error' in request_zen_tickets.json:
-                raise Exception('Error in accessing Zendesk API - %s: %s' %
-                                (request_zen_tickets.json['error'],
-                                 request_zen_tickets.json['description']))
+            if request_zen_tickets.status_code != 200:
+                request_zen_tickets.raise_for_status()
             zen_tickets.extend(request_zen_tickets.json['results'])
             if request_zen_tickets.json['next_page'] is not None:
                 page += 1
             else:
                 break
-        
-        working['zen'] = True
-    except:
-        zen_tickets = []
-        working['zen'] = False
-    
-    api_lists = {
-        'git_tickets': gticket_list,
-        'zen_tickets': zticket_list,
-        'status': working
-    }
+    except RequestException as e:
+        e.args = (e.args[0], 'Zendesk')
+        raise
 
-    return api_lists
+    return zen_tickets
 
-# TODO: Rewrite the filtering of GitHub tickets so that it only accesses the
-# tickets from the API that are associated with some Zendesk ticket. This
-# process will probably end up replacing this function.
-def filter_git_tickets(zen_fieldid, data_lists):
-    """Filters GitHub data to remove the data not needed in the app.
-    
+def get_id_lists(zen_tickets, zen_fieldid):
+    """Gets lists of the Zendesk user IDs and the GitHub issue numbers that are
+    associated with the passed list of Zendesk tickets.
+
     Parameters:
-        zen_fieldid - The ID number of the custom field that holds the ticket
-                        association value for a given Zendesk ticket. 
-        data_lists - The dictionary of lists that holds both a list of open
-                        GitHub tickets and a list of closed GitHub tickets as
-                        well as the status information for those lists.
+        zen_tickets - A list of Zendesk tickets whose associated GitHub issue
+                    numbers and Zendesk user IDs are desired.
+        zen_fieldid - The ID number of the custom field in Zendesk tickets that
+                        holds its associated GitHub issue number.
 
-    Returns a filtered GitHub ticket list.
+    Returns a tuple of two value with the first being the gathered list of
+    associated Zendesk user IDs and with the second being the gathered list
+    of associated GitHub issue numbers.
     """
+    
+    # Get Zendesk user IDs that are associated with Zendesk tickets.
+    zen_user_ids = []
+    for ticket in zen_tickets:
+        zen_user_ids.append(ticket['requester_id'])
+    zen_user_ids = set(zen_user_ids) # Remove duplicates
+    
+    # Get GitHub issue numbers that are associated with the Zendesk tickets.
+    git_issue_numbers = []
+    for ticket in zen_tickets:
+        association_data = ''
+        for field in ticket['fields']:
+            if field['id'] == zen_fieldid:
+                if field['value'] is not None:
+                    association_data = field['value'].split('-')
+                break
+        if association_data and association_data[0] == 'gh':
+            git_issue_numbers.append(int(association_data[1]))
+    git_issue_numbers = set(git_issue_numbers) # Remove duplicates
 
+    return (zen_user_ids, git_issue_numbers)
+
+def get_zen_users(profile, zen_user_ids):
+    """Gets the full Zendesk user records for each user ID number in the passed
+    list.
+
+    Parameters:
+        profile - The profile object that contains the current user's data
+                    necessary to access the users on their Zendesk account.  
+        zen_user_ids - A list of Zendesk user IDs whose full user records are 
+                        desired.
+
+    Returns a dictionary reference table with Zendesk user ID numbers as keys
+    and their cooresponding user names as values.
+    """
+    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
+                                              # API token authorization.
+    zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
+                            # names by their ID number.
+    try:
+        for id_number in zen_user_ids:
+            request_zen_user = requests.get(ZEN_USER_URL % \
+                                            {'subdomain': profile.zen_url,
+                                             'user_id': id_number},
+                                auth=(zen_name_tk, profile.zen_token))
+            if request_zen_user.status_code != 200:
+                request_zen_user.raise_for_status()
+            zen_user_reference[id_number] = \
+                    request_zen_user.json['user']['name']
+    except RequestException as e:
+        e.args = (e.args[0], 'Zendesk')
+        raise
+    
+    return zen_user_reference
+
+def get_git_tickets(profile, git_issue_numbers):
+    """Gets the full GitHub ticket records for each issue number in the passed
+    list.
+
+    Parameters:
+        profile - The profile object that contains the current user's data
+                    necessary to access the tickets on their GitHub account.  
+        git_issue_numbers - A list of GitHub issue numbers whose full ticket
+                                records are desired.
+
+    Returns a list with a GitHub ticket record for each of the issue numbers
+    passed to the function.
+    """
     git_tickets = []
-    if data_lists['status']['git']:
-
-        # Filters the list of closed GitHub tickets to remove the ones that are
-        # not associated with any Zendesk ticket. This filtered list is then
-        # combined with all of the open GitHub tickets.
-        git_issues_on_zen = []
-        for ticket in zen_tickets_full:
-            for field in ticket['fields']:
-                if field['id'] == zen_fieldid:
-                    if field['value'] is not None:
-                        association_number = field['value'].split('-')
-                    else:
-                        association_number = ['']
-                    break
-            if association_number[0] == 'gh':
-                git_issues_on_zen.append(int(association_number[1]))
-
-        for ticket in data_lists['git_tickets']:
-            if ticket['number'] in git_issues_on_zen:
-                git_tickets.append(ticket)
-        del git_issues_on_zen
-
-        # Tickets are sorted into order by their issue number
-        git_tickets = sorted(git_tickets, key=lambda k: k['number'])
+    
+    try:
+        for number in git_issue_numbers:
+            request_git_tickets = requests.get(GIT_ISSUE_URL % \
+                                               {'organization': profile.git_org,
+                                                'repository': profile.git_repo,
+                                                'issue_number': number}, 
+                                               params={'access_token':
+                                                       profile.git_token}
+                                              )
+            if request_git_tickets.status_code != 200:
+                request_git_tickets.raise_for_status()
+            git_tickets.append(request_git_tickets.json)
+    except RequestException as e:
+        e.args = (e.args[0], 'GitHub')
+        raise
 
     return git_tickets
 
-def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
-    """Builds the enhancement tracking tables from the Zendesk and GitHub
-    association data.
+def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
+                           zen_fieldid, utc_offset):
+    """Builds the enhancement tracking tables from the Zendesk and GitHub data.
     
     Parameters:
+        zen_tickets - A list of open Zendesk tickets to build the enhancement
+                        data from.
+        zen_user_reference - A dictionary reference that can be used to look up
+                                Zendesk user names by their ID number.
+        git_tickets - A list of GitHub tickets that cooresponds with the
+                        associated GitHub issue numbers of the Zendesk tickets
+                        in zen_tics.
         zen_fieldid - The ID number of the custom field that holds the ticket
                         association value for a given Zendesk ticket.
-        filtered_lists - A dictionary including lists of GitHub tickets, Zendesk
-                            tickets, and a Zendesk user reference table that
-                            have all been filtered and contain only the
-                            entries to be used in building enhancement tracking
-                            data.
-        api_status - A boolean that is True if the API lists were successfully
-                        gathered, and False if they were not. Needed to
-                        determine the status of the enhancement tracking lists.
+        utc_offset - The UTC offset for the current user's time zone. Used to
+                        format the date and time values for each ticket to the
+                        current user's time zone.
 
     Returns a dictionary of the built data with the following keys and values:
-        'git_tickets' - List of the GitHub tickets used in the app.
-        'zen_tickets' - List of the Zendesk tickets used in the app.
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
@@ -382,20 +383,7 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
         'unassociated_enhancements' - List of Zendesk tickets requesting an 
                                         enhancement that have no associated
                                         ticket in GitHub.
-        'status' - Dictionary with the status of building the enhancement lists
-                    with the following keys and values:
-            'tracking' - True if the tracking list was built successfully, 
-                            False if not.
-            'need_attention' - True if the need attention list was built
-                                successfully, False if not.
-            'broken_enhancments' - True if the broken enhancements list was 
-                                    built successfully, False if not. 
-            'unassociated_enhancements' - True if the unassociated enhancements
-                                            list was built successfully, False
-                                            if not.
     """
-    
-    status = {}
     tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
@@ -405,79 +393,66 @@ def build_enhancement_data(zen_fieldid, filtered_lists, api_status):
     unassociated_enhancements = [] # Requested enhancements from Zendesk 
                                    # tickets that have no associatied GitHub
                                    # ticket assigned to them.
-    if api_status:
-        status['tracking'] = True
-        status['need_attention'] = True
-        status['broken_enhancments'] = True
-        status['unassociated_enhancements'] = True
 
-        # Iterate through the Zendesk tickets using their data to classify them
-        # as being tracked, needing attention, or not being tracked. If the
-        # ticket does not fit into any of these catagories, it is deleted form
-        # the list to be returned.
-        for ticket in list(filtered_lists['zen_tickets']):
+    # Iterate through the Zendesk tickets using their data to classify them
+    # as being tracked, needing attention, broken, or not being tracked.
+    for ticket in zen_tickets:
 
-            # Add Zendesk data to enhancement data object
-            for field in ticket['fields']:
-                if field['id'] == zen_fieldid:
-                    association_number = field['value']
+        # Add Zendesk data to enhancement data object
+        association_data = ''
+        for field in ticket['fields']:
+            if field['id'] == zen_fieldid:
+                association_data = field['value']
+                break
+        enhancement_data = {} # Enhancement data object
+        enhancement_data['zen_id'] = ticket['id']
+        enhancement_data['zen_requester'] = \
+                zen_user_reference[ticket['requester_id']]
+        enhancement_data['zen_subject'] = ticket['subject']
+        zen_date = datetime.strptime(ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
+        zen_date = zen_date + timedelta(hours=utc_offset)
+        enhancement_data['zen_date'] = zen_date.strftime('%m/%d/%Y @ %I:%M %p')
+        
+        # Check if it has no associated GitHub ticket
+        if association_data is None or association_data.split('-')[0] != 'gh':
+            unassociated_enhancements.append(enhancement_data)
+        
+        else:
+            # Add GitHub data to enhancement data object
+            git_issue = {}
+            for issue in git_tickets:
+                if issue['number'] == int(association_data.split('-')[1]):
+                    git_issue = issue
                     break
-            enhancement_data = {} # Enhancement data object
-            enhancement_data['z_id'] = ticket['id']
-            enhancement_data['z_status'] = ticket['status']
-            enhancement_data['z_subject'] = ticket['subject']
-            z_date = datetime.strptime(ticket['updated_at'], 
-                                        "%Y-%m-%dT%H:%M:%SZ")
-            enhancement_data['z_date'] = z_date.strftime('%m/%d/%Y @ %H:%M')
+            # Check if it has a broken GitHub association field
+            if not git_issue:
+                enhancement_data['broken_assoc'] = association_number
+                broken_enhancements.append(enhancement_data)
+                continue
+            enhancement_data['git_id'] = git_issue['number']
+            enhancement_data['git_url'] = git_issue['html_url']
+            enhancement_data['git_status'] = git_issue['state']
+            git_date = datetime.strptime(git_issue['updated_at'], 
+                                       "%Y-%m-%dT%H:%M:%SZ")
+            git_date = git_date + timedelta(hours=utc_offset)
+            enhancement_data['git_date'] = \
+                    git_date.strftime('%m/%d/%Y @ %I:%M %p')
             
-            # Check if it has no associated  GitHub ticket
-            if association_number is None or \
-               association_number.split('-')[0] != 'gh':
-                unassociated_enhancements.append(enhancement_data)
+            # Check if the enhacement should be tracked (Both tickets are
+            # open).
+            if enhancement_data['git_status'] == 'open':
+                tracking.append(enhancement_data)
             
+            # Check if the enhancement is in need of attention (The GitHub
+            # ticket is closed).
             else:
-                # Add GitHub data to enhancement data object
-                git_issue = {}
-                for issue in filtered_lists['git_tickets']:
-                    if issue['number'] == int(association_number.split('-')[1]):
-                        git_issue = issue
-                        break
-                # Check if it has a broken GitHub association field
-                if not git_issue:
-                    enhancement_data['broken_assoc'] = association_number
-                    broken_enhancements.append(enhancement_data)
-                    continue
-                enhancement_data['g_id'] = git_issue['number']
-                enhancement_data['g_labels'] = [label['name'] for label \
-                                                in git_issue['labels']]
-                enhancement_data['g_url'] = git_issue['html_url']
-                enhancement_data['g_status'] = git_issue['state']
-                g_date = datetime.strptime(git_issue['updated_at'], 
-                                            "%Y-%m-%dT%H:%M:%SZ")
-                enhancement_data['g_date'] = g_date.strftime('%m/%d/%Y @ %H:%M')
-                
-                # Check if the enhacement should be tracked (Both tickets are
-                # open).
-                if enhancement_data['g_status'] == 'open':
-                    tracking.append(enhancement_data)
-                
-                # Check if the enhancement is in need of attention (The GitHub
-                # ticket is closed).
-                else:
-                    need_attention.append(enhancement_data)
-
-    else:
-        status['tracking'] = False
-        status['need_attention'] = False
-        status['broken_enhancements'] = False
-        status['unassociated_enhancemets'] = False
+                need_attention.append(enhancement_data)
     
     built_data = {
         'tracking': tracking,
         'need_attention': need_attention,
         'broken_enhancements': broken_enhancements,
         'unassociated_enhancements': unassociated_enhancements,
-        'status': status
     }
 
     return built_data

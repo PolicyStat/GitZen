@@ -14,13 +14,12 @@ class GZUserProfile(models.Model):
     zen_token = EncryptedCharField(max_length=75,
                                    verbose_name='Zendesk API Token')
     zen_url = models.CharField(max_length=100,
-                               verbose_name='Zendesk URL')
+                               verbose_name='Zendesk URL Subdomain')
     zen_fieldid = models.IntegerField(null=True,
                                       verbose_name='Zendesk Ticket \
                                       Association Field ID')
-    age_limit = models.IntegerField(null=True,
-                                    verbose_name='Age Limit (in days) for \
-                                    the Tickets')
+    utc_offset = models.IntegerField(null=True, 
+                                     verbose_name='Time Zone (UTC Offset)')
 
     def __str__(self):
         return "%s's profile" % self.user
