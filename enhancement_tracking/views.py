@@ -33,8 +33,7 @@ ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
 
 # Constant search query used to access open Zendesk problem and incident tickets
 # form its API.
-ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident ' \
-                        'ticket_type:problem status:open'
+ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
 
 # Constant URL string for accessing Zendesk users through the Zendesk API. It
 # requires the custom URL subdomain for the specific company whose users are
