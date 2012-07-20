@@ -131,28 +131,29 @@
 				<tr>
 					<td class="td-centered">
 						<a class="open" href="{{ zen_url }}/tickets/
-							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+							{{ enhancement.zen_id }}"
+							>Z{{ enhancement.zen_id }}</a> 
 						<br/> 
-						<a class="closed" href="{{ enhancement.g_url }}"
-							>G{{ enhancement.g_id }}</a>
+						<a class="closed" href="{{ enhancement.git_url }}"
+							>G{{ enhancement.git_id }}</a>
 					</td>
-					<td>{{ enhancement.z_subject }}</td>
-					<td>{{ enhancement.z_requester }}</td>
+					<td>{{ enhancement.zen_subject }}</td>
+					<td>{{ enhancement.zen_requester }}</td>
 					<td class="open td-centered">
 						<span style="display:none;">
-							{{ enhancement.z_sortable_datetime }}
+							{{ enhancement.zen_sortable_datetime }}
 						</span>
-						{{ enhancement.z_date }}
+						{{ enhancement.zen_date }}
 						<br/>
-						{{ enhancement.z_time }}
+						{{ enhancement.zen_time }}
 					</td>
 					<td class="closed td-centered">
 						<span style="display:none;">
-							{{ enhancement.g_sortable_datetime }}
+							{{ enhancement.git_sortable_datetime }}
 						</span>
-						{{ enhancement.g_date }}
+						{{ enhancement.git_date }}
 						<br/>
-						{{ enhancement.g_time }}
+						{{ enhancement.git_time }}
 					</td>
 				</tr>
 			{% endfor %}
@@ -189,28 +190,29 @@
 				<tr>
 					<td class="td-centered">
 						<a class="open" href="{{ zen_url }}/tickets/
-							{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a> 
+							{{ enhancement.zen_id }}"
+							>Z{{ enhancement.zen_id }}</a> 
 						<br/>
-						<a class="open" href="{{ enhancement.g_url }}"
-							>G{{enhancement.g_id }}</a>
+						<a class="open" href="{{ enhancement.git_url }}"
+							>G{{enhancement.git_id }}</a>
 					</td>
-					<td>{{ enhancement.z_subject }}</td>
-					<td>{{ enhancement.z_requester }}</td>
+					<td>{{ enhancement.zen_subject }}</td>
+					<td>{{ enhancement.zen_requester }}</td>
 					<td class="open td-centered">
 						<span style="display:none;">
-							{{ enhancement.z_sortable_datetime }}
+							{{ enhancement.zen_sortable_datetime }}
 						</span>
-						{{ enhancement.z_date }}
+						{{ enhancement.zen_date }}
 						<br/>
-						{{ enhancement.z_time }}
+						{{ enhancement.zen_time }}
 					</td>
 					<td class="open td-centered">
 						<span style="display:none;">
-							{{ enhancement.g_sortable_datetime }}
+							{{ enhancement.git_sortable_datetime }}
 						</span>
-						{{ enhancement.g_date }}
+						{{ enhancement.git_date }}
 						<br/>
-						{{ enhancement.g_time }}
+						{{ enhancement.git_time }}
 					</td>
 				</tr>
 			{% endfor %}
@@ -246,17 +248,17 @@
 			<tr>
 				<td class="td-centered">
 					<a class="open" href="{{ zen_url }}/tickets/
-					{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
+					{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
 				</td>
-				<td>{{ enhancement.z_subject }}</td>
-				<td>{{ enhancement.z_requester }}</td>
+				<td>{{ enhancement.zen_subject }}</td>
+				<td>{{ enhancement.zen_requester }}</td>
 				<td class="td-centered">
 					<span style="display:none;">
-						{{ enhancement.z_sortable_datetime }}
+						{{ enhancement.zen_sortable_datetime }}
 					</span>
-					{{ enhancement.z_date }}
+					{{ enhancement.zen_date }}
 					<br/>
-					{{ enhancement.z_time }}
+					{{ enhancement.zen_time }}
 				</td>
 			</tr>
 		{% endfor %}
@@ -295,17 +297,17 @@
 			<tr>
 				<td class="td-centered">
 					<a class="open" href="{{ zen_url }}/tickets/
-						{{ enhancement.z_id }}">Z{{ enhancement.z_id }}</a>
+						{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
 				</td>
-				<td>{{ enhancement.z_subject }}</td>
-				<td>{{ enhancement.z_requester }}</td>
+				<td>{{ enhancement.zen_subject }}</td>
+				<td>{{ enhancement.zen_requester }}</td>
 				<td class="td-centered">
 					<span style="display:none;">
-						{{ enhancement.z_sortable_datetime }}
+						{{ enhancement.zen_sortable_datetime }}
 					</span>
-					{{ enhancement.z_date }}
+					{{ enhancement.zen_date }}
 					<br/>
-					{{ enhancement.z_time }}
+					{{ enhancement.zen_time }}
 				</td>
 				<td class="td-centered">{{ enhancement.broken_assoc }}</td>
 			</tr>
