@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 
 # Constant URL string for accessing the GitHub API. It requires a GitHub
 # organization/user, repository, and issue number for the string's formatting.
-GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/\
-        %(repository)s/issues/%(issue_number)i'
+GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/' \
+                '%(repository)s/issues/%(issue_number)i'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
@@ -31,8 +31,8 @@ ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
 
 # Constant search query used to access open Zendesk problem and incident tickets
 # form its API.
-ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident \
-        ticket_type:problem status:open'
+ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident' \
+                        'ticket_type:problem status:open'
 
 # Constant URL string for accessing Zendesk users through the Zendesk API. It
 # requires the custom URL subdomain for the specific company whose users are
