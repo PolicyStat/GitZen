@@ -1,8 +1,11 @@
 <html>
 <head>
-	<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
-	<link rel="stylesheet" href="{{ STATIC_URL }}css/base.css">
+	<link rel="stylesheet" type="text/css" 
+	href="{{ STATIC_URL }}css/bootstrap.css">
+	<link rel="stylesheet" type="text/css"
+	href="{{ STATIC_URL }}css/base.css">
 	<title>{% block title %}{% endblock %}</title>
+	{% block extra_head %}{% endblock %}
 </head>
 
 <body>
