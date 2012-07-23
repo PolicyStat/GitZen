@@ -42,6 +42,22 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
 # formatting.
 ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
 
+def check_authentication_frontend(request, view_function):
+    """Function that front ends all of the requests for pages that require the
+    user to be logged in to an authenticated user account. If the user is not
+    logged in to an account, they will be redirected to the loggin screen.
+
+    Parameters:
+        request - The request object that holds the data about the user trying
+                    to access a page that requires an authenticated user.
+        view_function - A string with the name of the function in views for the
+                            page the user is trying to access.
+    """
+    if request.user.is_authenticated():
+        return globals()[view_function](request)
+    else:
+        return HttpResponseRedirect(reverse('login'))
+
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
     an existing user.
@@ -139,7 +155,7 @@ def change_form_handler(request):
         profile_change_form = ProfileChangeForm(instance=profile)
         zen_token_change_form = ZendeskTokenChangeForm()
     
-    return render_to_response('change.html', 
+    return render_to_response('change_account_data.html', 
                               {'password_change_form': password_change_form, 
                                'profile_change_form': profile_change_form,
                                'zen_token_change_form': zen_token_change_form,

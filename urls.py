@@ -17,7 +17,8 @@ urlpatterns = patterns('enhancement_tracking.views',
     url(r'^home/$', 'check_authentication_frontend',
         kwargs={'view_function': 'home'}, name='home'),
     url(r'^change/$', 'check_authentication_frontend',
-        kwargs={'view_function': 'change_form_handler'}, name='change'),
+        kwargs={'view_function': 'change_form_handler'},
+        name='change_account_data'),
     url(r'^confirm_changes/$', 'check_authentication_frontend',
         kwargs={'view_function': 'confirm_changes'}, name='confirm_changes')
 )
