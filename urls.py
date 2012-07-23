@@ -4,6 +4,10 @@ from django.conf.urls.defaults import patterns, include, url
 # from django.contrib import admin
 # admin.autodiscover()
 
+# The patterns that call the 'check_authentication_frontend' from views and
+# send their actual view function as a kwarg are pages that can only be viewed
+# if the user is logged into an authenticated user account. If an AnonymousUser
+# tries to access those pages, they will be redirected to the login screen.
 urlpatterns = patterns('enhancement_tracking.views',
     url(r'^$', 'user_login_form_handler', name='login'),
     url(r'^create/$', 'user_creation_form_handler', name='user_creation'),
