@@ -10,6 +10,7 @@ from django.conf.urls.defaults import patterns, include, url
 # tries to access those pages, they will be redirected to the login screen.
 urlpatterns = patterns('enhancement_tracking.views',
     url(r'^$', 'user_login_form_handler', name='login'),
+    url(r'^logout/$', 'user_logout', name='logout'),
     url(r'^create/$', 'user_creation_form_handler', name='user_creation'),
     url(r'^confirm_user_creation/$', 'confirm_user_creation', 
         name='confirm_user_creation'),

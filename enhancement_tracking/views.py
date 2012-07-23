@@ -162,6 +162,16 @@ def change_form_handler(request):
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
+def user_logout(request):
+    """Logs out the currently logged in user.
+
+    Parameters:
+        request - The request object that contains the information for the user
+                    that is being logged out.
+    """
+    logout(request)
+    return HttpResponseRedirect(reverse('login'))
+
 def confirm_user_creation(request):
     """Renders the confirmation page to confirm the successful creation of a new
     user.
