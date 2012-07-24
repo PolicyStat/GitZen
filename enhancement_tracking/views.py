@@ -215,7 +215,7 @@ def confirm_git_oauth(request):
     if new_user:
         del request.session['profile']
 
-    return render_to_response('git_confirm.html', 
+    return render_to_response('confirm_git_oauth.html', 
                               {'access': access, 'new_user': new_user},
                               context_instance=RequestContext(request))
 
