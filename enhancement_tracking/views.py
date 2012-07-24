@@ -2,6 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
 import requests
@@ -41,22 +42,6 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
 # being accessed and the ID number of the user being accessed for the string's
 # formatting.
 ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
-
-def check_authentication_frontend(request, view_function):
-    """Function that front ends all of the requests for pages that require the
-    user to be logged in to an authenticated user account. If the user is not
-    logged in to an account, they will be redirected to the loggin screen.
-
-    Parameters:
-        request - The request object that holds the data about the user trying
-                    to access a page that requires an authenticated user.
-        view_function - A string with the name of the function in views for the
-                            page the user is trying to access.
-    """
-    if request.user.is_authenticated():
-        return globals()[view_function](request)
-    else:
-        return HttpResponseRedirect(reverse('login'))
 
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
@@ -108,7 +93,8 @@ def user_creation_form_handler(request):
     return render_to_response('user_creation.html', {'user_form': user_form,
                               'profile_form': profile_form}, 
                               context_instance=RequestContext(request))
-            
+
+@login_required
 def change_form_handler(request):
     """Processes the requests from the Change Account Data page. This includes
     requests from the password change form, profile change form, and Zendesk API
@@ -184,6 +170,7 @@ def confirm_user_creation(request):
                               {'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
+@login_required
 def confirm_changes(request):
     """Renders the confirmation page to confirm the successful changes made to
     the current user's account data.
@@ -232,6 +219,7 @@ def confirm_git_oauth(request):
                               {'access': access, 'new_user': new_user},
                               context_instance=RequestContext(request))
 
+@login_required
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
     page of the app with this data.
@@ -261,9 +249,10 @@ def home(request):
         git_tickets = get_git_tickets(profile, git_issue_numbers)
     except RequestException as e:
         render_data['api_requests_successful'] = False
-        render_data['error_message'] = 'There was an error connecting to the \
-                %s API: %s. Try adjusting your account settings.' % (e.args[1],
-                                                                     e.args[0])
+        render_data['error_message'] = 'There was an error connecting to ' \
+                'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
+                'your account settings.' % {'API_name': e.args[1],
+                                            'exception_message': e.args[0]}
         return render_to_response('home.html', render_data,
                                     context_instance=RequestContext(request))
         
@@ -309,8 +298,16 @@ def get_zen_tickets(profile):
                 page += 1
             else:
                 break
+
+    # Catches exceptions from requests.get() or raise_for_status()
     except RequestException as e:
+        # Redefines the args attribute of the exception to contain both the
+        # original error message and the name of the API responsible for causing
+        # the exception.
         e.args = (e.args[0], 'Zendesk')
+
+        # Raise the exception so it can be caught by the except in the home
+        # function for further processing.
         raise
 
     return zen_tickets
@@ -378,8 +375,16 @@ def get_zen_users(profile, zen_user_ids):
                 request_zen_user.raise_for_status()
             zen_user_reference[id_number] = \
                     request_zen_user.json['user']['name']
+
+   # Catches exceptions from requests.get() or raise_for_status()
     except RequestException as e:
+        # Redefine the args attribute of the exception to contain both the
+        # original error message and the name of the API responsible for causing
+        # the exception.
         e.args = (e.args[0], 'Zendesk')
+
+        # Raise the exception so it can be caught by the except in the home
+        # function for further processing.
         raise
     
     return zen_user_reference
@@ -411,8 +416,16 @@ def get_git_tickets(profile, git_issue_numbers):
             if request_git_tickets.status_code != 200:
                 request_git_tickets.raise_for_status()
             git_tickets.append(request_git_tickets.json)
+
+    # Catches exceptions from requests.get() or raise_for_status()
     except RequestException as e:
+        # Redefine the args attribute of the exception to contain both the
+        # original error message and the name of the API responsible for causing
+        # the exception.
         e.args = (e.args[0], 'GitHub')
+
+        # Raise the exception so it can be caught by the except in the home
+        # function for further processing.
         raise
 
     return git_tickets
