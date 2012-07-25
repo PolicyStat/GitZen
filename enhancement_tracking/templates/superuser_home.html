@@ -12,7 +12,10 @@
 {% block body %}
 
 <h1>GitZen</h1>
-<h3><a href="{% url logout %}">Logout</a></h3>
+<div class="actions">
+	<button type="button" class="btn" 
+		onClick="window.location.href='{% url logout %}'">Logout</button>
+</div>
 <br/>
 
 <h2>Superuser Actions</h2>
@@ -58,6 +61,7 @@
 <div class="tab-pane" id="superuser_change_tab">
 <div class="row">
 <div class="span8 offset2">
+	<h2>Change Password</h2>
 	<form class="well" method="post">{% csrf_token %}
 		{{ password_change_form.as_p }}
 		<div class="actions">

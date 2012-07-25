@@ -85,8 +85,13 @@
 {% block body %}
 
 <h1>GitZen</h1>
-<h3><a href="{% url change_account_data %}">Change Account Settings</a></h3>
-<h3><a href="{% url logout %}">Logout</a></h3>
+<div class="actions">
+	<button type="button" class="btn" 
+		onClick="window.location.href='{% url change_account_settings %}'">
+		Change Account Settings</button>
+	<button type="button" class="btn" 
+		onClick="window.location.href='{% url logout %}'">Logout</button>
+</div>
 <br/>
 
 <h2>Enhancement Tracking</h2>

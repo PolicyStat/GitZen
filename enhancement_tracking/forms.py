@@ -22,19 +22,26 @@ class UserProfileForm(ModelForm):
             'zen_token': PasswordInput()
         }
 
-class ProfileChangeForm(ModelForm):
+class SecuredProfileChangeForm(ModelForm):
     """Form for changing the profile data of an existing user. All of the fields
     have their intial values set at the field's value for the current user's
     profile. Changing the git_token and zen_token are handled in seperate
-    forms."""
+    forms to secure the information from being viewed by the user."""
     def __init__(self, *args, **kwargs):
-        super(ProfileChangeForm, self).__init__(*args, **kwargs)
+        super(SecuredProfileChangeForm, self).__init__(*args, **kwargs)
         for key, value in self.fields.items():
             self.fields[key].initial = getattr(self.instance, key)
 
     class Meta:
         model = GZUserProfile
         exclude = ('user', 'git_token', 'zen_token')
+
+class FullProfileChangeForm(SecuredProfileChangeForm):
+    """Form for changing the profile data of an existing user by a superuser. It
+    extends the SecuredProfileChangeForm with the only change being that the
+    user can now view and edit the Zendesk API Token."""
+    class Meta(SecuredProfileChangeForm.Meta):
+        exclude = ('user', 'git_token')
 
 class ZendeskTokenChangeForm(ModelForm):
     """Form for changing the Zendesk API Token of an existing user."""
