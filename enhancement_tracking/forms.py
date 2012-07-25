@@ -1,4 +1,5 @@
-from django.forms import ModelForm, CharField, IntegerField, PasswordInput
+from django.forms import Form, ModelForm, CharField, IntegerField, \
+                         ModelChoiceField, PasswordInput
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from enhancement_tracking.models import GZUserProfile
@@ -43,3 +44,14 @@ class ZendeskTokenChangeForm(ModelForm):
         widgets = {
             'zen_token': PasswordInput()
         }
+
+class ProfileModelChoiceField(ModelChoiceField):
+    """Overwrites the default ModelChoiceField so that it displays only the
+    usernames for the users of the profiles in the model selection menu."""
+    def label_from_instance(self, profile):
+        return profile.user.username
+
+class UserSelectionForm(Form):
+    """Form for selecting a specific GitZen user's profile."""
+    profile = ProfileModelChoiceField(queryset=GZUserProfile.objects.all(),
+                                      label='Select User')

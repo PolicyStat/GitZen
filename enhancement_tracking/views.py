@@ -12,8 +12,9 @@ from datetime import datetime, timedelta
 from time import mktime
 from settings import CLIENT_ID, CLIENT_SECRET
 from enhancement_tracking.forms import UserForm, UserProfileForm, \
-                                        ProfileChangeForm, \
-                                        ZendeskTokenChangeForm
+                                       ProfileChangeForm, \
+                                       ZendeskTokenChangeForm, \
+                                       UserSelectionForm
 
 # Constant URL string for accessing the GitHub API. It requires a GitHub
 # organization/user, repository, and issue number for the string's formatting.
@@ -136,6 +137,9 @@ def change_form_handler(request):
                 return HttpResponseRedirect(reverse('confirm_changes'))
             password_change_form = PasswordChangeForm(user=request.user)
             profile_change_form = ProfileChangeForm()
+        
+        else:
+            return HttpResponseRedirect(reverse('change_account_data'))
     else:
         password_change_form = PasswordChangeForm(user=request.user)
         profile_change_form = ProfileChangeForm(instance=profile)
@@ -183,6 +187,21 @@ def confirm_changes(request):
     return render_to_response('confirm_changes.html',
                               context_instance=RequestContext(request))
 
+@login_required
+def confirm_delete_user(request):
+    """Renders the confirmation page to confirm the successful deletion of a
+    user by the superuser.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the selected user was successfully deleted.
+    """
+    deleted_username = request.session['deleted_username']
+    del request.session['deleted_username']
+    return render_to_response('confirm_delete_user.html',
+                              {'deleted_username': deleted_username},
+                              context_instance=RequestContext(request))
+
 def confirm_git_oauth(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the user login or change forms. Adds the access token
@@ -222,11 +241,17 @@ def confirm_git_oauth(request):
 @login_required
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
-    page of the app with this data.
+    page of the app with this data. If the request for the page is from a
+    superuser, it gets redirected to the superuser_home function.
     
     Parameters:
         request - The request object that contains the current user's data.
     """
+    # If the user is a superuser, render the superuser home page that allows for
+    # the editing of user account data instead of the regular user home page.
+    if request.user.is_superuser:
+        return superuser_home(request)
+
     profile = request.user.get_profile() # Current user profile
     zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
                                       # Zendesk tickets that contains their 
@@ -264,7 +289,68 @@ def home(request):
     render_data['zen_url'] = profile.zen_url
     
     return render_to_response('home.html', render_data,
-                                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
+
+@login_required
+def superuser_home(request):
+    """Processes the various form requests from the superuser home page. This
+    includes the forms to select a user to change their account, to select a
+    user to delete their account, and to change the password for the superuser.
+
+    Parameters:
+        request - The request object that contains the superuser data and the
+                    POST data from the various forms.
+    """
+    if request.POST:
+        # Process the user selection form for changing a user
+        if 'user_change_input' in request.POST:
+            user_change_form = UserSelectionForm(data=request.POST)
+            if user_change_form.is_valid():
+                # Put the profile object that was selected for changes into the
+                # session so that it can be accessed and modified on the change
+                # page.
+                request.session['changing_profile'] = \
+                    user_change_form.cleaned_data['profile']
+                return HttpResponseRedirect(reverse('change_account_data'))
+            user_delete_form = UserSelectionForm()
+            password_change_form = PasswordChangeForm(user=request.user)
+
+        # Process the user selection form for deleting a user
+        elif 'user_delete_input' in request.POST:
+            user_delete_form = UserSelectionForm(data=request.POST)
+            if user_delete_form.is_valid():
+                profile = user_delete_form.cleaned_data['profile']
+                # Put the username of the deleted user into the session so it
+                # can be accessed on the confirmation page.
+                request.session['deleted_username'] = profile.user.username
+                profile.delete()
+                return HttpResponseRedirect(reverse('confirm_delete_user'))
+            user_change_form = UserSelectionForm()
+            password_change_form = PasswordChangeForm(user=request.user)
+
+        # Process superuser password change form
+        elif 'password_change_input' in request.POST:
+            password_change_form = PasswordChangeForm(user=request.user,
+                                                      data=request.POST)
+            if password_change_form.is_valid():
+                password_change_form.save()
+                return HttpResponseRedirect(reverse('confirm_changes'))
+            user_change_form = UserSelectionForm()
+            user_delete_form = UserSelectionForm()
+
+        else:
+            return HttpResponseRedirect(reverse('home'))
+    
+    else:
+        user_change_form = UserSelectionForm()
+        user_delete_form = UserSelectionForm()
+        password_change_form = PasswordChangeForm(user=request.user)
+
+    return render_to_response('superuser_home.html',
+                              {'user_change_form': user_change_form,
+                               'user_delete_form': user_delete_form,
+                               'password_change_form': password_change_form},
+                              context_instance=RequestContext(request))
 
 def get_zen_tickets(profile):
     """Gets all of the open problem and incident Zendesk tickets using the

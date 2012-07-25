@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Superuser Home{% endblock %}
+
+{% block extra_head %}
+<script type="text/javascript" language="javascript"
+	src="{{ STATIC_URL }}js/jquery.js"></script>
+<script type="text/javascript" language="javascript"
+	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
+{% endblock %}
+
+{% block body %}
+
+<h1>GitZen</h1>
+<h3><a href="{% url logout %}">Logout</a></h3>
+<br/>
+
+<h2>Superuser Actions</h2>
+<ul class="nav nav-tabs">
+	<li class="active"><a href="#user_change_tab" data-toggle="tab"
+		>Change User Settings</a></li>
+	<li><a href="#user_delete_tab" data-toggle="tab"
+		>Delete User</a></li>
+	<li><a href="#superuser_change_tab" data-toggle="tab"
+		>Change Superuser Settings</a></li>
+</ul>
+
+<div class="tab-content">
+
+<div class="tab-pane active" id="user_change_tab">
+<div class="row">
+<div class="span8 offset2">
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_change_form.as_p }}
+		<div class="actions">
+			<button name="user_change_input" type="submit"
+				class="btn btn-primary">Change Account Settings</button>
+		</div>
+	</form>
+</div>
+</div>
+</div>
+
+<div class="tab-pane" id="user_delete_tab">
+<div class="row">
+<div class="span8 offset2">
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_delete_form.as_p }}
+		<div class="actions">
+			<button name="user_delete_input" type="submit"
+				class="btn btn-primary">Delete User</button>
+		</div>
+	</form>
+</div>
+</div>
+</div>
+
+<div class="tab-pane" id="superuser_change_tab">
+<div class="row">
+<div class="span8 offset2">
+	<form class="well" method="post">{% csrf_token %}
+		{{ password_change_form.as_p }}
+		<div class="actions">
+			<button name="change_password_input" type="submit"
+				class="btn btn-primary">Submit Change</button>
+		</div>
+	</form>
+</div>
+</div>
+</div>
+
+</div>
+
+{% endblock %}
