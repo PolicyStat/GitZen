@@ -233,7 +233,7 @@ def confirm_user_creation(request):
 @login_required
 def confirm_changes(request):
     """Renders the confirmation page to confirm the successful changes made to
-    the current user's account data.
+    the current user's account settings.
 
     Parameters:
         request - The request object sent with the call to the confirm page if
@@ -321,7 +321,8 @@ def home(request):
         request - The request object that contains the current user's data.
     """
     # If the user is a superuser, render the superuser home page that allows for
-    # the editing of user account data instead of the regular user home page.
+    # the editing of user account settings instead of the regular user home
+    # page.
     if request.user.is_superuser:
         return superuser_home(request)
 
@@ -396,6 +397,7 @@ def superuser_home(request):
                 # Put the username of the deleted user into the session so it
                 # can be accessed on the confirmation page.
                 request.session['deleted_username'] = profile.user.username
+                profile.user.delete()
                 profile.delete()
                 return HttpResponseRedirect(reverse('confirm_delete_user'))
             user_change_form = UserSelectionForm()
