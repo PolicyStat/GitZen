@@ -196,6 +196,7 @@ def superuser_change_form_handler(request):
  
         else:
             return HttpResponseRedirect(reverse('change_account_settings'))
+
     else:
         set_password_form = SetPasswordForm(user=changing_user)
         profile_change_form = FullProfileChangeForm(instance=changing_profile)
