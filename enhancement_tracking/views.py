@@ -2,6 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
 import requests
@@ -21,7 +22,8 @@ GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/' \
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
-                        redirect_uri='http://gitzen.herokuapp.com/git_confirm',
+                        redirect_uri='http://gitzen.herokuapp.com/' \
+                                     'confirm_git_oauth',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
@@ -83,7 +85,7 @@ def user_creation_form_handler(request):
             # Store the profile in the session so the GitHub access token
             # can be added to it through OAuth on the next pages.
             request.session['profile'] = profile
-            return HttpResponseRedirect(reverse('confirm', args=[1]))
+            return HttpResponseRedirect(reverse('confirm_user_creation'))
     else:
         user_form = UserForm()
         profile_form = UserProfileForm()
@@ -91,7 +93,8 @@ def user_creation_form_handler(request):
     return render_to_response('user_creation.html', {'user_form': user_form,
                               'profile_form': profile_form}, 
                               context_instance=RequestContext(request))
-            
+
+@login_required
 def change_form_handler(request):
     """Processes the requests from the Change Account Data page. This includes
     requests from the password change form, profile change form, and Zendesk API
@@ -110,7 +113,7 @@ def change_form_handler(request):
                                                       data=request.POST)
             if password_change_form.is_valid():
                 password_change_form.save()
-                return HttpResponseRedirect(reverse('confirm', args=[2]))
+                return HttpResponseRedirect(reverse('confirm_changes'))
             profile_change_form = ProfileChangeForm()
             zen_token_change_form = ZendeskTokenChangeForm()
 
@@ -120,7 +123,7 @@ def change_form_handler(request):
                                                     instance=profile)
             if profile_change_form.is_valid():
                 profile_change_form.save()
-                return HttpResponseRedirect(reverse('confirm', args=[2]))
+                return HttpResponseRedirect(reverse('confirm_changes'))
             password_change_form = PasswordChangeForm(user=request.user)
             zen_token_change_form = ZendeskTokenChangeForm()
         
@@ -130,7 +133,7 @@ def change_form_handler(request):
                                                            instance=profile)
             if zen_token_change_form.is_valid():
                 zen_token_change_form.save()
-                return HttpResponseRedirect(reverse('confirm', args=[2]))
+                return HttpResponseRedirect(reverse('confirm_changes'))
             password_change_form = PasswordChangeForm(user=request.user)
             profile_change_form = ProfileChangeForm()
     else:
@@ -138,27 +141,49 @@ def change_form_handler(request):
         profile_change_form = ProfileChangeForm(instance=profile)
         zen_token_change_form = ZendeskTokenChangeForm()
     
-    return render_to_response('change.html', 
+    return render_to_response('change_account_data.html', 
                               {'password_change_form': password_change_form, 
                                'profile_change_form': profile_change_form,
                                'zen_token_change_form': zen_token_change_form,
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
-def confirm(request, con_num):
-    """Renders the confirmation page to confirm the successful submission of
-    data from the different forms.
+def user_logout(request):
+    """Logs out the currently logged in user.
 
     Parameters:
-        request - The request object sent with the call to render the page.
-        con_num - The number to identify which confirmation message should be
-                    displayed on the page.
+        request - The request object that contains the information for the user
+                    that is being logged out.
     """
-    return render_to_response('confirm.html',
-                              {'con_num': con_num, 'auth_url': GIT_AUTH_URL},
+    logout(request)
+    return HttpResponseRedirect(reverse('login'))
+
+def confirm_user_creation(request):
+    """Renders the confirmation page to confirm the successful creation of a new
+    user.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if a
+                    user was successfully created from the user creation form.
+    """
+    return render_to_response('confirm_user_creation.html',
+                              {'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
-def git_oauth_confirm(request):
+@login_required
+def confirm_changes(request):
+    """Renders the confirmation page to confirm the successful changes made to
+    the current user's account data.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the user's
+                    account.
+    """
+    return render_to_response('confirm_changes.html',
+                              context_instance=RequestContext(request))
+
+def confirm_git_oauth(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the user login or change forms. Adds the access token
     to the user profile. For a newly created user, their profile was added to
@@ -190,10 +215,11 @@ def git_oauth_confirm(request):
     if new_user:
         del request.session['profile']
 
-    return render_to_response('git_confirm.html', 
+    return render_to_response('confirm_git_oauth.html', 
                               {'access': access, 'new_user': new_user},
                               context_instance=RequestContext(request))
 
+@login_required
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
     page of the app with this data.
@@ -223,9 +249,10 @@ def home(request):
         git_tickets = get_git_tickets(profile, git_issue_numbers)
     except RequestException as e:
         render_data['api_requests_successful'] = False
-        render_data['error_message'] = 'There was an error connecting to the \
-                %s API: %s. Try adjusting your account settings.' % (e.args[1],
-                                                                     e.args[0])
+        render_data['error_message'] = 'There was an error connecting to ' \
+                'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
+                'your account settings.' % {'API_name': e.args[1],
+                                            'exception_message': e.args[0]}
         return render_to_response('home.html', render_data,
                                     context_instance=RequestContext(request))
         
@@ -271,8 +298,16 @@ def get_zen_tickets(profile):
                 page += 1
             else:
                 break
+
+    # Catches exceptions from requests.get() or raise_for_status()
     except RequestException as e:
+        # Redefines the args attribute of the exception to contain both the
+        # original error message and the name of the API responsible for causing
+        # the exception.
         e.args = (e.args[0], 'Zendesk')
+
+        # Raise the exception so it can be caught by the except in the home
+        # function for further processing.
         raise
 
     return zen_tickets
@@ -340,8 +375,16 @@ def get_zen_users(profile, zen_user_ids):
                 request_zen_user.raise_for_status()
             zen_user_reference[id_number] = \
                     request_zen_user.json['user']['name']
+
+   # Catches exceptions from requests.get() or raise_for_status()
     except RequestException as e:
+        # Redefine the args attribute of the exception to contain both the
+        # original error message and the name of the API responsible for causing
+        # the exception.
         e.args = (e.args[0], 'Zendesk')
+
+        # Raise the exception so it can be caught by the except in the home
+        # function for further processing.
         raise
     
     return zen_user_reference
@@ -373,8 +416,16 @@ def get_git_tickets(profile, git_issue_numbers):
             if request_git_tickets.status_code != 200:
                 request_git_tickets.raise_for_status()
             git_tickets.append(request_git_tickets.json)
+
+    # Catches exceptions from requests.get() or raise_for_status()
     except RequestException as e:
+        # Redefine the args attribute of the exception to contain both the
+        # original error message and the name of the API responsible for causing
+        # the exception.
         e.args = (e.args[0], 'GitHub')
+
+        # Raise the exception so it can be caught by the except in the home
+        # function for further processing.
         raise
 
     return git_tickets
