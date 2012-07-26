@@ -7,19 +7,15 @@
 <h1>User Login</h1>
 <br/>
 
-<h2>Existing User</h2>
 <form class="well" method="post">{% csrf_token %}
-	{{ logform.as_p }}
-    <p><input name="log" type="submit" value="Login"/></p>
-</form>
-
-<br/>
-
-<h2>New User</h2>
-<form class="well" method="post">{% csrf_token %}
-	{{ uform.as_p }}
-	{{ pform.as_p }}
-	<p><input name="new" type="submit" value="Create User" /></p>
+	{{ log_form.as_p }}
+	<div class="actions">
+    	<button name="log_input" type="submit"
+			class="btn btn-primary">Login</button>
+		<button type="button" class="btn" 
+			onClick="window.location.href='{% url user_creation %}'">
+			Create New User</button>
+	</div>
 </form>
 
 {% endblock %}

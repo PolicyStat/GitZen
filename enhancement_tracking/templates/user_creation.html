@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}User Creation{% endblock %}
+
+{% block body %}
+
+<h1>User Creation</h1>
+<p>Fill out all of the fields below and click 
+"Submit" to create a new user.</p>
+<br/>
+
+<form class="well" method="post">{% csrf_token %}
+	{{ user_form.as_p }}
+	{{ profile_form.as_p }}
+	<div class="actions">
+		<button name="new_user_input" type="submit"
+			class="btn btn-primary">Submit</button>
+		<button type="button" class="btn"
+			onClick="window.location.href='{% url login %}'">
+			Cancel</button>
+	</div>
+</form>
+
+{% endblock %}

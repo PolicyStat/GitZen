@@ -11,15 +11,72 @@
 	src="{{ STATIC_URL }}js/jquery.dataTables.js"></script>
 <script type="text/javascript" language="javascript"
 	src="{{ STATIC_URL }}js/paging.js"></script>
+<script type="text/javascript" language="javascript"
+	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
 <script type="text/javascript">
 	$.extend( $.fn.dataTableExt.oStdClasses, {
 		"sWrapper": "dataTables_wrapper form-inline"
 	} );
 
 	$(document).ready(function() {
-		$('.dataTable').dataTable( {
+
+		var attention_table = $('#attention_table').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
-			"sPaginationType": "bootstrap"
+			"sPaginationType": "bootstrap",
+			"iDisplayLength": 5,
+			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
+			"bAutoWidth": false,
+			"aoColumns": [
+				{"sWidth": "110px"},
+				{"sWidth": "400px"},
+				{"sWidth": "110px"},
+				{"sWidth": "160px"},
+				{"sWidth": "160px"}
+			]
+		} );
+
+		var tracking_table = $('#tracking_table').dataTable( {
+			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+			"sPaginationType": "bootstrap",
+			"iDisplayLength": 5,
+			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
+			"bAutoWidth": false,
+			"aoColumns": [
+				{"sWidth": "110px"},
+				{"sWidth": "400px"},
+				{"sWidth": "110px"},
+				{"sWidth": "160px"},
+				{"sWidth": "160px"}
+			]
+		} );
+
+		var unassociated_table = $('#unassociated_table').dataTable( {
+			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+			"sPaginationType": "bootstrap",
+			"iDisplayLength": 5,
+			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
+			"bAutoWidth": false,
+			"aoColumns": [
+				{"sWidth": "130px"},
+				{"sWidth": "520px"},
+				{"sWidth": "130px"},
+				{"sWidth": "160px"}
+			]
+		} );
+
+		var broken_table = $('#broken_table').dataTable( {
+			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+			"sPaginationType": "bootstrap",
+			"iDisplayLength": 5,
+			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
+			"bAutoWidth": false,
+			"aoColumns": [
+				{"sWidth": "130px"},
+				{"sWidth": "400px"},
+				{"sWidth": "110px"},
+				{"sWidth": "150px"},
+				{"sWidth": "150px"}
+			]
 		} );
 	} );
 </script>
@@ -32,179 +89,239 @@
 <br/>
 
 <h2>Enhancement Tracking</h2>
-<br/>
-
 {% if api_requests_successful %}
+<ul class="nav nav-tabs">
+	<li class="active"><a href="#attention_tab" data-toggle="tab"
+		>Need Attention ({{ need_attention|length }})</a></li>
+	<li><a href="#tracking_tab" data-toggle="tab"
+		>Currently Tracking ({{ tracking|length }})</a></li>
+	<li><a href="#unassociated_tab" data-toggle="tab"
+		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
+	</li>
+	<li><a href="#broken_tab" data-toggle="tab"
+		{%if broken_enhancements %}
+			class="attention"
+		{% endif %}
+		>Broken Enhancements ({{ broken_enhancements|length }})</a></li>
+</ul>
+
+<div class="tab-content">
+
+<div class="tab-pane active" id="attention_tab">
 <div class="row">
 <div class="span12">
-	<h3>Need Attention</h3>
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
 	Zendesk ticket still remains open.</p>
 	<br/>
 
     {% if need_attention %}
-	<table class="table table-striped table-bordered span12 
-		dataTable table-center">
+	<table class="table table-striped table-bordered span12
+		dataTable table-center" id="attention_table">
 			<thead>
 				<tr>
-					<th>Association</th>
+					<th class="th-centered">Association</th>
 					<th>Zendesk Subject</th>
 					<th>Requester</th>
-					<th>Last Zen Ticket Update</th>
-					<th>Last Git Ticket Update</th>
+					<th class="th-centered">Last Zendesk<br/>Ticket Update</th>
+					<th class="th-centered">Last GitHub<br/>Ticket Update</th>
 				</tr>
 			</thead>
 			<tbody>
 			{% for enhancement in need_attention %}
 				<tr>
-					<td>
+					<td class="td-centered">
 						<a class="open" href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
-						--&gt; <a class="closed" 
-							href="{{ enhancement.git_url }}"
+						<br/> 
+						<a class="closed" href="{{ enhancement.git_url }}"
 							>G{{ enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
 					<td>{{ enhancement.zen_requester }}</td>
-					<td class="open">{{ enhancement.zen_date }}</td>
-					<td class="closed">{{ enhancement.git_date }}</td>
+					<td class="open td-centered">
+						<span style="display:none;">
+							{{ enhancement.zen_sortable_datetime }}
+						</span>
+						{{ enhancement.zen_date }}
+						<br/>
+						{{ enhancement.zen_time }}
+					</td>
+					<td class="closed td-centered">
+						<span style="display:none;">
+							{{ enhancement.git_sortable_datetime }}
+						</span>
+						{{ enhancement.git_date }}
+						<br/>
+						{{ enhancement.git_time }}
+					</td>
 				</tr>
 			{% endfor %}
 			</tbody>
         </table>
     {% else %}
-        <p>There are currently no Enhancements in need of attention.</p>
+        <p>There are currently no enhancements in need of attention.</p>
     {% endif %}
 </div>
 </div>
-<br/>
-<br/>
+</div>
 
+<div class="tab-pane" id="tracking_tab">
 <div class="row">
 <div class="span12">
-	<h3>Currently Tracking</h3>
 	<p>Requested enhancements whose Zendesk ticket and associated GitHub ticket
 	are still open and being worked on.</p>
 	<br/>
 
     {% if tracking %}
 	<table class="table table-striped table-bordered span12
-		dataTable table-center">
+		dataTable table-center" id="tracking_table">
 			<thead>
 				<tr>
-					<th>Association</th>
+					<th class="th-centered">Association</th>
 					<th>Zendesk Subject</th>
 					<th>Requester</th>
-					<th>Last Zen Ticket Update</th>
-					<th>Last Git Ticket Update</th>
+					<th class="th-centered">Last Zendesk<br/>Ticket Update</th>
+					<th class="th-centered">Last GitHub<br/>Ticket Update</th>
 				</tr>
 			</thead>
 			<tbody>
 			{% for enhancement in tracking %}
 				<tr>
-					<td>
+					<td class="td-centered">
 						<a class="open" href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
-						--&gt; <a class="open" href="{{ enhancement.git_url }}"
+						<br/>
+						<a class="open" href="{{ enhancement.git_url }}"
 							>G{{enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
 					<td>{{ enhancement.zen_requester }}</td>
-					<td class="open">{{ enhancement.zen_date }}</td>
-					<td class="open">{{ enhancement.git_date }}</td>
+					<td class="open td-centered">
+						<span style="display:none;">
+							{{ enhancement.zen_sortable_datetime }}
+						</span>
+						{{ enhancement.zen_date }}
+						<br/>
+						{{ enhancement.zen_time }}
+					</td>
+					<td class="open td-centered">
+						<span style="display:none;">
+							{{ enhancement.git_sortable_datetime }}
+						</span>
+						{{ enhancement.git_date }}
+						<br/>
+						{{ enhancement.git_time }}
+					</td>
 				</tr>
 			{% endfor %}
 			</tbody>
 		</table>
     {% else %}
-        <p>There are currently no Enhancements being tracked.</p>
+        <p>There are currently no enhancements being tracked.</p>
     {% endif %}
 </div>
 </div>
-<br/>
-<br/>
-
-{% if broken_enhancements %}
-<div class="row">
-<div class="span12">
-	<h3>Requested Enhancements with Improper GitHub Associations</h3>
-	<p>The listing in the GitHub Association field should be in the format
-	"gh-###" where the "###" is the GitHub issue number of the associated
-	issue.</p>
-	<br/>
-
-	<table class="table table-striped table-bordered span12 
-		dataTable table-center">
-		<thead>
-			<tr>
-				<th>Zendesk Ticket</th>
-				<th>Subject</th>
-				<th>Requester</th>
-				<th>Last Updated</th>
-				<th>Association Field Data</th>
-			</tr>
-		</thead>
-		<tbody>
-		{% for enhancement in broken_enhancements %}
-			<tr>
-				<td>
-					<a class="open" href="{{ zen_url }}/tickets/
-						{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
-				</td>
-				<td>{{ enhancement.zen_subject }}</td>
-				<td>{{ enhancement.zen_requester }}</td>
-				<td>{{ enhancement.zen_date }}</td>
-				<td>{{ enhancement.broken_assoc }}</td>
-			</tr>
-		{% endfor %}
-		</tbody>
-	</table>
 </div>
-</div>
-<br/>
-<br/>
-{% endif %}
 
+<div class="tab-pane" id="unassociated_tab">
 <div class="row">
 <div class="span12">		
-	<h3>Requested Enhancements not Associated with GitHub</h3>
 	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
 	ticket.</p>
 	<br/>
 
     {% if unassociated_enhancements %}
-	<table class="table table-striped table-bordered span12 
-		dataTable table-center">
+	<table class="table table-striped table-bordered span12
+		dataTable table-center" id="unassociated_table">
 		<thead>
 			<tr>
-				<th>Zendesk Ticket</th>
-				<th>Subject</th>
+				<th class="th-centered">Zendesk Ticket</th>
+				<th>Zendesk Subject</th>
 				<th>Requester</th>
-				<th>Last Updated</th>
+				<th class="th-centered">Last Updated</th>
 			</tr>
 		</thead>
 		<tbody>
 		{% for enhancement in unassociated_enhancements %}
 			<tr>
-				<td>
+				<td class="td-centered">
 					<a class="open" href="{{ zen_url }}/tickets/
 					{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
 				<td>{{ enhancement.zen_requester }}</td>
-				<td>{{ enhancement.zen_date }}</td>
+				<td class="td-centered">
+					<span style="display:none;">
+						{{ enhancement.zen_sortable_datetime }}
+					</span>
+					{{ enhancement.zen_date }}
+					<br/>
+					{{ enhancement.zen_time }}
+				</td>
 			</tr>
 		{% endfor %}
 		</tbody>
 	</table>
     {% else %}
-		<p>There are currently no requested Enhancements without GitHub
+		<p>There are currently no requested enhancements without GitHub
 			associations.</p>
 	{% endif %}
 </div>
 </div>
+</div>
+
+<div class="tab-pane" id="broken_tab">
+<div class="row">
+<div class="span12">
+{% if broken_enhancements %}
+	<p>The listing in the GitHub Association field should be in the format
+	"gh-###" where the "###" is the GitHub issue number of the associated
+	issue.</p>
+	<br/>
+
+	<table class="table table-striped table-bordered span12
+		dataTable table-center" id="broken_table">
+		<thead>
+			<tr>
+				<th class="th-centered">Zendesk Ticket</th>
+				<th>Zendesk Subject</th>
+				<th>Requester</th>
+				<th class="th-centered">Last Updated</th>
+				<th class="th-centered">Association<br/>Field Data</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for enhancement in broken_enhancements %}
+			<tr>
+				<td class="td-centered">
+					<a class="open" href="{{ zen_url }}/tickets/
+						{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
+				</td>
+				<td>{{ enhancement.zen_subject }}</td>
+				<td>{{ enhancement.zen_requester }}</td>
+				<td class="td-centered">
+					<span style="display:none;">
+						{{ enhancement.zen_sortable_datetime }}
+					</span>
+					{{ enhancement.zen_date }}
+					<br/>
+					{{ enhancement.zen_time }}
+				</td>
+				<td class="td-centered">{{ enhancement.broken_assoc }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+{% else %}
+	<p>There are currently no broken enhancements.</p>
+{% endif %}
+</div>
+</div>
+</div>
+</div>
+
 {% else %}
 	<p>{{ error_message }}</p>
 {% endif %}

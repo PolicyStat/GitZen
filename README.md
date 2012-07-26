@@ -3,6 +3,7 @@
 This is a web application built using Django that links Zendesk and Github for
 easier developer management.
 
+
 ### Setting up the environment for Heroku deployment (on Ubuntu)
 
 1. Make a Heroku account on their [website](http://www.heroku.com/).
@@ -22,14 +23,14 @@ easier developer management.
 [here](http://www.postgresql.org/download/) so testing can be done locally.
 
 6. Clone the GitZen repo with the command
-	>`git clone git://github.com/FriedRice/GitZen.git`
+	>`git clone git://github.com/PolicyStat/GitZen.git`
 
 7. Change directories to the newly cloned GitZen directory and setup a virualenv
 using the command
 	>`virtualenv venv --distribute`
 
 8. Activate the virtualenv with the command
-	>`source venv/bin/activate`  
+	>`source venv/bin/activate`
 		
 	You must source the virtualenv environment for each terminal session where
 you wish to run your app.
@@ -43,6 +44,7 @@ psycopg2 (Postgresql support for python) in the following step.
 10. Install the required packages for GitZen and Heroku with pip by using the
 command
 	>`pip install -r requirements.txt` 
+
 
 ### Deploying the application to Heroku (on Ubuntu)
 
@@ -68,44 +70,47 @@ the commands with
 command
 	>`heroku run python manage.py syncdb`
 
+
 ### Configuration Instructions
 
 1. Go to the [GitZen website](http://gitzen.herokuapp.com) on Heroku.
 
-2. Located under the heading "New User", begin filling out the information to
-create a new user by first assigning them a username and password and filling
-the "Username", "Password", and "Confirm Password" fields with this information.
+2. Click on the "Create New User" button on the login screen.
 
-3. In order to use GitHub ticket information in GitZen, each user must provide
-information on the GitHub repository from which ticket information should be
+3. Begin filling out the information to create a new user by first assigning
+them a username and password and filling the "Username", "Password", and
+"Confirm Password" fields with this information.
+
+4. In order to use GitHub issue information in GitZen, each user must provide
+information on the GitHub repository from which issue information should be
 monitored. This access information consists of a GitHub organization name and
-repository name associated with the desired ticket information, and those
+repository name associated with the desired issue information, and those
 parameters should be filled into the "GitHub Organization" and "GitHub
-Repository" fields in the new user form respectively. If the repository is
-under a user account rather than an organization, provide the username of that
-account in the organization field instead.
+Repository" fields respectively. If the repository is under a user account
+rather than an organization, provide the username of that account in the
+organization field instead.
 
-4. In order to use Zendesk ticket information in GitZen, each user must provide
+5. In order to use Zendesk ticket information in GitZen, each user must provide
 a set of access information from a Zendesk account linked to the tickets that
 should be monitored. The first information required to access this data is a
-Zendesk user email which should be filled into the "Zendesk User Email" field in
-the new user form. The other three bits of Zendesk access information needed are
-more specific and are covered in the following steps.
+Zendesk user email which should be filled into the "Zendesk User Email" field of
+the form. The other three bits of Zendesk access information needed are more
+specific and are covered in the following steps.
 
-5. In order to allow API token access to the Zendesk account, "Token Access"
+6. In order to allow API token access to the Zendesk account, "Token Access"
 must be enabled. This option can be found by logging into Zendesk with an
 account that has administrator level credentials and looking under
 "Settings"->"Channels"->"API". After clicking "edit" and checking the "Token
 Access" box, copy the displayed API token and paste it into the "Zendesk API
-Token" field in the new user form.
+Token" field in the form.
 
-6. For the "Zendesk URL" field in the new user form, enter in the full URL that
-comes up after logging into the Zendesk account associated with the desired
-ticket information (The URL should be in the format
+7. For the "Zendesk URL Subdomain" field in the form, enter in the full
+URL that comes up after logging into the Zendesk account associated with the
+desired ticket information (The URL should be in the format
 "https://\{yourcompanyname\}.zendesk.com").
 
-7. For the "Zendesk Ticket Association Field ID" field in the new user form, the
-ID number of the field that holds the external ticket association data for each
+8. For the "Zendesk Ticket Association Field ID" field in the form, the ID
+number of the field that holds the external ticket association data for each
 Zendesk ticket must be found. In order to find this ID number, first look up the
 ID number of a Zendesk ticket from the desired account that has this ticket
 association field on it. Then open up a command terminal and enter in the
@@ -121,24 +126,20 @@ the value of the "value" key matching the value of the ticket association field
 of the Zendesk ticket that was looked up for this process. In the same
 dictionary as this "value" pair, the number value for the "id" key is the ID
 number that must be entered into the "Zendesk Ticket Association Field ID" field
-in the new user form.
+in form.
 
-8. For the "Age Limit (in days) for the Tickets" field in the new user form,
-enter a limit (in days) for the age of the tickets used in the application.
-Only tickets from Zendesk and GitHub that were last updated between the current
-time and this age limit away from the current time will be monitored in the
-application. It should be noted that the higher this age limit is set, the
-longer it will take to load the application on login, so for this reason, it is
-recommended that the age limit is not set higher than one year (365 days) to
-avoid load times that are too long for Heroku. 
+9. For the "Time Zone (UTC Offset)" field in the form, enter in the UTC offset
+of your local time zone in order to adjust the dates and times of the
+application to the proper times for your location. The number value of the
+offset should be prefaced with a "+" or "-" to indicated whether the offset is
+ahead or behind UTC time (i.e. "-4" or "+9").
 
-9. Check to see that all fields under the "New User" heading are filled out
-accurately, and then click the "Create User" button to create a user with the
-given information.
+10. Check to see that all fields in the form are filled out accurately, and then
+click the "Submit" button to create a user with the given information.
 
-10. Once the account has been created, the next page will instruct you to
-authorize GitZen on GitHub for the newly created user by following the
-hyperlink. Click this link to start the authorization process, and after it is
-completed (either automatically or by following the GitHub instructions), a
-confirmation page will come up with a link back to the login page where one can
-login to the newly created GitZen account. 
+11. Once the account has been created, the next page will instruct you to
+authorize GitZen on GitHub for the newly created user by clicking the "GitHub
+Authorization" button. Click this button to start the authorization process, and
+after it is completed (either automatically or by following the GitHub
+instructions), a confirmation page will come up with a button that links back to
+the login page where one can login to the newly created GitZen account. 

@@ -4,13 +4,15 @@ from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.urlresolvers import reverse
-from enhancement_tracking.forms import UserForm, UserProfileForm, \
-                                        ProfileChangeForm
-from settings import CLIENT_ID, CLIENT_SECRET
 import requests
 from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
+from time import mktime
+from settings import CLIENT_ID, CLIENT_SECRET
+from enhancement_tracking.forms import UserForm, UserProfileForm, \
+                                        ProfileChangeForm, \
+                                        ZendeskTokenChangeForm
 
 # Constant URL string for accessing the GitHub API. It requires a GitHub
 # organization/user, repository, and issue number for the string's formatting.
@@ -31,8 +33,7 @@ ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
 
 # Constant search query used to access open Zendesk problem and incident tickets
 # form its API.
-ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident ' \
-                        'ticket_type:problem status:open'
+ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
 
 # Constant URL string for accessing Zendesk users through the Zendesk API. It
 # requires the custom URL subdomain for the specific company whose users are
@@ -40,83 +41,107 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket ticket_type:incident ' \
 # formatting.
 ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
 
-def user_login(request):
-    """Processes the requests from the login page. 
-    
-    Authenticates the login of an existing user or creates a new user by adding
-    their user data to the database. If any of the fields in the submitted form
-    are not completed properly, the login page will come up again with those
-    fields marked as needing to be properly filled.
+def user_login_form_handler(request):
+    """Processes the requests from the login page and authenticates the login of
+    an existing user.
 
     Parameters:
         request - The request object that contains the POST data from the login
                     forms.
-    """
-
+    """ 
     if request.method == 'POST':
-        if 'log' in request.POST:  # Process login form
-            logform = AuthenticationForm(data=request.POST)
-            if logform.is_valid():
-                login(request, logform.get_user())
-                return HttpResponseRedirect(reverse('home'))
-            uform = UserForm()
-            pform = UserProfileForm()
-
-        elif 'new' in request.POST:  # Process new user form
-            uform = UserForm(data=request.POST)
-            pform = UserProfileForm(data=request.POST)
-            if uform.is_valid() and pform.is_valid():
-                user = uform.save()
-                profile = pform.save(commit=False)
-                profile.user = user
-                profile.save()
-                
-                # Store the profile in the session so the GitHub access token
-                # can be added to it through OAuth on the next pages.
-                request.session['profile'] = profile
-                return HttpResponseRedirect(reverse('confirm', args=[1]))
-            logform = AuthenticationForm()
+        log_form = AuthenticationForm(data=request.POST)
+        if log_form.is_valid():
+            login(request, log_form.get_user())
+            return HttpResponseRedirect(reverse('home'))
     else:
-        logform = AuthenticationForm()
-        uform = UserForm()
-        pform = UserProfileForm()
+        log_form = AuthenticationForm()
 
-    return render_to_response('login.html', {'logform': logform,
-                                'uform': uform, 'pform': pform}, 
+    return render_to_response('login.html', {'log_form': log_form}, 
                               context_instance=RequestContext(request))
 
-def change(request):
-    """Processes the requests from the Change Account Data page.
-
-    All of the fields on the change forms are optional so that the user can
-    change only the account data that they want changed.
+def user_creation_form_handler(request):
+    """Process the requests from the User Creation page.
+    
+    If any of the fields in the submitted form are not completed properly, the
+    User Creation page will come up again with those fields marked as needing to
+    be properly filled.
 
     Parameters:
-        request - The request object that contains the POST data from the change
-                    form.
+        request - The request object that contains the form data submitted from
+                    the User Creation page.
     """
-
     if request.method == 'POST':
-        if 'password' in request.POST: # Process password change form
-            pwform = PasswordChangeForm(user=request.user, data=request.POST)
-            if pwform.is_valid():
-                pwform.save()
-                return HttpResponseRedirect(reverse('confirm', args=[2]))
-            prform = ProfileChangeForm()
-        
-        elif 'profile' in request.POST: # Process profile change form
-            prform = ProfileChangeForm(data=request.POST,
-                                       instance=request.user.get_profile())
-            if prform.is_valid():
-                prform.save()
-                return HttpResponseRedirect(reverse('confirm', args=[2]))
-            pwform = PasswordChangeForm(user=request.user)
+        user_form = UserForm(data=request.POST)
+        profile_form = UserProfileForm(data=request.POST)
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            profile = profile_form.save(commit=False)
+            profile.user = user
+            profile.save()
+            
+            # Store the profile in the session so the GitHub access token
+            # can be added to it through OAuth on the next pages.
+            request.session['profile'] = profile
+            return HttpResponseRedirect(reverse('confirm', args=[1]))
     else:
-        pwform = PasswordChangeForm(user=request.user)
-        prform = ProfileChangeForm()
+        user_form = UserForm()
+        profile_form = UserProfileForm()
+
+    return render_to_response('user_creation.html', {'user_form': user_form,
+                              'profile_form': profile_form}, 
+                              context_instance=RequestContext(request))
+            
+def change_form_handler(request):
+    """Processes the requests from the Change Account Data page. This includes
+    requests from the password change form, profile change form, and Zendesk API
+    token chnage form.
+
+    Parameters:
+        request - The request object that contains the POST data from one of the
+                    change forms.
+    """
+    profile = request.user.get_profile()
+
+    if request.POST:
+        # Process password change form
+        if 'password_input' in request.POST:
+            password_change_form = PasswordChangeForm(user=request.user,
+                                                      data=request.POST)
+            if password_change_form.is_valid():
+                password_change_form.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            profile_change_form = ProfileChangeForm()
+            zen_token_change_form = ZendeskTokenChangeForm()
+
+        # Process profile change form
+        elif 'profile_input' in request.POST:
+            profile_change_form = ProfileChangeForm(data=request.POST,
+                                                    instance=profile)
+            if profile_change_form.is_valid():
+                profile_change_form.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            password_change_form = PasswordChangeForm(user=request.user)
+            zen_token_change_form = ZendeskTokenChangeForm()
+        
+        # Process Zendesk API Token change form
+        elif 'zen_token_input' in request.POST: 
+            zen_token_change_form = ZendeskTokenChangeForm(data=request.POST,
+                                                           instance=profile)
+            if zen_token_change_form.is_valid():
+                zen_token_change_form.save()
+                return HttpResponseRedirect(reverse('confirm', args=[2]))
+            password_change_form = PasswordChangeForm(user=request.user)
+            profile_change_form = ProfileChangeForm()
+    else:
+        password_change_form = PasswordChangeForm(user=request.user)
+        profile_change_form = ProfileChangeForm(instance=profile)
+        zen_token_change_form = ZendeskTokenChangeForm()
     
     return render_to_response('change.html', 
-                              {'pwform': pwform, 'prform': prform,
+                              {'password_change_form': password_change_form, 
+                               'profile_change_form': profile_change_form,
+                               'zen_token_change_form': zen_token_change_form,
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
@@ -147,10 +172,10 @@ def git_oauth_confirm(request):
     """
     if 'profile' in request.session: # Authorizing for a new user
         profile = request.session['profile']
-        new_auth = True
+        new_user = True
     else: # Changing Authorization for an existing user
         profile = request.user.get_profile()
-        new_auth = False
+        new_user = False
 
     if 'error' in request.GET:
         profile.git_token = ''
@@ -162,11 +187,11 @@ def git_oauth_confirm(request):
         access = True
     
     profile.save()
-    if new_auth:
+    if new_user:
         del request.session['profile']
 
     return render_to_response('git_confirm.html', 
-                              {'access': access, 'new_auth': new_auth},
+                              {'access': access, 'new_user': new_user},
                               context_instance=RequestContext(request))
 
 def home(request):
@@ -376,23 +401,23 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
+        'unassociated_enhancements' - List of Zendesk tickets requesting an 
+                                        enhancement that have no associated
+                                        ticket in GitHub.
         'broken_enhancements' - List of Zendesk tickets that have improper data
                                     in their GitHub issue association field.
                                     This could be the result of a typo or some
                                     other user error.
-        'unassociated_enhancements' - List of Zendesk tickets requesting an 
-                                        enhancement that have no associated
-                                        ticket in GitHub.
     """
     tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
                         # is closed, the other needs attention.
-    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
-                             # GitHub issue association field.
     unassociated_enhancements = [] # Requested enhancements from Zendesk 
                                    # tickets that have no associatied GitHub
                                    # ticket assigned to them.
+    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
+                             # GitHub issue association field.
 
     # Iterate through the Zendesk tickets using their data to classify them
     # as being tracked, needing attention, broken, or not being tracked.
@@ -409,9 +434,13 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         enhancement_data['zen_requester'] = \
                 zen_user_reference[ticket['requester_id']]
         enhancement_data['zen_subject'] = ticket['subject']
-        zen_date = datetime.strptime(ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
-        zen_date = zen_date + timedelta(hours=utc_offset)
-        enhancement_data['zen_date'] = zen_date.strftime('%m/%d/%Y @ %I:%M %p')
+        zen_datetime = datetime.strptime(ticket['updated_at'],
+                                       "%Y-%m-%dT%H:%M:%SZ")
+        zen_datetime = zen_datetime + timedelta(hours=utc_offset)
+        enhancement_data['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
+        enhancement_data['zen_time'] = zen_datetime.strftime('%I:%M %p')
+        enhancement_data['zen_sortable_datetime'] = \
+                mktime(zen_datetime.timetuple())
         
         # Check if it has no associated GitHub ticket
         if association_data is None or association_data.split('-')[0] != 'gh':
@@ -432,11 +461,13 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['git_id'] = git_issue['number']
             enhancement_data['git_url'] = git_issue['html_url']
             enhancement_data['git_status'] = git_issue['state']
-            git_date = datetime.strptime(git_issue['updated_at'], 
-                                       "%Y-%m-%dT%H:%M:%SZ")
-            git_date = git_date + timedelta(hours=utc_offset)
-            enhancement_data['git_date'] = \
-                    git_date.strftime('%m/%d/%Y @ %I:%M %p')
+            git_datetime = datetime.strptime(git_issue['updated_at'],
+                                           "%Y-%m-%dT%H:%M:%SZ")
+            git_datetime = git_datetime + timedelta(hours=utc_offset)
+            enhancement_data['git_date'] = git_datetime.strftime('%m/%d/%Y')
+            enhancement_data['git_time'] = git_datetime.strftime('%I:%M %p')
+            enhancement_data['git_sortable_datetime'] = \
+                    mktime(git_datetime.timetuple())
             
             # Check if the enhacement should be tracked (Both tickets are
             # open).
@@ -447,12 +478,23 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             # ticket is closed).
             else:
                 need_attention.append(enhancement_data)
-    
+    """
+    broken_test = {
+        'zen_id': '9001',
+        'zen_subject': "Test. It's over 9000!",
+        'zen_requester': 'Nick McLaughlin',
+        'zen_date': '09/09/09',
+        'zen_time': '11:11 PM',
+        'broken_assoc': 'gh-1337'
+    }
+    broken_enhancements.append(broken_test)
+    """
+
     built_data = {
         'tracking': tracking,
         'need_attention': need_attention,
-        'broken_enhancements': broken_enhancements,
         'unassociated_enhancements': unassociated_enhancements,
+        'broken_enhancements': broken_enhancements,
     }
 
     return built_data

@@ -18,17 +18,17 @@
 			link if you are logged into GitHub, and you should be redirected
 			straight to the confirmation page.
 		</p>
-		<a href="{{ auth_url }}">GitHub Authorization</a>
+		<button type="button" class="btn btn-primary" 
+			onClick="window.location.href='{{ auth_url }}'">
+			GitHub Authorization</button>
 	{% else %}
 		{% if con_num == '2' %}
 			<p>
 				Your account has been updated with the entered information.
 			</p>
-			<a href="{% url home %}">Return to Homepage</a>
-		{% else %}
-			<p>
-				You should not be viewing this page.
-			</p>
+			<button type="button" class="btn" 
+				onClick="window.location.href='{% url home %}'">
+				Return to Home</button>
 		{% endif %}
 	{% endif %}
 {% endblock %}

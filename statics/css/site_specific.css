@@ -1,0 +1,69 @@
+/* Base CSS used on all pages of the Enhancement Tracking application. */
+
+h1, h2, h3, p, a, div 
+{
+	text-align:center;
+}
+
+a:link, a:visited 
+{
+	color:blue;
+}
+a.open, td.open 
+{
+	color:green
+}
+a.closed, td.closed 
+{
+	color:red
+}
+a.attention
+{
+	color:red
+}
+
+.center 
+{
+	margin-left:auto;
+	margin-right:auto;
+}
+
+td.td-centered
+{
+	text-align:center;
+}
+
+th.th-centered
+{
+	text-align:center;
+}
+
+.table-center 
+{
+	margin: 0 auto !important;
+	float: none !important;
+}
+
+.table tbody tr:hover td,
+.table tbody tr:hover th 
+{
+  background-color: #C7C7C7;
+}
+
+.nav-tabs > li, .nav-pills > li 
+{
+    float:none;
+    display:inline-block;
+    *display:inline;
+     zoom:1;
+}
+
+.nav-tabs 
+{
+    text-align:center;
+}
+
+.tab-content
+{
+	overflow: visible;
+}
