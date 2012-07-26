@@ -16,7 +16,8 @@ from enhancement_tracking.forms import UserForm, UserProfileForm, \
                                        SecuredProfileChangeForm, \
                                        FullProfileChangeForm, \
                                        ZendeskTokenChangeForm, \
-                                       UserSelectionForm
+                                       ActiveUserSelectionForm, \
+                                       InactiveUserSelectionForm
 
 # Constant URL string for accessing the GitHub API. It requires a GitHub
 # organization/user, repository, and issue number for the string's formatting.
@@ -169,8 +170,8 @@ def superuser_change_form_handler(request):
                     should be represented in the forms and the POST data from
                     the froms themselves.
     """
-    changing_profile = request.session['changing_profile']
-    changing_user = changing_profile.user
+    changing_user = request.session['changing_user']
+    changing_profile = changing_user.get_profile()
 
     if request.POST:
         # Process profile change form
@@ -261,18 +262,33 @@ def confirm_superuser_changes(request):
                               context_instance=RequestContext(request))
 
 @login_required
-def confirm_delete_user(request):
-    """Renders the confirmation page to confirm the successful deletion of a
+def confirm_user_deactivation(request):
+    """Renders the confirmation page to confirm the successful deactivation of a
     user by the superuser.
 
     Parameters:
         request - The request object sent with the call to the confirm page if
-                    the selected user was successfully deleted.
+                    the selected user was successfully deactivated.
     """
-    deleted_username = request.session['deleted_username']
-    del request.session['deleted_username']
-    return render_to_response('confirm_delete_user.html',
-                              {'deleted_username': deleted_username},
+    deactivated_username = request.session['deactivated_username']
+    del request.session['deactivated_username']
+    return render_to_response('confirm_user_deactivation.html',
+                              {'deactivated_username': deactivated_username},
+                              context_instance=RequestContext(request))
+
+@login_required
+def confirm_user_activation(request):
+    """Renders the confirmation page to confirm the successful activation of a
+    previously deactivated user by the superuser.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the selected user was successfully activated.
+    """
+    activated_username = request.session['activated_username']
+    del request.session['activated_username']
+    return render_to_response('confirm_user_activation.html',
+                              {'activated_username': activated_username},
                               context_instance=RequestContext(request))
 
 def confirm_git_oauth(request):
@@ -378,29 +394,49 @@ def superuser_home(request):
     if request.POST:
         # Process the user selection form for changing a user
         if 'user_change_input' in request.POST:
-            user_change_form = UserSelectionForm(data=request.POST)
+            user_change_form = ActiveUserSelectionForm(data=request.POST)
             if user_change_form.is_valid():
                 # Put the profile object that was selected for changes into the
                 # session so that it can be accessed and modified on the change
                 # page.
-                request.session['changing_profile'] = \
-                    user_change_form.cleaned_data['profile']
+                request.session['changing_user'] = \
+                        user_change_form.cleaned_data['user']
                 return HttpResponseRedirect(reverse('change_account_settings'))
-            user_delete_form = UserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm()
+            user_activate_form = InactiveUserSelectionForm()
             password_change_form = PasswordChangeForm(user=request.user)
 
-        # Process the user selection form for deleting a user
-        elif 'user_delete_input' in request.POST:
-            user_delete_form = UserSelectionForm(data=request.POST)
+        # Process the user selection form for deactivating a user
+        elif 'user_deactivate_input' in request.POST:
+            user_delete_form = ActiveUserSelectionForm(data=request.POST)
             if user_delete_form.is_valid():
-                profile = user_delete_form.cleaned_data['profile']
-                # Put the username of the deleted user into the session so it
+                user = user_delete_form.cleaned_data['user']
+                user.is_active = False
+                user.save()
+
+                # Put the username of the deactivated user into the session so
+                # it can be accessed on the confirmation page.
+                request.session['deactivated_username'] = user.username
+                return HttpResponseRedirect(
+                    reverse('confirm_user_deactivation'))
+            user_change_form = ActiveUserSelectionForm()
+            user_activate_form = InactiveUserSelectionForm()
+            password_change_form = PasswordChangeForm(user=request.user)
+        
+        # Process the user selection form for activating a user
+        elif 'user_activate_input' in request.POST:
+            user_activate_form = InactiveUserSelectionForm(data=request.POST)
+            if user_activate_form.is_valid():
+                user = user_activate_form.cleaned_data['user']
+                user.is_active = True
+                user.save()
+                
+                # Put the username of the activated user into the session so it
                 # can be accessed on the confirmation page.
-                request.session['deleted_username'] = profile.user.username
-                profile.user.delete()
-                profile.delete()
-                return HttpResponseRedirect(reverse('confirm_delete_user'))
-            user_change_form = UserSelectionForm()
+                request.session['activated_username'] = user.username
+                return HttpResponseRedirect(reverse('confirm_user_activation'))
+            user_change_form = ActiveUserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm()
             password_change_form = PasswordChangeForm(user=request.user)
 
         # Process superuser password change form
@@ -410,20 +446,23 @@ def superuser_home(request):
             if password_change_form.is_valid():
                 password_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
-            user_change_form = UserSelectionForm()
-            user_delete_form = UserSelectionForm()
+            user_change_form = ActiveUserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm()
+            user_activate_form = InactiveUserSelectionForm()
 
         else:
             return HttpResponseRedirect(reverse('home'))
     
     else:
-        user_change_form = UserSelectionForm()
-        user_delete_form = UserSelectionForm()
+        user_change_form = ActiveUserSelectionForm()
+        user_deactivate_form = ActiveUserSelectionForm()
+        user_activate_form = InactiveUserSelectionForm()
         password_change_form = PasswordChangeForm(user=request.user)
 
     return render_to_response('superuser_home.html',
                               {'user_change_form': user_change_form,
-                               'user_delete_form': user_delete_form,
+                               'user_deactivate_form': user_deactivate_form,
+                               'user_activate_form': user_activate_form,
                                'password_change_form': password_change_form},
                               context_instance=RequestContext(request))
 

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Deletion Confirmation{% endblock %}
+{% block title %}Deactivation Confirmation{% endblock %}
 
 {% block body %}
 	<h2>Confirmation</h2>
 	<p>
-		The user {{ deleted_username }} has been successfully deleted.
+		The user {{ deactivated_username }} has been successfully deactivated.
 	</p>
 	<button type="button" class="btn" 
 		onClick="window.location.href='{% url home %}'">

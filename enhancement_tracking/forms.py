@@ -52,13 +52,16 @@ class ZendeskTokenChangeForm(ModelForm):
             'zen_token': PasswordInput()
         }
 
-class ProfileModelChoiceField(ModelChoiceField):
-    """Overwrites the default ModelChoiceField so that it displays only the
-    usernames for the users of the profiles in the model selection menu."""
-    def label_from_instance(self, profile):
-        return profile.user.username
+class ActiveUserSelectionForm(Form):
+    """Form for selecting a specific GitZen user's profile. Excludes
+    superusers and users who are set as inactive.""" 
+    user = ModelChoiceField(queryset=User.objects.\
+                            exclude(is_superuser=True).exclude(is_active=False),
+                            label='Select User')
 
-class UserSelectionForm(Form):
-    """Form for selecting a specific GitZen user's profile."""
-    profile = ProfileModelChoiceField(queryset=GZUserProfile.objects.all(),
-                                      label='Select User')
+class InactiveUserSelectionForm(Form):
+    """Form for selecting a specific GitZen user's profile. Excludes superusers
+    and users who are set as active."""
+    user = ModelChoiceField(queryset=User.objects.\
+                            exclude(is_superuser=True).exclude(is_active=True),
+                            label='Select User')

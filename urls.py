@@ -14,8 +14,10 @@ urlpatterns = patterns('enhancement_tracking.views',
         name='confirm_user_creation'),
     url(r'^confirm_git_oauth/$', 'confirm_git_oauth', name='confirm_git_oauth'),
     url(r'^confirm_changes/$', 'confirm_changes', name='confirm_changes'),
-    url(r'^confirm_delete_user/$', 'confirm_delete_user',
-        name='confirm_delete_user'),
+    url(r'^confirm_user_deactivation/$', 'confirm_user_deactivation',
+        name='confirm_user_deactivation'),
+    url(r'^confirm_user_activation/$', 'confirm_user_activation',
+        name='confirm_user_activation'),
     url(r'^confirm_superuser_changes/$', 'confirm_superuser_changes',
         name='confirm_superuser_changes')
 )
