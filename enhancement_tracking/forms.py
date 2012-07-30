@@ -27,11 +27,6 @@ class SecuredProfileChangeForm(ModelForm):
     have their intial values set at the field's value for the current user's
     profile. Changing the git_token and zen_token are handled in seperate
     forms to secure the information from being viewed by the user."""
-    def __init__(self, *args, **kwargs):
-        super(SecuredProfileChangeForm, self).__init__(*args, **kwargs)
-        for key, value in self.fields.items():
-            self.fields[key].initial = getattr(self.instance, key)
-
     class Meta:
         model = GZUserProfile
         exclude = ('user', 'git_token', 'zen_token')
