@@ -102,7 +102,7 @@ def user_creation_form_handler(request):
 def change_form_handler(request):
     """Processes the requests from the Change Account Data page. This includes
     requests from the password change form, profile change form, and Zendesk API
-    token chnage form. If the page request is from a superuser, it redirects to
+    token change form. If the page request is from a superuser, it redirects to
     the superuser_change_form_handler function.
 
     Parameters:
