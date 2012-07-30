@@ -2,6 +2,25 @@
 
 {% block title %}Access Confirmation{% endblock %}
 
+{% block extra_head %}
+<script>
+	{% if new_user %}
+		$(document).ready(function() {
+			$('#return_login_button').click(function() {
+				window.location.href='{% url login %}';
+			});
+		});
+	{% else %}
+		$(document).ready(function() {
+			$('#return_home_button').click(function() {
+				window.location.href='{% url home %}';
+			});
+		});
+	{% endif %}
+</script>
+{% endblock %}
+
+
 {% block body %}
 	<h2>GitHub Access Confirmation</h2>
 
@@ -20,12 +39,10 @@
 		</p>
 	{% endif %}
 	{% if new_user %}
-		<button type="button" class="btn" 
-			onClick="window.location.href='{% url login %}'">
-			Return to Login</button>
+		<button id="return_login_button" type="button" class="btn"
+			>Return to Login</button>
 	{% else %}
-		<button type="button" class="btn" 
-			onClick="window.location.href='{% url home %}'">
-			Return to Home</button>
+		<button id="return_home_button" type="button" class="btn"
+			>Return to Home</button>
 	{% endif %}
 {% endblock %}

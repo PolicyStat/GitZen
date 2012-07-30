@@ -252,11 +252,11 @@ def confirm_superuser_changes(request):
     Parameters:
         request - The request object sent with the call to the confirm page if
                     the requested changes were successfully made to the selected
-                    user's account. It also should contain the username of that
-                    user in the session.
+                    user's account. It should also contain a reference to the
+                    selected user in the session.
     """
-    username = request.session['changing_profile'].user.username
-    del request.session['changing_profile']
+    username = request.session['changing_user'].username
+    del request.session['changing_user']
     return render_to_response('confirm_superuser_changes.html',
                               {'username': username},
                               context_instance=RequestContext(request))

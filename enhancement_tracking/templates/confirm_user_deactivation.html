@@ -2,12 +2,21 @@
 
 {% block title %}Deactivation Confirmation{% endblock %}
 
+{% block extra_head %}
+<script>
+	$(document).ready(function() {
+		$('#return_home_button').click(function() {
+			window.location.href='{% url home %}';
+		});
+	});
+</script>
+{% endblock %}
+
 {% block body %}
 	<h2>Confirmation</h2>
 	<p>
 		The user {{ deactivated_username }} has been successfully deactivated.
 	</p>
-	<button type="button" class="btn" 
-		onClick="window.location.href='{% url home %}'">
-		Return to Home</button>
+	<button id="return_home_button" type="button" class="btn"
+		>Return to Home</button>
 {% endblock %}

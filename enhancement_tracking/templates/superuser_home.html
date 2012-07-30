@@ -4,17 +4,21 @@
 
 {% block extra_head %}
 <script type="text/javascript" language="javascript"
-	src="{{ STATIC_URL }}js/jquery.js"></script>
-<script type="text/javascript" language="javascript"
 	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
+<script>
+	$(document).ready(function() {
+		$('#logout_button').click(function() {
+			window.location.href='{% url logout %}';
+		});
+	});
+</script>
 {% endblock %}
 
 {% block body %}
 
 <h1>GitZen</h1>
 <div class="actions">
-	<button type="button" class="btn" 
-		onClick="window.location.href='{% url logout %}'">Logout</button>
+	<button id="logout_button" type="button" class="btn">Logout</button>
 </div>
 <br/>
 

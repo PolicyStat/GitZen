@@ -2,6 +2,17 @@
 
 {% block title %}Login{% endblock %}
 
+{% block extra_head %}
+<script>
+	$(document).ready(function() {
+		$('#goto_create_user_button').click(function() {
+			window.location.href='{% url user_creation %}';
+		});
+	});
+</script>
+{% endblock %}
+
+
 {% block body %}
 
 <h1>User Login</h1>
@@ -10,11 +21,10 @@
 <form class="well" method="post">{% csrf_token %}
 	{{ log_form.as_p }}
 	<div class="actions">
-    	<button name="log_input" type="submit"
-			class="btn btn-primary">Login</button>
-		<button type="button" class="btn" 
-			onClick="window.location.href='{% url user_creation %}'">
-			Create New User</button>
+    	<button name="log_input" type="submit" class="btn btn-primary"
+			>Login</button>
+		<button id="goto_create_user_button" type="button" class="btn"
+			>Create New User</button>
 	</div>
 </form>
 
