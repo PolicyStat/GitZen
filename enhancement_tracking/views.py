@@ -654,21 +654,23 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                             enhancement is completed, but the other is not.
         'unassociated_enhancements' - List of Zendesk tickets requesting an 
                                         enhancement that have no associated
-                                        ticket in GitHub.
-        'broken_enhancements' - List of Zendesk tickets that have improper data
-                                    in their GitHub issue association field.
-                                    This could be the result of a typo or some
-                                    other user error.
+                                        external ticket.
+        'not_git_enhancements' - List of Zendesk tickets that have an associated
+                                    external ticket, but the ticket is not
+                                    labeled as being part of GitHub. (i.e. The
+                                    association string is not in the format
+                                    "gh-###").
     """
     tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
                         # is closed, the other needs attention.
     unassociated_enhancements = [] # Requested enhancements from Zendesk 
-                                   # tickets that have no associatied GitHub
+                                   # tickets that have no associated external
                                    # ticket assigned to them.
-    broken_enhancements = [] # Requested enhancements from Zendesk with a broken
-                             # GitHub issue association field.
+    not_git_enhancements = [] # Requested enhancements from Zendesk that have an
+                              # associated external ticket, but the ticket is
+                              # not labeled as being part of GitHub.
 
     # Iterate through the Zendesk tickets using their data to classify them
     # as being tracked, needing attention, broken, or not being tracked.
@@ -693,9 +695,14 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         enhancement_data['zen_sortable_datetime'] = \
                 mktime(zen_datetime.timetuple())
         
-        # Check if it has no associated GitHub ticket
-        if association_data is None or association_data.split('-')[0] != 'gh':
+        # Check if the enhancement has no associated ticket
+        if association_data is None or association_data == '':
             unassociated_enhancements.append(enhancement_data)
+
+        # Check if the enhancement's associated ticket is not a GitHub ticket
+        elif association_data.split('-')[0] != 'gh':
+            enhancement_data['non_git_association'] = association_data
+            not_git_enhancements.append(enhancement_data)
         
         else:
             # Add GitHub data to enhancement data object
@@ -704,11 +711,6 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                 if issue['number'] == int(association_data.split('-')[1]):
                     git_issue = issue
                     break
-            # Check if it has a broken GitHub association field
-            if not git_issue:
-                enhancement_data['broken_assoc'] = association_number
-                broken_enhancements.append(enhancement_data)
-                continue
             enhancement_data['git_id'] = git_issue['number']
             enhancement_data['git_url'] = git_issue['html_url']
             enhancement_data['git_status'] = git_issue['state']
@@ -729,23 +731,12 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             # ticket is closed).
             else:
                 need_attention.append(enhancement_data)
-    """
-    broken_test = {
-        'zen_id': '9001',
-        'zen_subject': "Test. It's over 9000!",
-        'zen_requester': 'Nick McLaughlin',
-        'zen_date': '09/09/09',
-        'zen_time': '11:11 PM',
-        'broken_assoc': 'gh-1337'
-    }
-    broken_enhancements.append(broken_test)
-    """
 
     built_data = {
         'tracking': tracking,
         'need_attention': need_attention,
         'unassociated_enhancements': unassociated_enhancements,
-        'broken_enhancements': broken_enhancements,
+        'not_git_enhancements': not_git_enhancements,
     }
 
     return built_data
