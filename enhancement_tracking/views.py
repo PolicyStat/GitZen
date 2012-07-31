@@ -2,7 +2,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import (
     AuthenticationForm, PasswordChangeForm, SetPasswordForm
 )
@@ -84,10 +85,10 @@ def user_creation_form_handler(request):
             profile = profile_form.save(commit=False)
             profile.user = user
             profile.save()
-            
+
             # Store the profile in the session so the GitHub access token
             # can be added to it through OAuth on the next pages.
-            request.session['profile'] = profile
+            request.session['new_profile'] = profile
             return HttpResponseRedirect(reverse('confirm_user_creation'))
     else:
         user_form = UserForm()
@@ -101,16 +102,12 @@ def user_creation_form_handler(request):
 def change_form_handler(request):
     """Processes the requests from the Change Account Data page. This includes
     requests from the password change form, profile change form, and Zendesk API
-    token change form. If the page request is from a superuser, it redirects to
-    the superuser_change_form_handler function.
+    token change form.
 
     Parameters:
         request - The request object that contains the POST data from one of the
                     change forms.
     """
-    if request.user.is_superuser:
-        return superuser_change_form_handler(request)
-
     profile = request.user.get_profile()
 
     if request.POST:
@@ -159,17 +156,18 @@ def change_form_handler(request):
                               context_instance=RequestContext(request))
 
 @login_required
-def superuser_change_form_handler(request):
+@user_passes_test(lambda u: u.is_superuser)
+def superuser_change_form_handler(request, user_id):
     """Process the requests from the superuser Change Account Data page for the
     user selected on the superuser home page. This includes requests from the
     profile change form and the set password form.
 
     Parameters:
-        request - The request object that contains both the user whose settings
-                    should be represented in the forms and the POST data from
-                    the froms themselves.
+        request - The request object that contains the POST data from the froms.
+        user_id - The ID number of the user that should be represented and
+                    modified by the change forms.
     """
-    changing_user = request.session['changing_user']
+    changing_user = User.objects.get(id=user_id)
     changing_profile = changing_user.get_profile()
 
     if request.POST:
@@ -180,7 +178,9 @@ def superuser_change_form_handler(request):
             if profile_change_form.is_valid():
                 profile_change_form.save()
                 return HttpResponseRedirect(
-                    reverse('confirm_superuser_changes'))
+                    reverse('confirm_superuser_changes',
+                            kwargs={'user_id': user_id})
+                )
             set_password_form = SetPasswordForm(user=changing_user)
         
         # Process password change form
@@ -190,9 +190,11 @@ def superuser_change_form_handler(request):
             if set_password_form.is_valid():
                 set_password_form.save()
                 return HttpResponseRedirect(
-                    reverse('confirm_superuser_changes'))
+                    reverse('confirm_superuser_changes',
+                            kwargs={'user_id': user_id})
+                )
             profile_change_form = FullProfileChangeForm(
-                                                    instance=changing_profile)
+                                    instance=changing_profile)
  
         else:
             return HttpResponseRedirect(reverse('change_account_settings'))
@@ -230,66 +232,6 @@ def confirm_user_creation(request):
                               {'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
-@login_required
-def confirm_changes(request):
-    """Renders the confirmation page to confirm the successful changes made to
-    the current user's account settings.
-
-    Parameters:
-        request - The request object sent with the call to the confirm page if
-                    the requested changes were successfully made to the user's
-                    account.
-    """
-    return render_to_response('confirm_changes.html',
-                              context_instance=RequestContext(request))
-
-@login_required
-def confirm_superuser_changes(request):
-    """Renders the confirmation page to confirm the successful changes made to
-    the selected user's account settings by the superuser.
-
-    Parameters:
-        request - The request object sent with the call to the confirm page if
-                    the requested changes were successfully made to the selected
-                    user's account. It should also contain a reference to the
-                    selected user in the session.
-    """
-    username = request.session['changing_user'].username
-    del request.session['changing_user']
-    return render_to_response('confirm_superuser_changes.html',
-                              {'username': username},
-                              context_instance=RequestContext(request))
-
-@login_required
-def confirm_user_deactivation(request):
-    """Renders the confirmation page to confirm the successful deactivation of a
-    user by the superuser.
-
-    Parameters:
-        request - The request object sent with the call to the confirm page if
-                    the selected user was successfully deactivated.
-    """
-    deactivated_username = request.session['deactivated_username']
-    del request.session['deactivated_username']
-    return render_to_response('confirm_user_deactivation.html',
-                              {'deactivated_username': deactivated_username},
-                              context_instance=RequestContext(request))
-
-@login_required
-def confirm_user_activation(request):
-    """Renders the confirmation page to confirm the successful activation of a
-    previously deactivated user by the superuser.
-
-    Parameters:
-        request - The request object sent with the call to the confirm page if
-                    the selected user was successfully activated.
-    """
-    activated_username = request.session['activated_username']
-    del request.session['activated_username']
-    return render_to_response('confirm_user_activation.html',
-                              {'activated_username': activated_username},
-                              context_instance=RequestContext(request))
-
 def confirm_git_oauth(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the user login or change forms. Adds the access token
@@ -304,26 +246,86 @@ def confirm_git_oauth(request):
     """
     if 'profile' in request.session: # Authorizing for a new user
         profile = request.session['profile']
-        new_user = True
+        is_new_user = True
     else: # Changing Authorization for an existing user
         profile = request.user.get_profile()
-        new_user = False
+        is_new_user = False
 
     if 'error' in request.GET:
         profile.git_token = ''
-        access = False
+        access_granted = False
     else:
         code = request.GET['code']
         response = OAUTH2_HANDLER.get_token(code)
         profile.git_token = response['access_token'][0]
-        access = True
+        access_granted = True
     
     profile.save()
-    if new_user:
+    if is_new_user:
         del request.session['profile']
 
     return render_to_response('confirm_git_oauth.html', 
-                              {'access': access, 'new_user': new_user},
+                              {'access_granted': access_granted,
+                               'is_new_user': is_new_user},
+                              context_instance=RequestContext(request))
+
+@login_required
+def confirm_changes(request):
+    """Renders the confirmation page to confirm the successful changes made to
+    the current user's account settings.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the user's
+                    account.
+    """
+    return render_to_response('confirm_changes.html',
+                              context_instance=RequestContext(request))
+
+@login_required
+def confirm_superuser_changes(request, user_id):
+    """Renders the confirmation page to confirm the successful changes made to
+    the selected user's account settings by the superuser.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the selected
+                    user's account.
+        user_id - The ID of the user that was just modified by the superuser.
+    """
+    username = User.objects.get(id=user_id).username
+    return render_to_response('confirm_superuser_changes.html',
+                              {'username': username},
+                              context_instance=RequestContext(request))
+
+@login_required
+def confirm_user_deactivation(request, user_id):
+    """Renders the confirmation page to confirm the successful deactivation of a
+    user by the superuser.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the selected user was successfully deactivated.
+        user_id - The ID of the user that was just deactivated by the superuser.
+        """
+    deactivated_username = User.objects.get(id=user_id).username
+    return render_to_response('confirm_user_deactivation.html',
+                              {'deactivated_username': deactivated_username},
+                              context_instance=RequestContext(request))
+
+@login_required
+def confirm_user_activation(request, user_id):
+    """Renders the confirmation page to confirm the successful activation of a
+    previously deactivated user by the superuser.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the selected user was successfully activated.
+        user_id - The ID of the user that just activated by the superuser.
+    """
+    activated_username = User.objects.get(id=user_id).username
+    return render_to_response('confirm_user_activation.html',
+                              {'activated_username': activated_username},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -381,6 +383,7 @@ def home(request):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def superuser_home(request):
     """Processes the various form requests from the superuser home page. This
     includes the forms to select a user to change their account, to select a
@@ -395,12 +398,11 @@ def superuser_home(request):
         if 'user_change_input' in request.POST:
             user_change_form = ActiveUserSelectionForm(data=request.POST)
             if user_change_form.is_valid():
-                # Put the profile object that was selected for changes into the
-                # session so that it can be accessed and modified on the change
-                # page.
-                request.session['changing_user'] = \
-                        user_change_form.cleaned_data['user']
-                return HttpResponseRedirect(reverse('change_account_settings'))
+                user = user_change_form.cleaned_data['user']
+                return HttpResponseRedirect(
+                    reverse('superuser_change_account_settings',
+                            kwargs={'user_id': user.id})
+                )
             user_deactivate_form = ActiveUserSelectionForm()
             user_activate_form = InactiveUserSelectionForm()
             password_change_form = PasswordChangeForm(user=request.user)
@@ -413,11 +415,10 @@ def superuser_home(request):
                 user.is_active = False
                 user.save()
 
-                # Put the username of the deactivated user into the session so
-                # it can be accessed on the confirmation page.
-                request.session['deactivated_username'] = user.username
                 return HttpResponseRedirect(
-                    reverse('confirm_user_deactivation'))
+                    reverse('confirm_user_deactivation',
+                            kwargs={'user_id': user.id})
+                )
             user_change_form = ActiveUserSelectionForm()
             user_activate_form = InactiveUserSelectionForm()
             password_change_form = PasswordChangeForm(user=request.user)
@@ -430,10 +431,10 @@ def superuser_home(request):
                 user.is_active = True
                 user.save()
                 
-                # Put the username of the activated user into the session so it
-                # can be accessed on the confirmation page.
-                request.session['activated_username'] = user.username
-                return HttpResponseRedirect(reverse('confirm_user_activation'))
+                return HttpResponseRedirect(
+                    reverse('confirm_user_activation',
+                            kwargs={'user_id': user.id})
+                )
             user_change_form = ActiveUserSelectionForm()
             user_deactivate_form = ActiveUserSelectionForm()
             password_change_form = PasswordChangeForm(user=request.user)

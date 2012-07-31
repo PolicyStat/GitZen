@@ -4,7 +4,7 @@
 
 {% block unobtrusive_javascript %}
 <script>
-	{% if new_user %}
+	{% if is_new_user %}
 		$(document).ready(function() {
 			$('#return_login_button').click(function() {
 				window.location.href='{% url login %}';
@@ -24,7 +24,7 @@
 {% block body %}
 	<h2>GitHub Access Confirmation</h2>
 
-	{% if access %}
+	{% if access_granted %}
 		<p class="center" style="width:50%;">
 			You have successfully authorized GitZen to access your GitHub
 			repository data.
@@ -38,7 +38,7 @@
 			logging into the application.
 		</p>
 	{% endif %}
-	{% if new_user %}
+	{% if is_new_user %}
 		<button id="return_login_button" type="button" class="btn"
 			>Return to Login</button>
 	{% else %}
