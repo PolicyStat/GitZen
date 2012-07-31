@@ -3,9 +3,7 @@
 <head>
 	<link rel="stylesheet" type="text/css" 
 		href="{{ STATIC_URL }}css/bootstrap.css">
-	<script type="text/javascript" language="javascript"
-		src="{{ STATIC_URL }}js/jquery.js"></script>
-	{% block extra_head %}{% endblock %}
+	{% block extra_css %}{% endblock %}
 	<link rel="stylesheet" type="text/css"
 		href="{{ STATIC_URL }}css/site_specific.css">
 
@@ -16,6 +14,8 @@
 	<div class="container">
 		{% block body %}{% endblock %}
 	</div>
-	{% block unobtrusive_javascript %}{% endblock %}
+	<script type="text/javascript" language="javascript"
+		src="{{ STATIC_URL }}js/jquery.js"></script>
+	{% block extra_javascript %}{% endblock %}
 </body>
 </html>
