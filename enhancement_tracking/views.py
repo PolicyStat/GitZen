@@ -3,8 +3,9 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, \
-                                      SetPasswordForm
+from django.contrib.auth.forms import (
+    AuthenticationForm, PasswordChangeForm, SetPasswordForm
+)
 from django.core.urlresolvers import reverse
 import requests
 from requests.exceptions import RequestException
@@ -12,12 +13,10 @@ from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
 from settings import CLIENT_ID, CLIENT_SECRET
-from enhancement_tracking.forms import UserForm, UserProfileForm, \
-                                       SecuredProfileChangeForm, \
-                                       FullProfileChangeForm, \
-                                       ZendeskTokenChangeForm, \
-                                       ActiveUserSelectionForm, \
-                                       InactiveUserSelectionForm
+from enhancement_tracking.forms import (
+    UserForm, UserProfileForm, SecuredProfileChangeForm, FullProfileChangeForm,
+    ZendeskTokenChangeForm, ActiveUserSelectionForm, InactiveUserSelectionForm
+)
 
 # Constant URL string for accessing the GitHub API. It requires a GitHub
 # organization/user, repository, and issue number for the string's formatting.

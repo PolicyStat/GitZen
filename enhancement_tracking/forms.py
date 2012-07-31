@@ -1,5 +1,6 @@
-from django.forms import Form, ModelForm, CharField, IntegerField, \
-                         ModelChoiceField, PasswordInput
+from django.forms import (
+    Form, ModelForm, CharField, IntegerField, ModelChoiceField, PasswordInput
+)
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from enhancement_tracking.models import GZUserProfile
