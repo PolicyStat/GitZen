@@ -77,7 +77,11 @@
 			]
 		} );
 	} );
+</script>
+{% endblock %}
 
+{% block unobtrusive_javascript %}
+<script>
 	$(document).ready(function() {
 		$('#goto_change_settings_button').click(function() {
 			window.location.href='{% url change_account_settings %}';
