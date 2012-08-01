@@ -485,12 +485,12 @@ def get_zen_tickets(profile):
         while True:
             request_zen_tickets = requests.get(ZEN_SEARCH_URL % \
                                                {'subdomain': profile.zen_url}, 
-                                params={'query': ZEN_TICKET_SEARCH_QUERY,
-                                        'sort_by': 'updated_at',
-                                        'sort_order': 'desc',
-                                        'per_page': 100,
-                                        'page': page},
-                                auth=(zen_name_tk, profile.zen_token))
+                                    params={'query': ZEN_TICKET_SEARCH_QUERY,
+                                            'sort_by': 'updated_at',
+                                            'sort_order': 'desc',
+                                            'per_page': 100,
+                                            'page': page},
+                                    auth=(zen_name_tk, profile.zen_token))
             if request_zen_tickets.status_code != 200:
                 request_zen_tickets.raise_for_status()
             zen_tickets.extend(request_zen_tickets.json['results'])
@@ -570,7 +570,7 @@ def get_zen_users(profile, zen_user_ids):
             request_zen_user = requests.get(ZEN_USER_URL % \
                                             {'subdomain': profile.zen_url,
                                              'user_id': id_number},
-                                auth=(zen_name_tk, profile.zen_token))
+                                    auth=(zen_name_tk, profile.zen_token))
             if request_zen_user.status_code != 200:
                 request_zen_user.raise_for_status()
             zen_user_reference[id_number] = \
@@ -704,8 +704,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['non_git_association'] = association_data
             not_git_enhancements.append(enhancement_data)
         
+        # Add GitHub data to the enhancement data object
         else:
-            # Add GitHub data to enhancement data object
             git_issue = {}
             for issue in git_tickets:
                 if issue['number'] == int(association_data.split('-')[1]):
@@ -715,7 +715,7 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['git_url'] = git_issue['html_url']
             enhancement_data['git_status'] = git_issue['state']
             git_datetime = datetime.strptime(git_issue['updated_at'],
-                                           "%Y-%m-%dT%H:%M:%SZ")
+                                             "%Y-%m-%dT%H:%M:%SZ")
             git_datetime = git_datetime + timedelta(hours=utc_offset)
             enhancement_data['git_date'] = git_datetime.strftime('%m/%d/%Y')
             enhancement_data['git_time'] = git_datetime.strftime('%I:%M %p')
