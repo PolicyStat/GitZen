@@ -1,4 +1,5 @@
 venv
+enhancement_tracking/migrations
 *.pyc
 *.swp
 *.db

@@ -106,21 +106,42 @@
 
 <h2>Enhancement Tracking</h2>
 {% if api_requests_successful %}
-<ul class="nav nav-tabs">
-	<li class="active"><a href="#attention_tab" data-toggle="tab"
-		>Need Attention ({{ need_attention|length }})</a></li>
-	<li><a href="#tracking_tab" data-toggle="tab"
-		>Currently Tracking ({{ tracking|length }})</a></li>
-	<li><a href="#unassociated_tab" data-toggle="tab"
-		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
-	</li>
-	<li><a href="#not_git_tab" data-toggle="tab"
-		>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a></li>
-</ul>
+
+{% if view_type == "ZEN" %}
+	<ul class="nav nav-tabs">
+		<li class="active"><a href="#attention_tab" data-toggle="tab"
+			>Need Attention ({{ need_attention|length }})</a></li>
+		<li><a href="#tracking_tab" data-toggle="tab"
+			>Currently Tracking ({{ tracking|length }})</a></li>
+		<li><a href="#unassociated_tab" data-toggle="tab"
+			>Unassociated Enhancements 
+			({{ unassociated_enhancements|length }})</a></li>
+		<li><a href="#not_git_tab" data-toggle="tab"
+			>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
+		</li>
+	</ul>
+{% else %} <!-- view_type == "GIT" -->
+	<ul class="nav nav-tabs">
+		<li class="active"><a href="#unassociated_tab" data-toggle="tab"
+			>Unassociated Enhancements 
+			({{ unassociated_enhancements|length }})</a></li>
+		<li><a href="#tracking_tab" data-toggle="tab"
+			>Currently Tracking ({{ tracking|length }})</a></li>
+		<li><a href="#attention_tab" data-toggle="tab"
+			>Awaiting Finalization ({{ need_attention|length }})</a></li>
+		<li><a href="#not_git_tab" data-toggle="tab"
+			>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
+		</li>
+	</ul>
+{% endif %}
 
 <div class="tab-content">
 
+{% if view_type == "ZEN" %}
 <div class="tab-pane active" id="attention_tab">
+{% else %} <!-- view_type == "GIT" -->
+<div class="tab-pane" id="attention_tab">
+{% endif %}
 <div class="row">
 <div class="span12">
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
@@ -242,7 +263,11 @@
 </div>
 </div>
 
+{% if view_type == "ZEN" %}
 <div class="tab-pane" id="unassociated_tab">
+{% else %} <!-- view_type == "GIT" -->
+<div class="tab-pane active" id="unassociated_tab">
+{% endif %}
 <div class="row">
 <div class="span12">		
 	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
