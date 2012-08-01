@@ -378,6 +378,7 @@ def home(request):
     # Add additional data to be rendered to the home page
     render_data['api_requests_successful'] = True
     render_data['zen_url'] = profile.zen_url
+    render_data['view_type'] = profile.view_type
     
     return render_to_response('home.html', render_data,
                               context_instance=RequestContext(request))
