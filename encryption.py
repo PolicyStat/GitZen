@@ -6,6 +6,7 @@ import Crypto.Cipher
 from django import forms
 from django.db import models
 from django.conf import settings
+from south.modelsinspector import add_introspection_rules
  
 class BaseEncryptedField(models.Field):
  
@@ -47,7 +48,7 @@ class BaseEncryptedField(models.Field):
                                         index in range(padding-1)])
             value = self.prefix + binascii.b2a_hex(self.cipher.encrypt(value))
         return value 
- 
+
 class EncryptedCharField(BaseEncryptedField):
     __metaclass__ = models.SubfieldBase
  
@@ -58,3 +59,6 @@ class EncryptedCharField(BaseEncryptedField):
         defaults = {'max_length': self.max_length}
         defaults.update(kwargs)
         return super(EncryptedCharField, self).formfield(**defaults)
+
+add_introspection_rules([], ["^encryption\.BaseEncryptedField"])
+add_introspection_rules([], ["^encryption\.EncryptedCharField"])
