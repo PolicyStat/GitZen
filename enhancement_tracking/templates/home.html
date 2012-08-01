@@ -143,11 +143,13 @@
 			{% for enhancement in need_attention %}
 				<tr>
 					<td class="td-centered">
-						<a class="open" href="{{ zen_url }}/tickets/
+						<a class="open" target="_blank" 
+							href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
 						<br/> 
-						<a class="closed" href="{{ enhancement.git_url }}"
+						<a class="closed" target="_blank" 
+							href="{{ enhancement.git_url }}"
 							>G{{ enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
@@ -202,11 +204,13 @@
 			{% for enhancement in tracking %}
 				<tr>
 					<td class="td-centered">
-						<a class="open" href="{{ zen_url }}/tickets/
+						<a class="open" target="_blank"
+						   	href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
 						<br/>
-						<a class="open" href="{{ enhancement.git_url }}"
+						<a class="open" target="_blank"
+						   	href="{{ enhancement.git_url }}"
 							>G{{enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
@@ -260,8 +264,9 @@
 		{% for enhancement in unassociated_enhancements %}
 			<tr>
 				<td class="td-centered">
-					<a class="open" href="{{ zen_url }}/tickets/
-					{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
+					<a class="open" target="_blank" 
+						href="{{ zen_url }}/tickets/{{ enhancement.zen_id }}"
+						>Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
 				<td>{{ enhancement.zen_requester }}</td>
@@ -310,8 +315,9 @@
 		{% for enhancement in not_git_enhancements %}
 			<tr>
 				<td class="td-centered">
-					<a class="open" href="{{ zen_url }}/tickets/
-						{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
+					<a class="open" target="_blank" 
+						href="{{ zen_url }}/tickets/{{ enhancement.zen_id }}"
+						>Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
 				<td>{{ enhancement.zen_requester }}</td>
