@@ -2,12 +2,9 @@
 
 {% block title %}Superuser Home{% endblock %}
 
-{% block extra_head %}
+{% block extra_javascript %}
 <script type="text/javascript" language="javascript"
 	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
-{% endblock %}
-
-{% block unobtrusive_javascript %}
 <script>
 	$(document).ready(function() {
 		$('#logout_button').click(function() {
