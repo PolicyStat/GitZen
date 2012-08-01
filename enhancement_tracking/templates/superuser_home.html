@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Superuser Home{% endblock %}
+
+{% block extra_javascript %}
+<script type="text/javascript" language="javascript"
+	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
+<script>
+	$(document).ready(function() {
+		$('#logout_button').click(function() {
+			window.location.href='{% url logout %}';
+		});
+	});
+</script>
+{% endblock %}
+
+{% block body %}
+
+<h1>GitZen</h1>
+<div class="actions">
+	<button id="logout_button" type="button" class="btn">Logout</button>
+</div>
+<br/>
+
+<h2>Superuser Actions</h2>
+<ul class="nav nav-tabs">
+	<li class="active"><a href="#user_change_tab" data-toggle="tab"
+		>Change User Settings</a></li>
+	<li><a href="#user_delete_tab" data-toggle="tab"
+		>Deactivate/Activate User</a></li>
+	<li><a href="#superuser_change_tab" data-toggle="tab"
+		>Change Superuser Settings</a></li>
+</ul>
+
+<div class="tab-content">
+
+<div class="tab-pane active" id="user_change_tab">
+<div class="row">
+<div class="span8 offset2">
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_change_form.as_p }}
+		<div class="actions">
+			<button name="user_change_input" type="submit"
+				class="btn btn-primary">Change Account Settings</button>
+		</div>
+	</form>
+</div>
+</div>
+</div>
+
+<div class="tab-pane" id="user_delete_tab">
+<div class="row">
+<div class="span8 offset2">
+	<h2>Deactivate User</h2>
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_deactivate_form.as_p }}
+		<div class="actions">
+			<button name="user_deactivate_input" type="submit"
+				class="btn btn-primary">Deactivate User</button>
+		</div>
+	</form>
+	<br/>
+	<h2>Activate User</h2>
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_activate_form.as_p }}
+		<div class="actions">
+			<button name="user_activate_input" type="submit"
+				class="btn btn-primary">Activate User</button>
+		</div>
+	</form>
+</div>
+</div>
+</div>
+
+<div class="tab-pane" id="superuser_change_tab">
+<div class="row">
+<div class="span8 offset2">
+	<h2>Change Password</h2>
+	<form class="well" method="post">{% csrf_token %}
+		{{ password_change_form.as_p }}
+		<div class="actions">
+			<button name="password_change_input" type="submit"
+				class="btn btn-primary">Submit Change</button>
+		</div>
+	</form>
+</div>
+</div>
+</div>
+
+</div>
+
+{% endblock %}

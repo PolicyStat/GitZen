@@ -2,8 +2,8 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" 
-		href="{{ STATIC_URL }}css/bootstrap.css">
-	{% block extra_head %}{% endblock %}
+		href="{{ STATIC_URL }}css/bootstrap.min.css">
+	{% block extra_css %}{% endblock %}
 	<link rel="stylesheet" type="text/css"
 		href="{{ STATIC_URL }}css/site_specific.css">
 
@@ -14,5 +14,8 @@
 	<div class="container">
 		{% block body %}{% endblock %}
 	</div>
+	<script type="text/javascript" language="javascript"
+		src="{{ STATIC_URL }}js/jquery.js"></script>
+	{% block extra_javascript %}{% endblock %}
 </body>
 </html>

@@ -2,11 +2,12 @@
 
 {% block title %}Home{% endblock %}
 
-{% block extra_head %}
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" 
 	href="{{ STATIC_URL }}css/dataTables.css">
-<script type="text/javascript" language="javascript" 
-	src="{{ STATIC_URL }}js/jquery.js"></script>
+{% endblock %}
+
+{% block extra_javascript %}
 <script type="text/javascript" language="javascript"
 	src="{{ STATIC_URL }}js/jquery.dataTables.js"></script>
 <script type="text/javascript" language="javascript"
@@ -79,14 +80,28 @@
 			]
 		} );
 	} );
+
+	$(document).ready(function() {
+		$('#goto_change_settings_button').click(function() {
+			window.location.href='{% url change_account_settings %}';
+		});
+	});
+	$(document).ready(function() {
+		$('#logout_button').click(function() {
+			window.location.href='{% url logout %}';
+		});
+	});
 </script>
 {% endblock %}
 
 {% block body %}
 
 <h1>GitZen</h1>
-<h3><a href="{% url change_account_data %}">Change Account Settings</a></h3>
-<h3><a href="{% url logout %}">Logout</a></h3>
+<div class="actions">
+	<button id="goto_change_settings_button" type="button" class="btn"
+		>Change Account Settings</button>
+	<button id="logout_button" type="button" class="btn">Logout</button>
+</div>
 <br/>
 
 <h2>Enhancement Tracking</h2>

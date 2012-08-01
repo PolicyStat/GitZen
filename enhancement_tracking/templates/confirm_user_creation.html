@@ -2,6 +2,16 @@
 
 {% block title %}User Creation Confirmation{% endblock %}
 
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#git_oauth_button').click(function() {
+			window.location.href='{{ auth_url }}';
+		});
+	});
+</script>
+{% endblock %}
+
 {% block body %}
 	<h2>Confirmation</h2>
 
@@ -17,7 +27,6 @@
 		link if you are logged into GitHub, and you should be redirected
 		straight to the confirmation page.
 	</p>
-	<button type="button" class="btn btn-primary" 
-		onClick="window.location.href='{{ auth_url }}'">
-		GitHub Authorization</button>
+	<button id="git_oauth_button" type="button" class="btn btn-primary"
+		>GitHub Authorization</button>
 {% endblock %}

@@ -2,10 +2,29 @@
 
 {% block title %}Access Confirmation{% endblock %}
 
+{% block extra_javascript %}
+<script>
+	{% if is_new_user %}
+		$(document).ready(function() {
+			$('#return_login_button').click(function() {
+				window.location.href='{% url login %}';
+			});
+		});
+	{% else %}
+		$(document).ready(function() {
+			$('#return_home_button').click(function() {
+				window.location.href='{% url home %}';
+			});
+		});
+	{% endif %}
+</script>
+{% endblock %}
+
+
 {% block body %}
 	<h2>GitHub Access Confirmation</h2>
 
-	{% if access %}
+	{% if access_granted %}
 		<p class="center" style="width:50%;">
 			You have successfully authorized GitZen to access your GitHub
 			repository data.
@@ -19,13 +38,11 @@
 			logging into the application.
 		</p>
 	{% endif %}
-	{% if new_user %}
-		<button type="button" class="btn" 
-			onClick="window.location.href='{% url login %}'">
-			Return to Login</button>
+	{% if is_new_user %}
+		<button id="return_login_button" type="button" class="btn"
+			>Return to Login</button>
 	{% else %}
-		<button type="button" class="btn" 
-			onClick="window.location.href='{% url home %}'">
-			Return to Home</button>
+		<button id="return_home_button" type="button" class="btn"
+			>Return to Home</button>
 	{% endif %}
 {% endblock %}

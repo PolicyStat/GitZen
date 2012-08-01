@@ -1,10 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Change Account Data{% endblock %}
+{% block title %}Change Account Settings{% endblock %}
+
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#git_oauth_button').click(function() {
+			window.location.href='{{ auth_url }}';
+		});
+	});
+</script>
+{% endblock %}
 
 {% block body %}
 
-<h1>Change Account Data</h1>
+<h1>Change Account Settings</h1>
 <p>
 	All fields are optional. Changing the User password requires entering of the
 	previous User password.
@@ -49,9 +59,8 @@
 		want to authorize or renew authorization of GitZen's access to Github,
 		click the button bellow.
 	</p>
-	<button type="button" class="btn btn-primary" 
-		onClick="window.location.href='{{ auth_url }}'">
-		GitHub Authorization</button>
+	<button id="git_oauth_button" type="button" class="btn btn-primary"
+		>GitHub Authorization</button>
 </form>
 
 {% endblock %}
