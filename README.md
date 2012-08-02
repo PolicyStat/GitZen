@@ -117,7 +117,7 @@ association field on it. Then open up a command terminal and enter in the
 following command, substituting the parameters surrounded by braces with the
 information from the desired Zendesk account and substituting the `id` parameter
 with the ticket ID number that was just looked up:
-	>`curl {zendesk_url}/api/v2/tickets/{id}.json -u
+	>`curl {zendesk_url_subdomain}/api/v2/tickets/{id}.json -u
 	>{email_address}/token:{api_token}`
 
 	From the output of this command, look for the dictionary key "fields", and
