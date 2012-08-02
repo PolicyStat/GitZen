@@ -134,10 +134,16 @@ application to the proper times for your location. The number value of the
 offset should be prefaced with a "+" or "-" to indicated whether the offset is
 ahead or behind UTC time (i.e. "-4" or "+9").
 
-10. Check to see that all fields in the form are filled out accurately, and then
+11. For the "View Type" field in the form, select whether the home page should
+be presented from a GitHub-centered or Zendesk-centered user perspective. By
+selecting one of these options, the home page will be set up to provide
+information in a more useful way depending on whether the GitZen user is using
+the application from a GitHub perspective or a Zendesk perspective. 
+
+12. Check to see that all fields in the form are filled out accurately, and then
 click the "Submit" button to create a user with the given information.
 
-11. Once the account has been created, the next page will instruct you to
+13. Once the account has been created, the next page will instruct you to
 authorize GitZen on GitHub for the newly created user by clicking the "GitHub
 Authorization" button. Click this button to start the authorization process, and
 after it is completed (either automatically or by following the GitHub
