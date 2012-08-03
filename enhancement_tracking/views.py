@@ -16,8 +16,8 @@ from datetime import datetime, timedelta
 from time import mktime
 from settings import CLIENT_ID, CLIENT_SECRET
 from enhancement_tracking.forms import (
-    UserForm, UserProfileForm, SecuredProfileChangeForm, FullProfileChangeForm,
-    ZendeskTokenChangeForm, ActiveUserSelectionForm, InactiveUserSelectionForm
+    UserForm, GroupSuperuserForm, APIAccessDataForm, UserProfileChangeForm,
+    ActiveUserSelectionForm, InactiveUserSelectionForm
 )
 
 # Constant URL string for accessing the GitHub API. It requires a GitHub
@@ -67,36 +67,36 @@ def user_login_form_handler(request):
     return render_to_response('login.html', {'log_form': log_form}, 
                               context_instance=RequestContext(request))
 
-def user_creation_form_handler(request):
-    """Process the requests from the User Creation page.
+def group_creation_form_handler(request):
+    """Process the requests from the User Group Creation page.
     
-    If any of the fields in the submitted form are not completed properly, the
-    User Creation page will come up again with those fields marked as needing to
-    be properly filled.
-
     Parameters:
         request - The request object that contains the form data submitted from
-                    the User Creation page.
+                    the User Group Creation page.
     """
     if request.method == 'POST':
-        user_form = UserForm(data=request.POST)
-        profile_form = UserProfileForm(data=request.POST)
-        if user_form.is_valid() and profile_form.is_valid():
-            user = user_form.save()
-            profile = profile_form.save(commit=False)
-            profile.user = user
-            profile.save()
+        group_superuser_form = GroupSuperuserForm(data=request.POST)
+        api_access_data_form = APIAccessDataForm(data=request.POST)
+        if group_superuser_form.is_valid() and api_access_data_form.is_valid():
+            group_superuser = group_superuser_form.save()
+            api_access_model = api_access_data_form.save()
+            group_superuser_profile = \
+                    UserProfile(user=group_superuser,
+                                api_access_model=api_access_model,
+                                is_group_superuser=True)
+            group_superuser_profile.save()
 
-            # Store the profile in the session so the GitHub access token
-            # can be added to it through OAuth on the next pages.
-            request.session['new_profile'] = profile
-            return HttpResponseRedirect(reverse('confirm_user_creation'))
+            # Store the API access model in the session so the GitHub access
+            # token can be added to it through OAuth on the next pages.
+            request.session['new_api_access_model'] = api_access_model
+            return HttpResponseRedirect(reverse('confirm_group_creation'))
     else:
-        user_form = UserForm()
-        profile_form = UserProfileForm()
+        group_superuser_form = GroupSuperuserForm()
+        api_access_data_form = APIAcessDataForm()
 
-    return render_to_response('user_creation.html', {'user_form': user_form,
-                              'profile_form': profile_form}, 
+    return render_to_response('group_creation.html',
+                              {'group_superuser_form': group_superuser_form,
+                              'api_access_data_form': api_access_data_form}, 
                               context_instance=RequestContext(request))
 
 @login_required
@@ -221,53 +221,54 @@ def user_logout(request):
     logout(request)
     return HttpResponseRedirect(reverse('login'))
 
-def confirm_user_creation(request):
+def confirm_group_creation(request):
     """Renders the confirmation page to confirm the successful creation of a new
-    user.
+    user group.
 
     Parameters:
         request - The request object sent with the call to the confirm page if a
-                    user was successfully created from the user creation form.
+                    group and group superuser were successfully created from the
+                    group creation page.
     """
-    return render_to_response('confirm_user_creation.html',
+    return render_to_response('confirm_group_creation.html',
                               {'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
 def confirm_git_oauth(request):
     """Finishes the OAuth2 access web flow after the user goes to the
-    GIT_AUTH_URL in either the user login or change forms. Adds the access token
-    to the user profile. For a newly created user, their profile was added to
-    the session when the user was created. This data is deleted from the
-    session afterwards.
+    GIT_AUTH_URL in either the group creation or change forms. Adds the access
+    token to the API access model for the group. For a newly created group,
+    their API access model was added to the session when the group was created.
+    This data is deleted from the session afterwards.
 
     Parameters:
         request - The request object that should contain the returned code from
-                    GitHub in its GET parameters in addition to the user profile
-                    that the access token should be added to.
+                    GitHub in its GET parameters in addition to the API access
+                    model that the access token should be added to.
     """
-    if 'profile' in request.session: # Authorizing for a new user
-        profile = request.session['profile']
-        is_new_user = True
-    else: # Changing Authorization for an existing user
-        profile = request.user.get_profile()
-        is_new_user = False
+    if 'new_api_access_model' in request.session: # Authorizing for a new group
+        api_access_model = request.session['new_api_access_model']
+        is_new_group = True
+    else: # Changing Authorization for an existing group
+        api_access_model = request.user.get_profile().api_access_model
+        is_new_group = False
 
     if 'error' in request.GET:
-        profile.git_token = ''
+        api_access_model.git_token = ''
         access_granted = False
     else:
         code = request.GET['code']
         response = OAUTH2_HANDLER.get_token(code)
-        profile.git_token = response['access_token'][0]
+        api_access_model.git_token = response['access_token'][0]
         access_granted = True
     
-    profile.save()
-    if is_new_user:
-        del request.session['profile']
+    api_access_model.save()
+    if is_new_group:
+        del request.session['new_api_access_model']
 
     return render_to_response('confirm_git_oauth.html', 
                               {'access_granted': access_granted,
-                               'is_new_user': is_new_user},
+                               'is_new_group': is_new_group},
                               context_instance=RequestContext(request))
 
 @login_required
