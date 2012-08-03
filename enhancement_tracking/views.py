@@ -86,9 +86,10 @@ def group_creation_form_handler(request):
                                 is_group_superuser=True)
             group_superuser_profile.save()
 
-            # Store the API access model in the session so the GitHub access
-            # token can be added to it through OAuth on the next pages.
-            request.session['new_api_access_model'] = api_access_model
+            # Login the newly created group superuser so a GitHub access token
+            # can be added to the group's API access model through OAuth on the
+            # next pages.
+            login(request, group_superuser)
             return HttpResponseRedirect(reverse('confirm_group_creation'))
     else:
         group_superuser_form = GroupSuperuserForm()
@@ -246,12 +247,7 @@ def confirm_git_oauth(request):
                     GitHub in its GET parameters in addition to the API access
                     model that the access token should be added to.
     """
-    if 'new_api_access_model' in request.session: # Authorizing for a new group
-        api_access_model = request.session['new_api_access_model']
-        is_new_group = True
-    else: # Changing Authorization for an existing group
-        api_access_model = request.user.get_profile().api_access_model
-        is_new_group = False
+    api_access_model = request.user.get_profile().api_access_model
 
     if 'error' in request.GET:
         api_access_model.git_token = ''
@@ -261,14 +257,10 @@ def confirm_git_oauth(request):
         response = OAUTH2_HANDLER.get_token(code)
         api_access_model.git_token = response['access_token'][0]
         access_granted = True
-    
     api_access_model.save()
-    if is_new_group:
-        del request.session['new_api_access_model']
 
     return render_to_response('confirm_git_oauth.html', 
-                              {'access_granted': access_granted,
-                               'is_new_group': is_new_group},
+                              {'access_granted': access_granted},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -329,6 +321,48 @@ def confirm_user_activation(request, user_id):
     return render_to_response('confirm_user_activation.html',
                               {'activated_username': activated_username},
                               context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def build_cache_index(api_access_model):
+    cache_data = {} # Data to be stored in the cache for the passed API access
+                    # model.
+    zen_tickets = [] # List of the open tickets in Zendesk with the API access
+                     # model's specified tags.
+    zen_user_reference = {} # Dictionary reference of the user IDs and 
+                            # user names associated with the Zendesk tickets in
+                            # zen_tickets.
+    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
+                     # tickets in zen_tickets.
+    
+    try:
+        zen_tickets = get_zen_tickets(api_access_model)
+        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
+        zen_user_reference = get_zen_users(api_access_model, zen_user_ids)
+        git_tickets = get_git_tickets(api_access_model, git_issue_numbers)
+    except RequestException as e:
+        render_data['api_requests_successful'] = False
+        render_data['error_message'] = 'There was an error connecting to ' \
+                'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
+                'your account settings.' % {'API_name': e.args[1],
+                                            'exception_message': e.args[0]}
+        return render_to_response('home.html', render_data,
+                                    context_instance=RequestContext(request))
+        
+    context = build_enhancement_data(zen_tickets, zen_user_reference,
+                                     git_tickets, zen_fieldid, utc_offset)
+
+    # Add additional data to be used in the context of the home page
+    context['api_requests_successful'] = True
+    context['zen_url'] = profile.zen_url
+    if profile.view_type == 'ZEN':
+        context['is_zendesk_user'] = True
+    else:
+        context['is_zendesk_user'] = False
+    context['is_github_user'] = not context['is_zendesk_user']
+    
+    return render_to_response('home.html', context,
+                              context_instance=RequestContext(request)) 
 
 @login_required
 def home(request):
