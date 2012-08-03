@@ -107,41 +107,36 @@
 <h2>Enhancement Tracking</h2>
 {% if api_requests_successful %}
 
-{% if view_type == "ZEN" %}
-	<ul class="nav nav-tabs">
-		<li class="active"><a href="#attention_tab" data-toggle="tab"
-			>Need Attention ({{ need_attention|length }})</a></li>
-		<li><a href="#tracking_tab" data-toggle="tab"
-			>Currently Tracking ({{ tracking|length }})</a></li>
-		<li><a href="#unassociated_tab" data-toggle="tab"
-			>Unassociated Enhancements 
-			({{ unassociated_enhancements|length }})</a></li>
-		<li><a href="#not_git_tab" data-toggle="tab"
-			>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
-		</li>
-	</ul>
-{% else %} <!-- view_type == "GIT" -->
-	<ul class="nav nav-tabs">
-		<li class="active"><a href="#unassociated_tab" data-toggle="tab"
-			>Unassociated Enhancements 
-			({{ unassociated_enhancements|length }})</a></li>
-		<li><a href="#tracking_tab" data-toggle="tab"
-			>Currently Tracking ({{ tracking|length }})</a></li>
-		<li><a href="#attention_tab" data-toggle="tab"
-			>Awaiting Finalization ({{ need_attention|length }})</a></li>
-		<li><a href="#not_git_tab" data-toggle="tab"
-			>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
-		</li>
-	</ul>
+<ul class="nav nav-tabs">
+{% if is_zendesk_user %}
+	<li class="active"><a href="#attention_tab" data-toggle="tab"
+		>Need Attention ({{ need_attention|length }})</a></li>
+	<li><a href="#tracking_tab" data-toggle="tab"
+		>Currently Tracking ({{ tracking|length }})</a></li>
+	<li><a href="#unassociated_tab" data-toggle="tab"
+		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
+	</li>
+	<li><a href="#not_git_tab" data-toggle="tab"
+		>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
+	</li>
+{% else %} <!-- is_github_user == True -->
+	<li class="active"><a href="#unassociated_tab" data-toggle="tab"
+		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
+	</li>
+	<li><a href="#tracking_tab" data-toggle="tab"
+		>Currently Tracking ({{ tracking|length }})</a></li>
+	<li><a href="#attention_tab" data-toggle="tab"
+		>Awaiting Finalization ({{ need_attention|length }})</a></li>
+	<li><a href="#not_git_tab" data-toggle="tab"
+		>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
+	</li>
 {% endif %}
+</ul>
 
 <div class="tab-content">
 
-{% if view_type == "ZEN" %}
-<div class="tab-pane active" id="attention_tab">
-{% else %} <!-- view_type == "GIT" -->
-<div class="tab-pane" id="attention_tab">
-{% endif %}
+<div class="tab-pane {% if is_zendesk_user %}active{% endif %}" 
+	id="attention_tab">
 <div class="row">
 <div class="span12">
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
@@ -263,11 +258,8 @@
 </div>
 </div>
 
-{% if view_type == "ZEN" %}
-<div class="tab-pane" id="unassociated_tab">
-{% else %} <!-- view_type == "GIT" -->
-<div class="tab-pane active" id="unassociated_tab">
-{% endif %}
+<div class="tab-pane {% if is_github_user %}active{% endif %}"
+	id="unassociated_tab">
 <div class="row">
 <div class="span12">		
 	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
