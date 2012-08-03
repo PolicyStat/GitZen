@@ -687,6 +687,8 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             if field['id'] == zen_fieldid:
                 association_data = field['value']
                 break
+        split_association_data = association_data.split('-')
+
         enhancement_data = {} # Enhancement data object
         enhancement_data['zen_id'] = ticket['id']
         enhancement_data['zen_requester'] = \
@@ -705,7 +707,6 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             unassociated_enhancements.append(enhancement_data)
 
         # Check if the enhancement's associated ticket is not a GitHub ticket
-        split_association_data = association_data.split('-')
         elif len(split_association_data) != 2 or \
                 split_association_data[0] != 'gh' or \
                 not split_association_data[1].isdigit():
