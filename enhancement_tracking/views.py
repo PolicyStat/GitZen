@@ -296,6 +296,7 @@ def confirm_cache_building(request):
                                   context_instance=RequestContext(request))
     
     context['caching_successful'] = True
+    logout(request)
     return render_to_response('confirm_cache_building.html', context,
                               context_instance=RequestContext(request))
 
@@ -533,8 +534,6 @@ def build_cache_index(api_access_model):
         cache_data['zen_user_reference'] = zen_user_reference
         git_tickets = get_git_tickets(api_access_model, git_issue_numbers)
     except RequestException:
-        """
-        """
         # Raise RequestExceptions so they can be properly handled by whatever
         # view function call the build_cache_index function.
         raise
