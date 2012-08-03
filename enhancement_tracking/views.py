@@ -349,7 +349,7 @@ def home(request):
                                       # associated GitHub issue number.
     utc_offset = profile.utc_offset # The UTC offset for the current user's time
                                     # zone.
-    render_data = {} # Data to be rendered to the home page
+    context = {} # Data to be used in the context of the home page
 
     zen_tickets = [] # List of the open problem or incident tickets in Zendesk.
     zen_user_reference = {} # Dictionary reference of the user IDs and 
