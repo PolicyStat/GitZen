@@ -4,19 +4,16 @@
 
 {% block extra_javascript %}
 <script>
-	{% if is_new_user %}
-		$(document).ready(function() {
-			$('#return_login_button').click(function() {
-				window.location.href='{% url login %}';
-			});
+	$(document).ready(function() {
+		$('#build_cache_button').click(function() {
+			window.location.href='{% url confirm_cache_building %}';
 		});
-	{% else %}
-		$(document).ready(function() {
-			$('#return_home_button').click(function() {
-				window.location.href='{% url home %}';
-			});
+	});
+	$(document).ready(function() {
+		$('#return_to_login_button').click(function() {
+			window.location.href='{% url login %}';
 		});
-	{% endif %}
+	});
 </script>
 {% endblock %}
 
@@ -27,22 +24,20 @@
 	{% if access_granted %}
 		<p class="center" style="width:50%;">
 			You have successfully authorized GitZen to access your GitHub
-			repository data.
+			repository data. Click the button bellow to build the cache index
+			with the enhancement data for the group. 
 		</p>
+		<button id="build_cache_button" type="button" class="btn"
+			>Build Cache Index</button>
 	{% else %}
 		<p class="center" style="width:50%;">
 			GitZen did not receive authorization to access your GitHub
 			repository, so the application will not be able to function for this
-			user. If you want to give this user's account access to GitHub, you
-			can authorize their account under "Change Account Settings" after
-			logging into the application.
+			group. If you want to give this group access to GitHub, you can
+			authorize it by changing the API access settings after logging in
+			with the group superuser account.
 		</p>
-	{% endif %}
-	{% if is_new_user %}
-		<button id="return_login_button" type="button" class="btn"
+		<button id="return_to_login_button" type="button" class="btn"
 			>Return to Login</button>
-	{% else %}
-		<button id="return_home_button" type="button" class="btn"
-			>Return to Home</button>
 	{% endif %}
 {% endblock %}

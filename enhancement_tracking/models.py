@@ -31,8 +31,7 @@ class APIAccessData(models.Model):
                                    verbose_name='Zendesk API Token')
     zen_url = models.CharField(max_length=100,
                                verbose_name='Zendesk URL Subdomain')
-    zen_tags = models.SeparatedValuesField(verbose_name=\
-                                           'Zendesk Tags to Filter By')
+    zen_tags = SeparatedValuesField(verbose_name='Zendesk Tags to Filter By')
     zen_schema = models.CharField(max_length=25,
                                   verbose_name='Zendesk External ' \
                                   'Association Naming Schema')

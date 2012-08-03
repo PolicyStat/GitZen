@@ -15,6 +15,7 @@ from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
 from settings import CLIENT_ID, CLIENT_SECRET
+from enhancement_tracking.models import UserProfile
 from enhancement_tracking.forms import (
     UserForm, GroupSuperuserForm, APIAccessDataForm, UserProfileChangeForm,
     ActiveUserSelectionForm, InactiveUserSelectionForm
@@ -211,7 +212,7 @@ def superuser_change_form_handler(request, user_id):
                                'profile_change_form': profile_change_form,
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
-
+@login_required
 def user_logout(request):
     """Logs out the currently logged in user.
 
@@ -222,6 +223,8 @@ def user_logout(request):
     logout(request)
     return HttpResponseRedirect(reverse('login'))
 
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_group_creation(request):
     """Renders the confirmation page to confirm the successful creation of a new
     user group.
@@ -235,6 +238,8 @@ def confirm_group_creation(request):
                               {'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_git_oauth(request):
     """Finishes the OAuth2 access web flow after the user goes to the
     GIT_AUTH_URL in either the group creation or change forms. Adds the access
@@ -248,7 +253,8 @@ def confirm_git_oauth(request):
                     model that the access token should be added to.
     """
     api_access_model = request.user.get_profile().api_access_model
-
+    
+    """
     if 'error' in request.GET:
         api_access_model.git_token = ''
         access_granted = False
@@ -258,9 +264,39 @@ def confirm_git_oauth(request):
         api_access_model.git_token = response['access_token'][0]
         access_granted = True
     api_access_model.save()
-
+    """
+    api_access_model.git_token = '147a87738db7ac19c865845e19652b8134ad0099'
+    api_access_model.save()
+    access_granted = True
     return render_to_response('confirm_git_oauth.html', 
                               {'access_granted': access_granted},
+                              context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_cache_building(request):
+    """Calls the function to build and index the cache for the API access model
+    of the logged in group superuser and renders a page that tells if the
+    caching was successful or not.
+
+    Parameters:
+        request - The request object that should have a group superuser logged
+                    into it.
+    """
+    context = {} # The context for the confirm page
+    try:
+        build_cache_index(request.user.get_profile().api_access_model)
+    except RequestException as e:
+        context['caching_successful'] = False
+        context['error_message'] = "There was an error connecting to the " \
+                "%(API_name)s API: %(exception_message)s. Try adjusting the" \
+                " group's API access settings." % \
+                {'API_name': e.args[1], 'exception_message': e.args[0]}
+        return render_to_response('confirm_cache_building.html', context,
+                                  context_instance=RequestContext(request))
+    
+    context['caching_successful'] = True
+    return render_to_response('confirm_cache_building.html', context,
                               context_instance=RequestContext(request))
 
 @login_required
@@ -321,48 +357,6 @@ def confirm_user_activation(request, user_id):
     return render_to_response('confirm_user_activation.html',
                               {'activated_username': activated_username},
                               context_instance=RequestContext(request))
-
-@login_required
-@user_passes_test(lambda user: user.get_profile().is_group_superuser)
-def build_cache_index(api_access_model):
-    cache_data = {} # Data to be stored in the cache for the passed API access
-                    # model.
-    zen_tickets = [] # List of the open tickets in Zendesk with the API access
-                     # model's specified tags.
-    zen_user_reference = {} # Dictionary reference of the user IDs and 
-                            # user names associated with the Zendesk tickets in
-                            # zen_tickets.
-    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
-                     # tickets in zen_tickets.
-    
-    try:
-        zen_tickets = get_zen_tickets(api_access_model)
-        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
-        zen_user_reference = get_zen_users(api_access_model, zen_user_ids)
-        git_tickets = get_git_tickets(api_access_model, git_issue_numbers)
-    except RequestException as e:
-        render_data['api_requests_successful'] = False
-        render_data['error_message'] = 'There was an error connecting to ' \
-                'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
-                'your account settings.' % {'API_name': e.args[1],
-                                            'exception_message': e.args[0]}
-        return render_to_response('home.html', render_data,
-                                    context_instance=RequestContext(request))
-        
-    context = build_enhancement_data(zen_tickets, zen_user_reference,
-                                     git_tickets, zen_fieldid, utc_offset)
-
-    # Add additional data to be used in the context of the home page
-    context['api_requests_successful'] = True
-    context['zen_url'] = profile.zen_url
-    if profile.view_type == 'ZEN':
-        context['is_zendesk_user'] = True
-    else:
-        context['is_zendesk_user'] = False
-    context['is_github_user'] = not context['is_zendesk_user']
-    
-    return render_to_response('home.html', context,
-                              context_instance=RequestContext(request)) 
 
 @login_required
 def home(request):
@@ -507,31 +501,77 @@ def superuser_home(request):
                                'password_change_form': password_change_form},
                               context_instance=RequestContext(request))
 
-def get_zen_tickets(profile):
+def build_cache_index(api_access_model):
+    """Builds and indexes the cache data necessary for the application for the
+    passed API access model.
+
+    Parameters:
+        api_access_model - The object that contains the necessary access
+                            parameters for getting the data needed for the
+                            application from the Zendesk and GitHub APIs.
+
+    This function will raise any RequestExceptions that happen while trying to
+    access either the Zendesk or GitHub APIs so they can be properly handled by
+    the calling view function.
+    """
+    cache_data = {} # Data to be stored in the cache for the passed API access
+                    # model.
+    zen_tickets = [] # List of the open tickets in Zendesk with the API access
+                     # model's specified tags.
+    zen_user_reference = {} # Dictionary reference of the user IDs and 
+                            # user names associated with the Zendesk tickets in
+                            # zen_tickets.
+    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
+                     # tickets in zen_tickets.
+    
+    cache_data['last_updated'] = datetime.utcnow()
+    try:
+        zen_tickets = get_zen_tickets(api_access_model)
+        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets,
+                                                api_access_model.zen_fieldid)
+        zen_user_reference = get_zen_users(api_access_model, zen_user_ids)
+        cache_data['zen_user_reference'] = zen_user_reference
+        git_tickets = get_git_tickets(api_access_model, git_issue_numbers)
+    except RequestException:
+        """
+        """
+        # Raise RequestExceptions so they can be properly handled by whatever
+        # view function call the build_cache_index function.
+        raise
+        
+    enhancement_data = build_enhancement_data(zen_tickets, zen_user_reference,
+                                              git_tickets, zen_fieldid)
+    cache_data = dict(cache_data.items() + enhancement_data.items())
+    cache.set(api_access_model.id, cache_data)
+
+def get_zen_tickets(api_access_model):
     """Gets all of the open problem and incident Zendesk tickets using the
     Zendesk API.
 
     Parameters:
-        profile - The profile object that contains the current user's data 
-                    necessary to access the tickets on their Zendesk account.
+        api_access_model - The object that contains the current user's API
+                            access data necessary to access the tickets on their
+                            Zendesk account.
 
     Returns a gathered list of Zendesk tickets.
     """
-    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
-                                              # API token authorization.
+    # Zendesk user email set up for API token authorization
+    zen_name_tk = api_access_model.zen_name + '/token'
+
     zen_tickets = []
     page = 1
     
     try:
         while True:
-            request_zen_tickets = requests.get(ZEN_SEARCH_URL % \
-                                               {'subdomain': profile.zen_url}, 
-                                    params={'query': ZEN_TICKET_SEARCH_QUERY,
-                                            'sort_by': 'updated_at',
-                                            'sort_order': 'desc',
-                                            'per_page': 100,
-                                            'page': page},
-                                    auth=(zen_name_tk, profile.zen_token))
+            request_zen_tickets = \
+                    requests.get(ZEN_SEARCH_URL % \
+                                 {'subdomain': api_access_model.zen_url},
+                                 params={'query': ZEN_TICKET_SEARCH_QUERY,
+                                         'sort_by': 'updated_at',
+                                         'sort_order': 'desc',
+                                         'per_page': 100,
+                                         'page': page},
+                                 auth=(zen_name_tk, api_access_model.zen_token))
             if request_zen_tickets.status_code != 200:
                 request_zen_tickets.raise_for_status()
             zen_tickets.extend(request_zen_tickets.json['results'])
@@ -589,29 +629,31 @@ def get_id_lists(zen_tickets, zen_fieldid):
 
     return (zen_user_ids, git_issue_numbers)
 
-def get_zen_users(profile, zen_user_ids):
+def get_zen_users(api_access_model, zen_user_ids):
     """Gets the full Zendesk user records for each user ID number in the passed
     list.
 
     Parameters:
-        profile - The profile object that contains the current user's data
-                    necessary to access the users on their Zendesk account.  
+        api_access_model - The object that contains the current user's API
+                            access data necessary to access the users on their
+                            Zendesk account.  
         zen_user_ids - A list of Zendesk user IDs whose full user records are 
                         desired.
 
     Returns a dictionary reference table with Zendesk user ID numbers as keys
     and their cooresponding user names as values.
     """
-    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
-                                              # API token authorization.
+    # Zendesk user email set up for API token authorization
+    zen_name_tk = api_access_model.zen_name + '/token'
     zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
                             # names by their ID number.
     try:
         for id_number in zen_user_ids:
-            request_zen_user = requests.get(ZEN_USER_URL % \
-                                            {'subdomain': profile.zen_url,
-                                             'user_id': id_number},
-                                    auth=(zen_name_tk, profile.zen_token))
+            request_zen_user = \
+                    requests.get(ZEN_USER_URL % \
+                                 {'subdomain': api_access_model.zen_url,
+                                  'user_id': id_number},
+                                 auth=(zen_name_tk, api_access_model.zen_token))
             if request_zen_user.status_code != 200:
                 request_zen_user.raise_for_status()
             zen_user_reference[id_number] = \
@@ -630,13 +672,14 @@ def get_zen_users(profile, zen_user_ids):
     
     return zen_user_reference
 
-def get_git_tickets(profile, git_issue_numbers):
+def get_git_tickets(api_access_model, git_issue_numbers):
     """Gets the full GitHub ticket records for each issue number in the passed
     list.
 
     Parameters:
-        profile - The profile object that contains the current user's data
-                    necessary to access the tickets on their GitHub account.  
+        api_access_model - The object that contains the current user's API
+                            access data necessary to access the tickets on their
+                            GitHub account.  
         git_issue_numbers - A list of GitHub issue numbers whose full ticket
                                 records are desired.
 
@@ -647,13 +690,14 @@ def get_git_tickets(profile, git_issue_numbers):
     
     try:
         for number in git_issue_numbers:
-            request_git_tickets = requests.get(GIT_ISSUE_URL % \
-                                               {'organization': profile.git_org,
-                                                'repository': profile.git_repo,
-                                                'issue_number': number}, 
-                                               params={'access_token':
-                                                       profile.git_token}
-                                              )
+            request_git_tickets = \
+                    requests.get(GIT_ISSUE_URL % \
+                                 {'organization': api_access_model.git_org,
+                                  'repository': api_access_model.git_repo,
+                                  'issue_number': number},
+                                 params={'access_token':
+                                         api_access_token.git_token}
+                                )
             if request_git_tickets.status_code != 200:
                 request_git_tickets.raise_for_status()
             git_tickets.append(request_git_tickets.json)
@@ -672,7 +716,7 @@ def get_git_tickets(profile, git_issue_numbers):
     return git_tickets
 
 def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
-                           zen_fieldid, utc_offset):
+                           zen_fieldid):
     """Builds the enhancement tracking tables from the Zendesk and GitHub data.
     
     Parameters:
@@ -730,12 +774,15 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         enhancement_data['zen_subject'] = ticket['subject']
         zen_datetime = datetime.strptime(ticket['updated_at'],
                                        "%Y-%m-%dT%H:%M:%SZ")
+        enhancement_data['zen_datetime'] = zen_datetime
+        """
         zen_datetime = zen_datetime + timedelta(hours=utc_offset)
         enhancement_data['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
         enhancement_data['zen_time'] = zen_datetime.strftime('%I:%M %p')
         enhancement_data['zen_sortable_datetime'] = \
                 mktime(zen_datetime.timetuple())
-        
+        """
+
         # Check if the enhancement has no associated ticket
         if not association_data:
             unassociated_enhancements.append(enhancement_data)
@@ -760,11 +807,14 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['git_status'] = git_issue['state']
             git_datetime = datetime.strptime(git_issue['updated_at'],
                                              "%Y-%m-%dT%H:%M:%SZ")
+            enhancement_data['git_datetime'] = git_datetime
+            """
             git_datetime = git_datetime + timedelta(hours=utc_offset)
             enhancement_data['git_date'] = git_datetime.strftime('%m/%d/%Y')
             enhancement_data['git_time'] = git_datetime.strftime('%I:%M %p')
             enhancement_data['git_sortable_datetime'] = \
                     mktime(git_datetime.timetuple())
+            """
             
             # Check if the enhacement should be tracked (Both tickets are
             # open).

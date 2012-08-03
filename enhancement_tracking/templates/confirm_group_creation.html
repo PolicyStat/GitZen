@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Group Creation Confirmation{% endblock %}
+
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#git_oauth_button').click(function() {
+			window.location.href='{{ auth_url }}';
+		});
+	});
+</script>
+{% endblock %}
+
+{% block body %}
+	<h2>Confirmation</h2>
+
+	<p class="center" style="width:50%;">
+		The group and group superuser were successfully created, but you must
+		authorize GitZen on GitHub on the linked page to allow the application
+		to access the repository data for your group. 
+	</p>
+	<button id="git_oauth_button" type="button" class="btn btn-primary"
+		>GitHub Authorization</button>
+{% endblock %}

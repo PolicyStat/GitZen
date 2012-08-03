@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}User Creation{% endblock %}
+{% block title %}User Group Creation{% endblock %}
 
 {% block extra_javascript %}
 <script>
@@ -14,15 +14,16 @@
 
 {% block body %}
 
-<h1>User Creation</h1>
-<p>Fill out all of the fields below and click "Submit" to create a new user.</p>
+<h1>User Group Creation</h1>
+<p>Fill out all of the fields below and click "Submit" to create a new user
+group along with the superuser account for that group.</p>
 <br/>
 
 <form class="well" method="post">{% csrf_token %}
-	{{ user_form.as_p }}
-	{{ profile_form.as_p }}
+	{{ group_superuser_form.as_p }}
+	{{ api_access_data_form.as_p }}
 	<div class="actions">
-		<button name="new_user_input" type="submit" class="btn btn-primary"
+		<button name="new_group_input" type="submit" class="btn btn-primary"
 			>Submit</button>
 		<button id="cancel_button" type="button" class="btn">Cancel</button>
 	</div>

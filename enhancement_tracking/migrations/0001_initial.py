@@ -8,25 +8,39 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'GZUserProfile'
-        db.create_table('enhancement_tracking_gzuserprofile', (
+        # Adding model 'UserProfile'
+        db.create_table('enhancement_tracking_userprofile', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], unique=True)),
-            ('git_token', self.gf('encryption.EncryptedCharField')(max_length=165)),
+            ('api_access_model', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['enhancement_tracking.APIAccessData'])),
+            ('is_group_superuser', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('utc_offset', self.gf('django.db.models.fields.IntegerField')(default=0, null=True)),
+            ('view_type', self.gf('django.db.models.fields.CharField')(default='ZEN', max_length=3)),
+        ))
+        db.send_create_signal('enhancement_tracking', ['UserProfile'])
+
+        # Adding model 'APIAccessData'
+        db.create_table('enhancement_tracking_apiaccessdata', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('git_org', self.gf('django.db.models.fields.CharField')(max_length=75)),
             ('git_repo', self.gf('django.db.models.fields.CharField')(max_length=75)),
+            ('git_token', self.gf('customfields.EncryptedCharField')(max_length=165)),
             ('zen_name', self.gf('django.db.models.fields.CharField')(max_length=75)),
-            ('zen_token', self.gf('encryption.EncryptedCharField')(max_length=165)),
+            ('zen_token', self.gf('customfields.EncryptedCharField')(max_length=165)),
             ('zen_url', self.gf('django.db.models.fields.CharField')(max_length=100)),
+            ('zen_tags', self.gf('customfields.SeparatedValuesField')()),
+            ('zen_schema', self.gf('django.db.models.fields.CharField')(max_length=25)),
             ('zen_fieldid', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('utc_offset', self.gf('django.db.models.fields.IntegerField')(null=True)),
         ))
-        db.send_create_signal('enhancement_tracking', ['GZUserProfile'])
+        db.send_create_signal('enhancement_tracking', ['APIAccessData'])
 
 
     def backwards(self, orm):
-        # Deleting model 'GZUserProfile'
-        db.delete_table('enhancement_tracking_gzuserprofile')
+        # Deleting model 'UserProfile'
+        db.delete_table('enhancement_tracking_userprofile')
+
+        # Deleting model 'APIAccessData'
+        db.delete_table('enhancement_tracking_apiaccessdata')
 
 
     models = {
@@ -66,18 +80,27 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
-        'enhancement_tracking.gzuserprofile': {
-            'Meta': {'object_name': 'GZUserProfile'},
+        'enhancement_tracking.apiaccessdata': {
+            'Meta': {'object_name': 'APIAccessData'},
             'git_org': ('django.db.models.fields.CharField', [], {'max_length': '75'}),
             'git_repo': ('django.db.models.fields.CharField', [], {'max_length': '75'}),
-            'git_token': ('encryption.EncryptedCharField', [], {'max_length': '165'}),
+            'git_token': ('customfields.EncryptedCharField', [], {'max_length': '165'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'unique': 'True'}),
-            'utc_offset': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'zen_fieldid': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'zen_name': ('django.db.models.fields.CharField', [], {'max_length': '75'}),
-            'zen_token': ('encryption.EncryptedCharField', [], {'max_length': '165'}),
+            'zen_schema': ('django.db.models.fields.CharField', [], {'max_length': '25'}),
+            'zen_tags': ('customfields.SeparatedValuesField', [], {}),
+            'zen_token': ('customfields.EncryptedCharField', [], {'max_length': '165'}),
             'zen_url': ('django.db.models.fields.CharField', [], {'max_length': '100'})
+        },
+        'enhancement_tracking.userprofile': {
+            'Meta': {'object_name': 'UserProfile'},
+            'api_access_model': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['enhancement_tracking.APIAccessData']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_group_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'unique': 'True'}),
+            'utc_offset': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
+            'view_type': ('django.db.models.fields.CharField', [], {'default': "'ZEN'", 'max_length': '3'})
         }
     }
 

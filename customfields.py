@@ -76,7 +76,7 @@ class SeparatedValuesField(models.TextField):
             return value
         return value.split(self.token)
 
-    def get_db_prep_value(self, value):
+    def get_db_prep_value(self, value, connection, prepared):
         if not value: return
         assert(isinstance(value, list) or isinstance(value, tuple))
         return self.token.join([unicode(s) for s in value])
@@ -85,4 +85,4 @@ class SeparatedValuesField(models.TextField):
         value = self._get_val_from_obj(obj)
         return self.get_db_prep_value(value)
 
-add_introspection_rules([], ["^customfields\.SeperatedValuesField"])
+add_introspection_rules([], ["^customfields\.SeparatedValuesField"])

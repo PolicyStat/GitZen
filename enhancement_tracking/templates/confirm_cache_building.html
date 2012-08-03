@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Cache Building Confirmation{% endblock %}
+
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#goto_home_button').click(function() {
+			window.location.href='{% url login %}';
+		});
+	});
+</script>
+{% endblock %}
+
+{% block body %}
+	{% if caching_successful %}
+		<h2>Confirmation</h2>
+		
+		<p>The cache for the group was successfully built and indexed.</p>
+	{% else %}
+		<h2>Error in API Access</h2>
+
+		<p>{{ error_message }}</p>
+	{% endif %}
+	<button id="goto_home_button" type="button" class="btn"
+		>Return to Login</button>
+{% endblock %}
