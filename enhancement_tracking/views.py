@@ -364,12 +364,12 @@ def home(request):
         zen_user_reference = get_zen_users(profile, zen_user_ids)
         git_tickets = get_git_tickets(profile, git_issue_numbers)
     except RequestException as e:
-        render_data['api_requests_successful'] = False
-        render_data['error_message'] = 'There was an error connecting to ' \
+        context['api_requests_successful'] = False
+        context['error_message'] = 'There was an error connecting to ' \
                 'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
                 'your account settings.' % {'API_name': e.args[1],
                                             'exception_message': e.args[0]}
-        return render_to_response('home.html', render_data,
+        return render_to_response('home.html', context,
                                     context_instance=RequestContext(request))
         
     context = build_enhancement_data(zen_tickets, zen_user_reference,
