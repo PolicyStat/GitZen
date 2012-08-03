@@ -372,15 +372,19 @@ def home(request):
         return render_to_response('home.html', render_data,
                                     context_instance=RequestContext(request))
         
-    render_data = build_enhancement_data(zen_tickets, zen_user_reference,
-                                         git_tickets, zen_fieldid, utc_offset)
+    context = build_enhancement_data(zen_tickets, zen_user_reference,
+                                     git_tickets, zen_fieldid, utc_offset)
 
-    # Add additional data to be rendered to the home page
-    render_data['api_requests_successful'] = True
-    render_data['zen_url'] = profile.zen_url
-    render_data['view_type'] = profile.view_type
+    # Add additional data to be used in the context of the home page
+    context['api_requests_successful'] = True
+    context['zen_url'] = profile.zen_url
+    if profile.view_type == 'ZEN':
+        context['is_zendesk_user'] = True
+    else:
+        context['is_zendesk_user'] = False
+    context['is_github_user'] = not context['is_zendesk_user']
     
-    return render_to_response('home.html', render_data,
+    return render_to_response('home.html', context,
                               context_instance=RequestContext(request))
 
 @login_required
@@ -697,11 +701,14 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                 mktime(zen_datetime.timetuple())
         
         # Check if the enhancement has no associated ticket
-        if association_data is None or association_data == '':
+        if not association_data:
             unassociated_enhancements.append(enhancement_data)
 
         # Check if the enhancement's associated ticket is not a GitHub ticket
-        elif association_data.split('-')[0] != 'gh':
+        split_association_data = association_data.split('-')
+        elif len(split_association_data) != 2 or \
+                split_association_data[0] != 'gh' or \
+                not split_association_data[1].isdigit():
             enhancement_data['non_git_association'] = association_data
             not_git_enhancements.append(enhancement_data)
         
@@ -709,7 +716,7 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         else:
             git_issue = {}
             for issue in git_tickets:
-                if issue['number'] == int(association_data.split('-')[1]):
+                if issue['number'] == int(split_association_data[1]):
                     git_issue = issue
                     break
             enhancement_data['git_id'] = git_issue['number']
