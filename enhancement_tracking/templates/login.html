@@ -5,8 +5,8 @@
 {% block extra_javascript %}
 <script>
 	$(document).ready(function() {
-		$('#goto_create_user_button').click(function() {
-			window.location.href='{% url user_creation %}';
+		$('#goto_create_group_button').click(function() {
+			window.location.href='{% url group_creation %}';
 		});
 	});
 </script>
@@ -23,8 +23,8 @@
 	<div class="actions">
     	<button name="log_input" type="submit" class="btn btn-primary"
 			>Login</button>
-		<button id="goto_create_user_button" type="button" class="btn"
-			>Create New User</button>
+		<button id="goto_create_group_button" type="button" class="btn"
+			>Create New User Group</button>
 	</div>
 </form>
 

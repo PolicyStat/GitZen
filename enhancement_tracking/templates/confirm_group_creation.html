@@ -6,7 +6,7 @@
 <script>
 	$(document).ready(function() {
 		$('#git_oauth_button').click(function() {
-			window.location.href='{{ auth_url }}';
+			window.location.href='{% url confirm_git_oauth %}';
 		});
 	});
 </script>
@@ -17,8 +17,8 @@
 
 	<p class="center" style="width:50%;">
 		The group and group superuser were successfully created, but you must
-		authorize GitZen on GitHub on the linked page to allow the application
-		to access the repository data for your group. 
+		authorize GitZen on GitHub on the following page to allow the
+		application to access the repository data for your group. 
 	</p>
 	<button id="git_oauth_button" type="button" class="btn btn-primary"
 		>GitHub Authorization</button>

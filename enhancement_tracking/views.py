@@ -80,21 +80,25 @@ def group_creation_form_handler(request):
         api_access_data_form = APIAccessDataForm(data=request.POST)
         if group_superuser_form.is_valid() and api_access_data_form.is_valid():
             group_superuser = group_superuser_form.save()
-            api_access_model = api_access_data_form.save()
+            api_access_data = api_access_data_form.save()
             group_superuser_profile = \
                     UserProfile(user=group_superuser,
-                                api_access_model=api_access_model,
+                                api_access_data=api_access_data,
                                 is_group_superuser=True)
             group_superuser_profile.save()
 
-            # Login the newly created group superuser so a GitHub access token
-            # can be added to the group's API access model through OAuth on the
-            # next pages.
-            login(request, group_superuser)
+            # Authenticate and login the newly created group superuser so a
+            # GitHub access token can be added to the group's API access model
+            # through OAuth on the next pages.
+            user = authenticate(
+                username=group_superuser_form.cleaned_data['username'],
+                password=group_superuser_form.cleaned_data['password1']
+            )
+            login(request, user)
             return HttpResponseRedirect(reverse('confirm_group_creation'))
     else:
         group_superuser_form = GroupSuperuserForm()
-        api_access_data_form = APIAcessDataForm()
+        api_access_data_form = APIAccessDataForm()
 
     return render_to_response('group_creation.html',
                               {'group_superuser_form': group_superuser_form,
@@ -252,21 +256,21 @@ def confirm_git_oauth(request):
                     GitHub in its GET parameters in addition to the API access
                     model that the access token should be added to.
     """
-    api_access_model = request.user.get_profile().api_access_model
+    api_access_data = request.user.get_profile().api_access_data
     
     """
     if 'error' in request.GET:
-        api_access_model.git_token = ''
+        api_access_data.git_token = ''
         access_granted = False
     else:
         code = request.GET['code']
         response = OAUTH2_HANDLER.get_token(code)
-        api_access_model.git_token = response['access_token'][0]
+        api_access_data.git_token = response['access_token'][0]
         access_granted = True
-    api_access_model.save()
+    api_access_data.save()
     """
-    api_access_model.git_token = '147a87738db7ac19c865845e19652b8134ad0099'
-    api_access_model.save()
+    api_access_data.git_token = '147a87738db7ac19c865845e19652b8134ad0099'
+    api_access_data.save()
     access_granted = True
     return render_to_response('confirm_git_oauth.html', 
                               {'access_granted': access_granted},
@@ -285,7 +289,7 @@ def confirm_cache_building(request):
     """
     context = {} # The context for the confirm page
     try:
-        build_cache_index(request.user.get_profile().api_access_model)
+        build_cache_index(request.user.get_profile().api_access_data)
     except RequestException as e:
         context['caching_successful'] = False
         context['error_message'] = "There was an error connecting to the " \
@@ -502,12 +506,12 @@ def superuser_home(request):
                                'password_change_form': password_change_form},
                               context_instance=RequestContext(request))
 
-def build_cache_index(api_access_model):
+def build_cache_index(api_access_data):
     """Builds and indexes the cache data necessary for the application for the
     passed API access model.
 
     Parameters:
-        api_access_model - The object that contains the necessary access
+        api_access_data - The object that contains the necessary access
                             parameters for getting the data needed for the
                             application from the Zendesk and GitHub APIs.
 
@@ -524,15 +528,15 @@ def build_cache_index(api_access_model):
                             # zen_tickets.
     git_tickets = [] # List of the GitHub tickets associated with the Zendesk
                      # tickets in zen_tickets.
+    zen_fieldid = api_access_data.zen_fieldid
     
     cache_data['last_updated'] = datetime.utcnow()
     try:
-        zen_tickets = get_zen_tickets(api_access_model)
-        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets,
-                                                api_access_model.zen_fieldid)
-        zen_user_reference = get_zen_users(api_access_model, zen_user_ids)
+        zen_tickets = get_zen_tickets(api_access_data)
+        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
+        zen_user_reference = get_zen_users(api_access_data, zen_user_ids)
         cache_data['zen_user_reference'] = zen_user_reference
-        git_tickets = get_git_tickets(api_access_model, git_issue_numbers)
+        git_tickets = get_git_tickets(api_access_data, git_issue_numbers)
     except RequestException:
         # Raise RequestExceptions so they can be properly handled by whatever
         # view function call the build_cache_index function.
@@ -541,21 +545,21 @@ def build_cache_index(api_access_model):
     enhancement_data = build_enhancement_data(zen_tickets, zen_user_reference,
                                               git_tickets, zen_fieldid)
     cache_data = dict(cache_data.items() + enhancement_data.items())
-    cache.set(api_access_model.id, cache_data)
+    cache.set(api_access_data.id, cache_data)
 
-def get_zen_tickets(api_access_model):
+def get_zen_tickets(api_access_data):
     """Gets all of the open problem and incident Zendesk tickets using the
     Zendesk API.
 
     Parameters:
-        api_access_model - The object that contains the current user's API
+        api_access_data - The object that contains the current user's API
                             access data necessary to access the tickets on their
                             Zendesk account.
 
     Returns a gathered list of Zendesk tickets.
     """
     # Zendesk user email set up for API token authorization
-    zen_name_tk = api_access_model.zen_name + '/token'
+    zen_name_tk = api_access_data.zen_name + '/token'
 
     zen_tickets = []
     page = 1
@@ -564,13 +568,13 @@ def get_zen_tickets(api_access_model):
         while True:
             request_zen_tickets = \
                     requests.get(ZEN_SEARCH_URL % \
-                                 {'subdomain': api_access_model.zen_url},
+                                 {'subdomain': api_access_data.zen_url},
                                  params={'query': ZEN_TICKET_SEARCH_QUERY,
                                          'sort_by': 'updated_at',
                                          'sort_order': 'desc',
                                          'per_page': 100,
                                          'page': page},
-                                 auth=(zen_name_tk, api_access_model.zen_token))
+                                 auth=(zen_name_tk, api_access_data.zen_token))
             if request_zen_tickets.status_code != 200:
                 request_zen_tickets.raise_for_status()
             zen_tickets.extend(request_zen_tickets.json['results'])
@@ -628,12 +632,12 @@ def get_id_lists(zen_tickets, zen_fieldid):
 
     return (zen_user_ids, git_issue_numbers)
 
-def get_zen_users(api_access_model, zen_user_ids):
+def get_zen_users(api_access_data, zen_user_ids):
     """Gets the full Zendesk user records for each user ID number in the passed
     list.
 
     Parameters:
-        api_access_model - The object that contains the current user's API
+        api_access_data - The object that contains the current user's API
                             access data necessary to access the users on their
                             Zendesk account.  
         zen_user_ids - A list of Zendesk user IDs whose full user records are 
@@ -643,16 +647,16 @@ def get_zen_users(api_access_model, zen_user_ids):
     and their cooresponding user names as values.
     """
     # Zendesk user email set up for API token authorization
-    zen_name_tk = api_access_model.zen_name + '/token'
+    zen_name_tk = api_access_data.zen_name + '/token'
     zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
                             # names by their ID number.
     try:
         for id_number in zen_user_ids:
             request_zen_user = \
                     requests.get(ZEN_USER_URL % \
-                                 {'subdomain': api_access_model.zen_url,
+                                 {'subdomain': api_access_data.zen_url,
                                   'user_id': id_number},
-                                 auth=(zen_name_tk, api_access_model.zen_token))
+                                 auth=(zen_name_tk, api_access_data.zen_token))
             if request_zen_user.status_code != 200:
                 request_zen_user.raise_for_status()
             zen_user_reference[id_number] = \
@@ -671,12 +675,12 @@ def get_zen_users(api_access_model, zen_user_ids):
     
     return zen_user_reference
 
-def get_git_tickets(api_access_model, git_issue_numbers):
+def get_git_tickets(api_access_data, git_issue_numbers):
     """Gets the full GitHub ticket records for each issue number in the passed
     list.
 
     Parameters:
-        api_access_model - The object that contains the current user's API
+        api_access_data - The object that contains the current user's API
                             access data necessary to access the tickets on their
                             GitHub account.  
         git_issue_numbers - A list of GitHub issue numbers whose full ticket
@@ -691,11 +695,11 @@ def get_git_tickets(api_access_model, git_issue_numbers):
         for number in git_issue_numbers:
             request_git_tickets = \
                     requests.get(GIT_ISSUE_URL % \
-                                 {'organization': api_access_model.git_org,
-                                  'repository': api_access_model.git_repo,
+                                 {'organization': api_access_data.git_org,
+                                  'repository': api_access_data.git_repo,
                                   'issue_number': number},
                                  params={'access_token':
-                                         api_access_token.git_token}
+                                         api_access_data.git_token}
                                 )
             if request_git_tickets.status_code != 200:
                 request_git_tickets.raise_for_status()

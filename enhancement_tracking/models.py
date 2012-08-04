@@ -9,7 +9,7 @@ VIEW_TYPE_CHOICES = (
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True)
-    api_access_model = models.ForeignKey('APIAccessData')
+    api_access_data = models.ForeignKey('APIAccessData')
     is_group_superuser = models.BooleanField(default=False)
     utc_offset = models.IntegerField(null=True, default=0, 
                                      verbose_name='Time Zone (UTC Offset)')

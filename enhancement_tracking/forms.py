@@ -19,10 +19,10 @@ class GroupSuperuserForm(UserForm):
     relabels the username field so that the user knows they are creating the
     group superuser."""
     def __init__(self, *args, **kwargs):
-        super(UserForm, self).__init__(*args, **kwargs)
+        super(GroupSuperuserForm, self).__init__(*args, **kwargs)
         self.fields['username'].label = 'Group Superuser Username'
 
-class APIAcessDataForm(ModelForm):
+class APIAccessDataForm(ModelForm):
     """Form for creating a set of access data for the GitHub and Zendesk
     APIs."""
     class Meta:
