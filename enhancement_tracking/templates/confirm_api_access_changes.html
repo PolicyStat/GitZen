@@ -5,8 +5,8 @@
 {% block extra_javascript %}
 <script>
 	$(document).ready(function() {
-		$('#return_home_button').click(function() {
-			window.location.href='{% url home %}';
+		$('#reset_cache_button').click(function() {
+			window.location.href='{% url confirm_cache_building is_reset=1 %}';
 		});
 	});
 </script>
@@ -15,9 +15,10 @@
 {% block body %}
 	<h2>Confirmation</h2>
 	<p class="confirm_paragraph">
-		The API Access settings for the {{ product_name }} product have been
-		successfully updated with the changes.
+		The API access settings for the {{ product_name }} product have been
+		successfully updated with the changes. The cache index for this product
+		must now be reset to update it with the changes.
 	</p>
-	<button id="return_home_button" type="button" class="btn"
-		>Return to Home</button>
+	<button id="reset_cache_button" type="button" class="btn"
+		>Reset Cache</button>
 {% endblock %}

@@ -22,15 +22,30 @@ class NewGroupSuperuserForm(NewUserForm):
         super(NewGroupSuperuserForm, self).__init__(*args, **kwargs)
         self.fields['username'].label = 'Group Superuser Username'
 
-class APIAccessDataForm(ModelForm):
+class NewAPIAccessDataForm(ModelForm):
     """Form for creating a set of access data for the GitHub and Zendesk
     APIs."""
     class Meta:
         model = APIAccessData
-        exclude = ('git_token')
+        exclude = ('git_token',)
         widgets = {
             'zen_token': PasswordInput()
         }
+
+class ChangeAPIAccessDataForm(ModelForm):
+    """Form for changing a set of access data for the GitHub and Zendesk
+    APIs. Despite passing this form an instance, it will still not display the
+    instance's initial values for the encrypted fields, so it is necessary to
+    manually set each field initial value with its cooresponding value in the
+    passed instance."""
+    class Meta:
+        model = APIAccessData
+        exclude = ('git_token',)
+
+    def __init__(self, *args, **kwargs):
+        super(ChangeAPIAccessDataForm, self).__init__(*args, **kwargs)
+        for key, value in self.fields.items():
+            self.fields[key].initial = getattr(self.instance, key)
 
 class UserProfileForm(ModelForm):
     """Form to set the two editable fields of a user's profile data."""

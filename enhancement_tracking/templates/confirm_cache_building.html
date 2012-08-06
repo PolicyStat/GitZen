@@ -24,17 +24,17 @@
 
 		<p class="confirm_paragraph">
 		{% if is_reset == "1" %}
-			The cache for the group was successfully reset.
+			The cache for the {{ product_name }} group was successfully reset.
 		{% else %}
-			The cache for the group was successfully built and indexed. You
-			can now add users to the group from the group superuser home
-			page.
+			The cache for the {{ product_name }} group was successfully built
+			and indexed. You can now add users to the group from the group
+			superuser home page.
 		{% endif %}
 		</p>
 	{% else %}
 		<h2>Error in API Access</h2>
 
-		<p>{{ error_message }}</p>
+		<p class="confirm_paragraph">{{ error_message }}</p>
 	{% endif %}
 	<button id="goto_home_button" type="button" class="btn">
 		{% if is_reset == "1" %}
