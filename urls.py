@@ -16,6 +16,11 @@ urlpatterns = patterns('enhancement_tracking.views',
 
 # URL patterns only used by group superusers
 urlpatterns += patterns('enhancement_tracking.views',
+    url(r'^superuser_change_account_settings/(?P<user_id>\d+)/$',
+        'superuser_change_form_handler',
+        name='superuser_change_account_settings'),
+    url(r'^confirm_superuser_changes/(?P<user_id>\d+)/$',
+        'confirm_superuser_changes', name='confirm_superuser_changes'),
     url(r'^confirm_group_creation/$', 'confirm_group_creation',
         name='confirm_group_creation'),
     url(r'^confirm_git_oauth/$', 'confirm_git_oauth',

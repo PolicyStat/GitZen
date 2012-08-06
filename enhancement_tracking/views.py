@@ -163,11 +163,11 @@ def change_form_handler(request):
                               context_instance=RequestContext(request))
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def superuser_change_form_handler(request, user_id):
-    """Process the requests from the superuser Change Account Data page for the
-    user selected on the superuser home page. This includes requests from the
-    profile change form and the set password form.
+    """Process the requests from the group superuser Change Account Settings
+    page for the user selected on the superuser home page. This includes
+    requests from the profile change form and the set password form.
 
     Parameters:
         request - The request object that contains the POST data from the froms.
@@ -180,8 +180,8 @@ def superuser_change_form_handler(request, user_id):
     if request.POST:
         # Process profile change form
         if 'profile_input' in request.POST:
-            profile_change_form = FullProfileChangeForm(data=request.POST,
-                                                    instance=changing_profile)
+            profile_change_form = UserProfileForm(data=request.POST,
+                                                  instance=changing_profile)
             if profile_change_form.is_valid():
                 profile_change_form.save()
                 return HttpResponseRedirect(
@@ -204,11 +204,14 @@ def superuser_change_form_handler(request, user_id):
                                     instance=changing_profile)
  
         else:
-            return HttpResponseRedirect(reverse('change_account_settings'))
+            return HttpResponseRedirect(
+                reverse('superuser_change_account_settings',
+                        kwargs={'user_id': user_id})
+            )
 
     else:
         set_password_form = SetPasswordForm(user=changing_user)
-        profile_change_form = FullProfileChangeForm(instance=changing_profile)
+        profile_change_form = UserProfileForm(instance=changing_profile)
     
     return render_to_response('superuser_change_account_settings.html', 
                               {'username': changing_user.username,
@@ -216,6 +219,7 @@ def superuser_change_form_handler(request, user_id):
                                'profile_change_form': profile_change_form,
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
+
 @login_required
 def user_logout(request):
     """Logs out the currently logged in user.
@@ -238,6 +242,23 @@ def confirm_changes(request):
                     account.
     """
     return render_to_response('confirm_changes.html',
+                              context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_superuser_changes(request, user_id):
+    """Renders the confirmation page to confirm the successful changes made to
+    the selected user's account settings by the group superuser.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the selected
+                    user's account.
+        user_id - The ID of the user that was just modified.
+    """
+    username = User.objects.get(id=user_id).username
+    return render_to_response('confirm_superuser_changes.html',
+                              {'username': username},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -462,7 +483,7 @@ def group_superuser_home(request):
 
     if request.POST:
         # Process the new user form for getting the information needed to create
-        # a new user and add them to the group.
+        # a new user and add them to the group
         if 'user_creation_input' in request.POST:
             new_user_form = NewUserForm(data=request.POST)
             user_profile_form = UserProfileForm(data=request.POST)
@@ -477,6 +498,24 @@ def group_superuser_home(request):
                     reverse('confirm_user_creation', 
                             kwargs={'user_id': user.id})
                 )
+            user_select_form = ActiveUserSelectionForm(api_access_data)
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
+            api_access_change_form = APIAccessDataForm(instance=api_access_data)
+            password_change_form = PasswordChangeForm(user=request.user)
+
+        # Process the user selection form for selecting a user to modify
+        elif 'user_select_input' in request.POST:
+            user_select_form = ActiveUserSelectionForm(api_access_data,
+                                                       data=request.POST)
+            if user_select_form.is_valid():
+                user = user_select_form.cleaned_data['profile'].user
+                return HttpResponseRedirect(
+                    reverse('superuser_change_account_settings',
+                            kwargs={'user_id': user.id})
+                )
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
@@ -497,6 +536,7 @@ def group_superuser_home(request):
                 )
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
@@ -516,6 +556,7 @@ def group_superuser_home(request):
                 )
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
@@ -532,6 +573,7 @@ def group_superuser_home(request):
                 )
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
@@ -545,6 +587,7 @@ def group_superuser_home(request):
                 return HttpResponseRedirect(reverse('confirm_changes'))
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
@@ -555,6 +598,7 @@ def group_superuser_home(request):
     else:
         new_user_form = NewUserForm()
         user_profile_form = UserProfileForm()
+        user_select_form = ActiveUserSelectionForm(api_access_data)
         user_deactivate_form = ActiveUserSelectionForm(api_access_data)
         user_activate_form = InactiveUserSelectionForm(api_access_data)
         api_access_change_form = APIAccessDataForm(instance=api_access_data)
@@ -563,6 +607,7 @@ def group_superuser_home(request):
     context = {
         'new_user_form': new_user_form,
         'user_profile_form': user_profile_form,
+        'user_select_form': user_select_form,
         'user_deactivate_form': user_deactivate_form,
         'user_activate_form': user_activate_form,
         'api_access_change_form': api_access_change_form,

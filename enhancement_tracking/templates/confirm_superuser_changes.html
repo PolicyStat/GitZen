@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Changes Confirmation{% endblock %}
+
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#return_home_button').click(function() {
+			window.location.href='{% url home %}';
+		});
+	});
+</script>
+{% endblock %}
+
+{% block body %}
+	<h2>Confirmation</h2>
+	<p>
+		{{ username }}'s account has been updated with the entered information.
+	</p>
+	<button id="return_home_button" type="button" class="btn"
+		>Return to Home</button>
+{% endblock %}
+
+

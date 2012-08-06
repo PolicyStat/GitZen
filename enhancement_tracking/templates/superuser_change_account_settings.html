@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Change Account Settings{% endblock %}
+
+{% block body %}
+
+<h1>Change Account Settings</h1>
+<p>
+	These are the account settings for the user {{ username }}. All fields are
+	optional.
+	<br/>
+	<a href="{% url home %}">Return to Home</a>
+</p>
+
+<h2>Set Password</h2>
+<form class="well" method="post">{% csrf_token %}
+	{{ set_password_form.as_p }}
+	<div class="actions">
+		<button name="password_input" type="submit"
+			class="btn btn-primary">Submit Change</button>
+	</div>
+</form>
+<br/>
+
+<h2>Change Profile</h2>
+<form class="well" method="post">{% csrf_token %}
+	{{ profile_change_form.as_p }}
+	<div class="actions">
+		<button name="profile_input" type="submit"
+			class="btn btn-primary">Submit Changes</button>
+	</div>
+</form>
+
+{% endblock %}

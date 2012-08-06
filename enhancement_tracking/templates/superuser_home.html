@@ -37,7 +37,7 @@
 <h2>{{ product_name }} Superuser Actions</h2>
 <ul class="nav nav-tabs">
 	<li class="active"><a href="#user_creation_tab" data-toggle="tab"
-		>User Creation</a></li>
+		>User Creation and Modification</a></li>
 	<li><a href="#user_activation_tab" data-toggle="tab"
 		>User Deactivation/Activation</a></li>
 	<li><a href="#api_access_settings_tab" data-toggle="tab"
@@ -58,6 +58,15 @@
 		<div class="actions">
 			<button name="user_creation_input" type="submit"
 				class="btn btn-primary">Create User</button>
+		</div>
+	</form>
+	<br/>
+	<h2>Modify Active User</h2>
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_select_form.as_p }}
+		<div class="actions">
+			<button name="user_select_input" type="submit"
+				class="btn btn-primary">Modify User</button>
 		</div>
 	</form>
 </div>
