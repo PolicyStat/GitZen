@@ -477,16 +477,17 @@ def group_superuser_home(request):
                     reverse('confirm_user_creation', 
                             kwargs={'user_id': user.id})
                 )
-            user_deactivate_form = ActiveUserSelectionForm()
-            user_activate_form = InactiveUserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
 
         # Process the user selection form for deactivating a user
         elif 'user_deactivate_input' in request.POST:
-            user_delete_form = ActiveUserSelectionForm(data=request.POST)
-            if user_delete_form.is_valid():
-                user = user_delete_form.cleaned_data['user']
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data,
+                                                           data=request.POST)
+            if user_deactivate_form.is_valid():
+                user = user_deactivate_form.cleaned_data['profile'].user
                 user.is_active = False
                 user.save()
 
@@ -496,15 +497,16 @@ def group_superuser_home(request):
                 )
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
-            user_activate_form = InactiveUserSelectionForm()
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
         
         # Process the user selection form for activating a user
         elif 'user_activate_input' in request.POST:
-            user_activate_form = InactiveUserSelectionForm(data=request.POST)
+            user_activate_form = InactiveUserSelectionForm(api_access_data,
+                                                           data=request.POST)
             if user_activate_form.is_valid():
-                user = user_activate_form.cleaned_data['user']
+                user = user_activate_form.cleaned_data['profile'].user
                 user.is_active = True
                 user.save()
                 
@@ -514,7 +516,7 @@ def group_superuser_home(request):
                 )
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
-            user_deactivate_form = ActiveUserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
 
@@ -530,8 +532,8 @@ def group_superuser_home(request):
                 )
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
-            user_deactivate_form = ActiveUserSelectionForm()
-            user_activate_form = InactiveUserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
 
         # Process superuser password change form
@@ -543,8 +545,8 @@ def group_superuser_home(request):
                 return HttpResponseRedirect(reverse('confirm_changes'))
             new_user_form = NewUserForm()
             user_profile_form = UserProfileForm()
-            user_deactivate_form = ActiveUserSelectionForm()
-            user_activate_form = InactiveUserSelectionForm()
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = APIAccessDataForm(instance=api_access_data)
 
         else:
@@ -553,8 +555,8 @@ def group_superuser_home(request):
     else:
         new_user_form = NewUserForm()
         user_profile_form = UserProfileForm()
-        user_deactivate_form = ActiveUserSelectionForm()
-        user_activate_form = InactiveUserSelectionForm()
+        user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+        user_activate_form = InactiveUserSelectionForm(api_access_data)
         api_access_change_form = APIAccessDataForm(instance=api_access_data)
         password_change_form = PasswordChangeForm(user=request.user)
 
