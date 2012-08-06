@@ -53,16 +53,6 @@ USE_L10N = True
 # The relative URL of the login page for the application.
 LOGIN_URL = '/'
 
-# The absolute URL of the website for the application.
-ABSOLUTE_SITE_URL = 'gitzen.herokuapp.com'
-
-# The default email address to use when sending out emails from GitZen.
-DEFAULT_FROM_EMAIL = 'no_reply@gitzen.herokuapp.com'
-
-EMAIL_HOST = 'localhost'
-
-EMAIL_PORT = 1025
-
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
 MEDIA_ROOT = ''

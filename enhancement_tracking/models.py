@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from customfields import EncryptedCharField, SeparatedValuesField
+from customfields import EncryptedCharField
 
 VIEW_TYPE_CHOICES = (
     ('GIT', 'GitHub'),
@@ -33,10 +33,6 @@ class APIAccessData(models.Model):
                                    verbose_name='Zendesk API Token')
     zen_url = models.CharField(max_length=100,
                                verbose_name='Zendesk URL Subdomain')
-    zen_tags = SeparatedValuesField(verbose_name='Zendesk Tags to Filter By')
-    zen_schema = models.CharField(max_length=25,
-                                  verbose_name='Zendesk External ' \
-                                  'Association Naming Schema')
     zen_fieldid = models.IntegerField(null=True,
                                       verbose_name='Zendesk Ticket ' \
                                       'Association Field ID')

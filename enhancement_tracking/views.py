@@ -14,10 +14,10 @@ from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
-from settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
+from settings import CLIENT_ID, CLIENT_SECRET
 from enhancement_tracking.models import UserProfile
 from enhancement_tracking.forms import (
-    GroupSuperuserForm, APIAccessDataForm, NewUserForm, UserProfileForm,
+    NewUserForm, NewGroupSuperuserForm, APIAccessDataForm, UserProfileForm,
     ActiveUserSelectionForm, InactiveUserSelectionForm
 )
 
@@ -49,23 +49,6 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
 # formatting.
 ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
 
-# Email message that is sent to new users after a group superuser has created a
-# user account for them in their group. The message prompts the user to change
-# the random password that was assigned to their account upon creation.
-NEW_USER_EMAIL_MESSAGE = \
-    "A user account has been created for you on GitZen for the product " \
-    "%(product_name)s. This account will allow you to track the progress of " \
-    "enhancments for this product as they move through different stages in " \
-    "GitHub and Zendesk.\n\n" \
-    "The username and password for your account are listed bellow. The " \
-    "password was automatically generated during your account's creation, " \
-    "so it is recommended that you change your password on the Change " \
-    "Account Settings page after logging into GitZen for the first time.\n\n" \
-    "Username: %(username)s\n" \
-    "Password: %(password)s\n\n" \
-    "You can now log into GitZen with this account at %(absolute_site_url)s " \
-    "and start tracking enhancements for %(product_name)s!"
-
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
     an existing user.
@@ -93,7 +76,7 @@ def group_creation_form_handler(request):
                     the User Group Creation page.
     """
     if request.method == 'POST':
-        group_superuser_form = GroupSuperuserForm(data=request.POST)
+        group_superuser_form = NewGroupSuperuserForm(data=request.POST)
         api_access_data_form = APIAccessDataForm(data=request.POST)
         if group_superuser_form.is_valid() and api_access_data_form.is_valid():
             group_superuser = group_superuser_form.save()
@@ -114,7 +97,7 @@ def group_creation_form_handler(request):
             login(request, user)
             return HttpResponseRedirect(reverse('confirm_group_creation'))
     else:
-        group_superuser_form = GroupSuperuserForm()
+        group_superuser_form = NewGroupSuperuserForm()
         api_access_data_form = APIAccessDataForm()
 
     return render_to_response('group_creation.html',
@@ -484,27 +467,12 @@ def group_superuser_home(request):
             new_user_form = NewUserForm(data=request.POST)
             user_profile_form = UserProfileForm(data=request.POST)
             if new_user_form.is_valid() and user_profile_form.is_valid():
-                password = User.objects.make_random_password()
-                user = User.objects.create_user(
-                    new_user_form.cleaned_data['username'],
-                    new_user_form.cleaned_data['email'],
-                    password
-                )
+                user = new_user_form.save()
                 user_profile = user_profile_form.save(commit=False)
                 user_profile.user = user
                 user_profile.api_access_data = api_access_data
                 user_profile.save()
 
-                # Email the new user to let them know an account has been
-                # created for them in this group and to tell them to change
-                # their temporary random password.
-                user.email_user(
-                    'New GitZen Account',
-                    NEW_USER_EMAIL_MESSAGE % {'product_name': product_name,
-                                        'username': user.username,
-                                        'password': password,
-                                        'absolute_site_url': ABSOLUTE_SITE_URL}
-                )
                 return HttpResponseRedirect(
                     reverse('confirm_user_creation', 
                             kwargs={'user_id': user.id})
@@ -590,14 +558,18 @@ def group_superuser_home(request):
         api_access_change_form = APIAccessDataForm(instance=api_access_data)
         password_change_form = PasswordChangeForm(user=request.user)
 
-    return render_to_response('superuser_home.html',
-                              {'new_user_form': new_user_form,
-                               'user_profile_form': user_profile_form,
-                               'user_deactivate_form': user_deactivate_form,
-                               'user_activate_form': user_activate_form,
-                               'api_access_change_form': api_access_change_form,
-                               'password_change_form': password_change_form,
-                               'auth_url': GIT_AUTH_URL},
+    context = {
+        'new_user_form': new_user_form,
+        'user_profile_form': user_profile_form,
+        'user_deactivate_form': user_deactivate_form,
+        'user_activate_form': user_activate_form,
+        'api_access_change_form': api_access_change_form,
+        'password_change_form': password_change_form,
+        'product_name': product_name,
+        'auth_url': GIT_AUTH_URL
+    }
+
+    return render_to_response('superuser_home.html', context,
                               context_instance=RequestContext(request))
 
 def build_cache_index(api_access_data):

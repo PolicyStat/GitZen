@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-	{% if is_reset == 1%}
+	{% if is_reset == "1" %}
 		Cache Reset Confirmation
 	{% else %}
 		Cache Building Confirmation
@@ -23,7 +23,7 @@
 		<h2>Confirmation</h2>
 
 		<p class="confirm_paragraph">
-		{% if is_reset == 1%}
+		{% if is_reset == "1" %}
 			The cache for the group was successfully reset.
 		{% else %}
 			The cache for the group was successfully built and indexed. You
@@ -37,7 +37,7 @@
 		<p>{{ error_message }}</p>
 	{% endif %}
 	<button id="goto_home_button" type="button" class="btn">
-		{% if is_reset == 1%}
+		{% if is_reset == "1" %}
 			Return to Home
 		{% else %}
 			Go to Superuser Home
