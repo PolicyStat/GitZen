@@ -14,10 +14,10 @@ from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
-from settings import CLIENT_ID, CLIENT_SECRET
+from settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
 from enhancement_tracking.models import UserProfile
 from enhancement_tracking.forms import (
-    UserForm, GroupSuperuserForm, APIAccessDataForm, UserProfileChangeForm,
+    GroupSuperuserForm, APIAccessDataForm, NewUserForm, UserProfileForm,
     ActiveUserSelectionForm, InactiveUserSelectionForm
 )
 
@@ -48,6 +48,23 @@ ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
 # being accessed and the ID number of the user being accessed for the string's
 # formatting.
 ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
+
+# Email message that is sent to new users after a group superuser has created a
+# user account for them in their group. The message prompts the user to change
+# the random password that was assigned to their account upon creation.
+NEW_USER_EMAIL_MESSAGE = \
+    "A user account has been created for you on GitZen for the product " \
+    "%(product_name)s. This account will allow you to track the progress of " \
+    "enhancments for this product as they move through different stages in " \
+    "GitHub and Zendesk.\n\n" \
+    "The username and password for your account are listed bellow. The " \
+    "password was automatically generated during your account's creation, " \
+    "so it is recommended that you change your password on the Change " \
+    "Account Settings page after logging into GitZen for the first time.\n\n" \
+    "Username: %(username)s\n" \
+    "Password: %(password)s\n\n" \
+    "You can now log into GitZen with this account at %(absolute_site_url)s " \
+    "and start tracking enhancements for %(product_name)s!"
 
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
@@ -228,6 +245,19 @@ def user_logout(request):
     return HttpResponseRedirect(reverse('login'))
 
 @login_required
+def confirm_changes(request):
+    """Renders the confirmation page to confirm the successful changes made to
+    the current user's account settings.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the user's
+                    account.
+    """
+    return render_to_response('confirm_changes.html',
+                              context_instance=RequestContext(request))
+
+@login_required
 @user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_group_creation(request):
     """Renders the confirmation page to confirm the successful creation of a new
@@ -272,13 +302,15 @@ def confirm_git_oauth(request):
     api_access_data.git_token = '147a87738db7ac19c865845e19652b8134ad0099'
     api_access_data.save()
     access_granted = True
+    product_name = api_access_data.product_name
     return render_to_response('confirm_git_oauth.html', 
-                              {'access_granted': access_granted},
+                              {'access_granted': access_granted,
+                               'product_name': product_name},
                               context_instance=RequestContext(request))
 
 @login_required
 @user_passes_test(lambda user: user.get_profile().is_group_superuser)
-def confirm_cache_building(request):
+def confirm_cache_building(request, is_reset):
     """Calls the function to build and index the cache for the API access model
     of the logged in group superuser and renders a page that tells if the
     caching was successful or not.
@@ -288,6 +320,7 @@ def confirm_cache_building(request):
                     into it.
     """
     context = {} # The context for the confirm page
+    context['is_reset'] = is_reset
     try:
         build_cache_index(request.user.get_profile().api_access_data)
     except RequestException as e:
@@ -300,40 +333,30 @@ def confirm_cache_building(request):
                                   context_instance=RequestContext(request))
     
     context['caching_successful'] = True
-    logout(request)
     return render_to_response('confirm_cache_building.html', context,
                               context_instance=RequestContext(request))
 
 @login_required
-def confirm_changes(request):
-    """Renders the confirmation page to confirm the successful changes made to
-    the current user's account settings.
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_user_creation(request, user_id):
+    """Renders the confirmation page to confirm the successful creation of a new
+    user.
 
     Parameters:
         request - The request object sent with the call to the confirm page if
-                    the requested changes were successfully made to the user's
-                    account.
+                    the user was created successfully.
+        user_id - The ID of the user that was just created.
     """
-    return render_to_response('confirm_changes.html',
+    user = User.objects.get(id=user_id)
+    username = user.username
+    product_name = user.get_profile().api_access_data.product_name
+    return render_to_response('confirm_user_creation.html',
+                              {'username': username,
+                               'product_name': product_name},
                               context_instance=RequestContext(request))
 
 @login_required
-def confirm_superuser_changes(request, user_id):
-    """Renders the confirmation page to confirm the successful changes made to
-    the selected user's account settings by the superuser.
-
-    Parameters:
-        request - The request object sent with the call to the confirm page if
-                    the requested changes were successfully made to the selected
-                    user's account.
-        user_id - The ID of the user that was just modified by the superuser.
-    """
-    username = User.objects.get(id=user_id).username
-    return render_to_response('confirm_superuser_changes.html',
-                              {'username': username},
-                              context_instance=RequestContext(request))
-
-@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_user_deactivation(request, user_id):
     """Renders the confirmation page to confirm the successful deactivation of a
     user by the superuser.
@@ -349,6 +372,7 @@ def confirm_user_deactivation(request, user_id):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_user_activation(request, user_id):
     """Renders the confirmation page to confirm the successful activation of a
     previously deactivated user by the superuser.
@@ -364,19 +388,35 @@ def confirm_user_activation(request, user_id):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_api_access_changes(request):
+    """Renders the confirmation page to confirm the successful changes made to
+    the API access settings for the superuser's group.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the API
+                    access settings.
+    """
+    product_name = request.user.get_profile().api_access_data.product_name
+    return render_to_response('confirm_changes.html',
+                              {'product_name': product_name},
+                              context_instance=RequestContext(request))
+
+@login_required
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
     page of the app with this data. If the request for the page is from a
-    superuser, it gets redirected to the superuser_home function.
+    group superuser, it gets redirected to the group_superuser_home function.
     
     Parameters:
         request - The request object that contains the current user's data.
     """
-    # If the user is a superuser, render the superuser home page that allows for
-    # the editing of user account settings instead of the regular user home
+    # If the user is a group superuser, render the group superuser home page
+    # that allows for group superuser actions instead of the regular user home
     # page.
-    if request.user.is_superuser:
-        return superuser_home(request)
+    if request.user.get_profile().is_group_superuser:
+        return group_superuser_home(request)
 
     profile = request.user.get_profile() # Current user profile
     zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
@@ -423,28 +463,55 @@ def home(request):
                               context_instance=RequestContext(request))
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
-def superuser_home(request):
-    """Processes the various form requests from the superuser home page. This
-    includes the forms to select a user to change their account, to select a
-    user to delete their account, and to change the password for the superuser.
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def group_superuser_home(request):
+    """Processes the various form requests from the group superuser home page.
+    This includes the forms to create a new user, to deactivate or reactivate a
+    user, to change the group API access settings, and to change the password
+    for the superuser.
 
     Parameters:
-        request - The request object that contains the superuser data and the
-                    POST data from the various forms.
+        request - The request object that contains the group superuser data and
+                    the POST data from the various forms.
     """
+    api_access_data = request.user.get_profile().api_access_data
+    product_name = api_access_data.product_name
+
     if request.POST:
-        # Process the user selection form for changing a user
-        if 'user_change_input' in request.POST:
-            user_change_form = ActiveUserSelectionForm(data=request.POST)
-            if user_change_form.is_valid():
-                user = user_change_form.cleaned_data['user']
+        # Process the new user form for getting the information needed to create
+        # a new user and add them to the group.
+        if 'user_creation_input' in request.POST:
+            new_user_form = NewUserForm(data=request.POST)
+            user_profile_form = UserProfileForm(data=request.POST)
+            if new_user_form.is_valid() and user_profile_form.is_valid():
+                password = User.objects.make_random_password()
+                user = User.objects.create_user(
+                    new_user_form.cleaned_data['username'],
+                    new_user_form.cleaned_data['email'],
+                    password
+                )
+                user_profile = user_profile_form.save(commit=False)
+                user_profile.user = user
+                user_profile.api_access_data = api_access_data
+                user_profile.save()
+
+                # Email the new user to let them know an account has been
+                # created for them in this group and to tell them to change
+                # their temporary random password.
+                user.email_user(
+                    'New GitZen Account',
+                    NEW_USER_EMAIL_MESSAGE % {'product_name': product_name,
+                                        'username': user.username,
+                                        'password': password,
+                                        'absolute_site_url': ABSOLUTE_SITE_URL}
+                )
                 return HttpResponseRedirect(
-                    reverse('superuser_change_account_settings',
+                    reverse('confirm_user_creation', 
                             kwargs={'user_id': user.id})
                 )
             user_deactivate_form = ActiveUserSelectionForm()
             user_activate_form = InactiveUserSelectionForm()
+            api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
 
         # Process the user selection form for deactivating a user
@@ -459,8 +526,10 @@ def superuser_home(request):
                     reverse('confirm_user_deactivation',
                             kwargs={'user_id': user.id})
                 )
-            user_change_form = ActiveUserSelectionForm()
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
             user_activate_form = InactiveUserSelectionForm()
+            api_access_change_form = APIAccessDataForm(instance=api_access_data)
             password_change_form = PasswordChangeForm(user=request.user)
         
         # Process the user selection form for activating a user
@@ -475,8 +544,26 @@ def superuser_home(request):
                     reverse('confirm_user_activation',
                             kwargs={'user_id': user.id})
                 )
-            user_change_form = ActiveUserSelectionForm()
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
             user_deactivate_form = ActiveUserSelectionForm()
+            api_access_change_form = APIAccessDataForm(instance=api_access_data)
+            password_change_form = PasswordChangeForm(user=request.user)
+
+        # Process the API access data form for changing the API access data for
+        # the group.
+        elif 'api_access_change_input' in request.POST:
+            api_access_change_form = APIAccessDataForm(data=request.POST,
+                                                      instance=api_access_data)
+            if api_access_change_form.is_valid():
+                api_access_change_form.save()
+                return HttpResponseRedirect(
+                    reverse('confirm_api_access_changes')
+                )
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
+            user_deactivate_form = ActiveUserSelectionForm()
+            user_activate_form = InactiveUserSelectionForm()
             password_change_form = PasswordChangeForm(user=request.user)
 
         # Process superuser password change form
@@ -486,24 +573,31 @@ def superuser_home(request):
             if password_change_form.is_valid():
                 password_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
-            user_change_form = ActiveUserSelectionForm()
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
             user_deactivate_form = ActiveUserSelectionForm()
             user_activate_form = InactiveUserSelectionForm()
+            api_access_change_form = APIAccessDataForm(instance=api_access_data)
 
         else:
             return HttpResponseRedirect(reverse('home'))
     
     else:
-        user_change_form = ActiveUserSelectionForm()
+        new_user_form = NewUserForm()
+        user_profile_form = UserProfileForm()
         user_deactivate_form = ActiveUserSelectionForm()
         user_activate_form = InactiveUserSelectionForm()
+        api_access_change_form = APIAccessDataForm(instance=api_access_data)
         password_change_form = PasswordChangeForm(user=request.user)
 
     return render_to_response('superuser_home.html',
-                              {'user_change_form': user_change_form,
+                              {'new_user_form': new_user_form,
+                               'user_profile_form': user_profile_form,
                                'user_deactivate_form': user_deactivate_form,
                                'user_activate_form': user_activate_form,
-                               'password_change_form': password_change_form},
+                               'api_access_change_form': api_access_change_form,
+                               'password_change_form': password_change_form,
+                               'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
 def build_cache_index(api_access_data):

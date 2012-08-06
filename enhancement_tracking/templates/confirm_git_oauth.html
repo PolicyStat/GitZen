@@ -6,7 +6,7 @@
 <script>
 	$(document).ready(function() {
 		$('#build_cache_button').click(function() {
-			window.location.href='{% url confirm_cache_building %}';
+			window.location.href='{% url confirm_cache_building is_reset=0 %}';
 		});
 	});
 	$(document).ready(function() {
@@ -22,20 +22,20 @@
 	<h2>GitHub Access Confirmation</h2>
 
 	{% if access_granted %}
-		<p class="center" style="width:60%;">
+		<p class="confirm_paragraph">
 			You have successfully authorized GitZen to access your GitHub
 			repository data. Click the button bellow to build the cache index
-			with the enhancement data for the group. 
+			with the enhancement data for {{ product_name }}. 
 		</p>
 		<button id="build_cache_button" type="button" class="btn"
 			>Build Cache Index</button>
 	{% else %}
-		<p class="center" style="width:50%;">
+		<p class="confirm_paragraph">
 			GitZen did not receive authorization to access your GitHub
-			repository, so the application will not be able to function for this
-			group. If you want to give this group access to GitHub, you can
-			authorize it by changing the API access settings after logging in
-			with the group superuser account.
+			repository, so the application will not be able to function for 
+			{{ product_name }}. If you want to give GitZen access to GitHub for
+			this product, you can authorize it by changing the API access
+			settings after logging in with the group superuser account.
 		</p>
 		<button id="return_to_login_button" type="button" class="btn"
 			>Return to Login</button>

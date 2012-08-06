@@ -20,14 +20,16 @@ class UserProfile(models.Model):
         return "%s's profile" % self.user
 
 class APIAccessData(models.Model):
+    product_name = models.CharField(max_length=50,
+                                    verbose_name='Product Name')
     git_org = models.CharField(max_length=75, 
                                verbose_name='GitHub Organization')
     git_repo = models.CharField(max_length=75,
                                 verbose_name='GitHub Repository')
-    git_token = EncryptedCharField(max_length=75)
+    git_token = EncryptedCharField(max_length=50)
     zen_name = models.CharField(max_length=75,
                                 verbose_name='Zendesk User Email')
-    zen_token = EncryptedCharField(max_length=75,
+    zen_token = EncryptedCharField(max_length=50,
                                    verbose_name='Zendesk API Token')
     zen_url = models.CharField(max_length=100,
                                verbose_name='Zendesk URL Subdomain')
