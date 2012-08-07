@@ -9,23 +9,21 @@ from django.contrib.auth.forms import (
     AuthenticationForm, PasswordChangeForm, SetPasswordForm
 )
 from django.core.urlresolvers import reverse
-import requests
 from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
+from itertools import chain
 from settings import CLIENT_ID, CLIENT_SECRET
 from enhancement_tracking.models import UserProfile
+from enhancement_tracking.cache_actions import (
+    build_cache_index, update_cache_index
+)
 from enhancement_tracking.forms import (
     NewUserForm, NewGroupSuperuserForm, NewAPIAccessDataForm,
     ChangeAPIAccessDataForm, UserProfileForm, ActiveUserSelectionForm,
     InactiveUserSelectionForm
 )
-
-# Constant URL string for accessing the GitHub API. It requires a GitHub
-# organization/user, repository, and issue number for the string's formatting.
-GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/' \
-                '%(repository)s/issues/%(issue_number)i'
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
@@ -34,21 +32,6 @@ OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
-
-# Constant URL string for searching for tickets through the Zendesk API. It
-# requires the custom URL subdomain of the specific company whose information
-# is being accessed for the string's formatting.
-ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
-
-# Constant search query used to access open Zendesk problem and incident tickets
-# form its API.
-ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
-
-# Constant URL string for accessing Zendesk users through the Zendesk API. It
-# requires the custom URL subdomain for the specific company whose users are
-# being accessed and the ID number of the user being accessed for the string's
-# formatting.
-ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
 
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
@@ -426,41 +409,35 @@ def home(request):
     if request.user.get_profile().is_group_superuser:
         return group_superuser_home(request)
 
-    profile = request.user.get_profile() # Current user profile
-    zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
-                                      # Zendesk tickets that contains their 
-                                      # associated GitHub issue number.
-    utc_offset = profile.utc_offset # The UTC offset for the current user's time
-                                    # zone.
-    context = {} # Data to be used in the context of the home page
-
-    zen_tickets = [] # List of the open problem or incident tickets in Zendesk.
-    zen_user_reference = {} # Dictionary reference of the user IDs and 
-                            # user names associated with the Zendesk tickets in
-                            # zen_tickets.
-    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
-                     # tickets in zen_tickets.
+    profile = request.user.get_profile() # Current user's profile
+    utc_offset = profile.utc_offset
+    api_access_data = profile.api_access_data
+    product_name = api_access_data.product_name
+    context = {}
     
     try:
-        zen_tickets = get_zen_tickets(profile)
-        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
-        zen_user_reference = get_zen_users(profile, zen_user_ids)
-        git_tickets = get_git_tickets(profile, git_issue_numbers)
+        update_cache_index(api_access_data)
     except RequestException as e:
         context['api_requests_successful'] = False
         context['error_message'] = 'There was an error connecting to ' \
-                'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
-                'your account settings.' % {'API_name': e.args[1],
-                                            'exception_message': e.args[0]}
+                'the %(API_name)s API: %(exception_message)s. If the error ' \
+                'persists after refreshing the page, inform the superuser ' \
+                'for %(product_name)s that the API access settings may need ' \
+                'adjustment.' % {'API_name': e.args[1],
+                                 'exception_message': e.args[0],
+                                 'product_name': product_name}
         return render_to_response('home.html', context,
                                     context_instance=RequestContext(request))
+    
+    # Account for the time zone offset and get the enhancement data
+    cache_data = cache.get(api_access_data.id)
+    enhancement_tables = _time_adjust_enhancement_data(cache_data, utc_offset)
+    context = enhancement_tables
         
-    context = build_enhancement_data(zen_tickets, zen_user_reference,
-                                     git_tickets, zen_fieldid, utc_offset)
-
     # Add additional data to be used in the context of the home page
     context['api_requests_successful'] = True
-    context['zen_url'] = profile.zen_url
+    context['product_name'] = product_name
+    context['zen_url'] = api_access_data.zen_url
     if profile.view_type == 'ZEN':
         context['is_zendesk_user'] = True
     else:
@@ -469,6 +446,52 @@ def home(request):
     
     return render_to_response('home.html', context,
                               context_instance=RequestContext(request))
+
+def _time_adjust_enhancement_data(cache_data, utc_offset):
+    """Adjusts the enhancement data from the cache so that all of the dates and
+    times are in the passed UTC time zone.
+
+    Parameters:
+        cache_data - A dictionary of enhancement data stored under a group index
+                        in the cache.
+        utc_offset - The numeric UTC offset for the time zone that the
+                        enhancement data should be converted to.
+
+    Returns the four enhancement tables (need_attention, tracking,
+    unassociated_enhancements, and not_git_enhancements) adjusted to the passed
+    time zone in a dictionary with the keys being the tables' names.
+    """
+    offset_delta = timedelta(hours=utc_offset)
+
+    for enhancement in chain(cache_data['need_attention'],
+                             cache_data['tracking']):
+        zen_datetime = enhancement['zen_datetime'] + offset_delta
+        enhancement['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
+        enhancement['zen_time'] = zen_datetime.strftime('%I:%M %p')
+        enhancement['zen_sortable_datetime'] = \
+                mktime(zen_datetime.timetuple())
+        git_datetime = enhancement['git_datetime'] + offset_delta
+        enhancement['git_date'] = git_datetime.strftime('%m/%d/%Y')
+        enhancement['git_time'] = git_datetime.strftime('%I:%M %p')
+        enhancement['git_sortable_datetime'] = \
+                mktime(git_datetime.timetuple())
+
+    for enhancement in chain(cache_data['unassociated_enhancements'],
+                             cache_data['not_git_enhancements']):
+        zen_datetime = enhancement['zen_datetime'] + offset_delta
+        enhancement['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
+        enhancement['zen_time'] = zen_datetime.strftime('%I:%M %p')
+        enhancement['zen_sortable_datetime'] = \
+                mktime(zen_datetime.timetuple())
+
+    enhancement_tables = {
+        'need_attention': cache_data['need_attention'],
+        'tracking': cache_data['tracking'],
+        'unassociated_enhancements': cache_data['unassociated_enhancements'],
+        'not_git_enhancements': cache_data['not_git_enhancements']
+    }
+
+    return enhancement_tables
 
 @login_required
 @user_passes_test(lambda user: user.get_profile().is_group_superuser)
@@ -628,337 +651,3 @@ def group_superuser_home(request):
 
     return render_to_response('superuser_home.html', context,
                               context_instance=RequestContext(request))
-
-def build_cache_index(api_access_data):
-    """Builds and indexes the cache data necessary for the application for the
-    passed API access model.
-
-    Parameters:
-        api_access_data - The object that contains the necessary access
-                            parameters for getting the data needed for the
-                            application from the Zendesk and GitHub APIs.
-
-    This function will raise any RequestExceptions that happen while trying to
-    access either the Zendesk or GitHub APIs so they can be properly handled by
-    the calling view function.
-    """
-    cache_data = {} # Data to be stored in the cache for the passed API access
-                    # model.
-    zen_tickets = [] # List of the open tickets in Zendesk with the API access
-                     # model's specified tags.
-    zen_user_reference = {} # Dictionary reference of the user IDs and 
-                            # user names associated with the Zendesk tickets in
-                            # zen_tickets.
-    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
-                     # tickets in zen_tickets.
-    zen_fieldid = api_access_data.zen_fieldid
-    
-    cache_data['last_updated'] = datetime.utcnow()
-    try:
-        zen_tickets = get_zen_tickets(api_access_data)
-        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
-        zen_user_reference = get_zen_users(api_access_data, zen_user_ids)
-        cache_data['zen_user_reference'] = zen_user_reference
-        git_tickets = get_git_tickets(api_access_data, git_issue_numbers)
-    except RequestException:
-        # Raise RequestExceptions so they can be properly handled by whatever
-        # view function call the build_cache_index function.
-        raise
-        
-    enhancement_data = build_enhancement_data(zen_tickets, zen_user_reference,
-                                              git_tickets, zen_fieldid)
-    cache_data = dict(cache_data.items() + enhancement_data.items())
-    cache.set(api_access_data.id, cache_data)
-
-def get_zen_tickets(api_access_data):
-    """Gets all of the open problem and incident Zendesk tickets using the
-    Zendesk API.
-
-    Parameters:
-        api_access_data - The object that contains the current user's API
-                            access data necessary to access the tickets on their
-                            Zendesk account.
-
-    Returns a gathered list of Zendesk tickets.
-    """
-    # Zendesk user email set up for API token authorization
-    zen_name_tk = api_access_data.zen_name + '/token'
-
-    zen_tickets = []
-    page = 1
-    
-    try:
-        while True:
-            request_zen_tickets = \
-                    requests.get(ZEN_SEARCH_URL % \
-                                 {'subdomain': api_access_data.zen_url},
-                                 params={'query': ZEN_TICKET_SEARCH_QUERY,
-                                         'sort_by': 'updated_at',
-                                         'sort_order': 'desc',
-                                         'per_page': 100,
-                                         'page': page},
-                                 auth=(zen_name_tk, api_access_data.zen_token))
-            if request_zen_tickets.status_code != 200:
-                request_zen_tickets.raise_for_status()
-            zen_tickets.extend(request_zen_tickets.json['results'])
-            if request_zen_tickets.json['next_page'] is not None:
-                page += 1
-            else:
-                break
-
-    # Catches exceptions from requests.get() or raise_for_status()
-    except RequestException as e:
-        # Redefines the args attribute of the exception to contain both the
-        # original error message and the name of the API responsible for causing
-        # the exception.
-        e.args = (e.args[0], 'Zendesk')
-
-        # Raise the exception so it can be caught by the except in the home
-        # function for further processing.
-        raise
-
-    return zen_tickets
-
-def get_id_lists(zen_tickets, zen_fieldid):
-    """Gets lists of the Zendesk user IDs and the GitHub issue numbers that are
-    associated with the passed list of Zendesk tickets.
-
-    Parameters:
-        zen_tickets - A list of Zendesk tickets whose associated GitHub issue
-                    numbers and Zendesk user IDs are desired.
-        zen_fieldid - The ID number of the custom field in Zendesk tickets that
-                        holds its associated GitHub issue number.
-
-    Returns a tuple of two value with the first being the gathered list of
-    associated Zendesk user IDs and with the second being the gathered list
-    of associated GitHub issue numbers.
-    """
-    
-    # Get Zendesk user IDs that are associated with Zendesk tickets.
-    zen_user_ids = []
-    for ticket in zen_tickets:
-        zen_user_ids.append(ticket['requester_id'])
-    zen_user_ids = set(zen_user_ids) # Remove duplicates
-    
-    # Get GitHub issue numbers that are associated with the Zendesk tickets.
-    git_issue_numbers = []
-    for ticket in zen_tickets:
-        association_data = ''
-        for field in ticket['fields']:
-            if field['id'] == zen_fieldid:
-                if field['value'] is not None:
-                    association_data = field['value'].split('-')
-                break
-        if association_data and association_data[0] == 'gh':
-            git_issue_numbers.append(int(association_data[1]))
-    git_issue_numbers = set(git_issue_numbers) # Remove duplicates
-
-    return (zen_user_ids, git_issue_numbers)
-
-def get_zen_users(api_access_data, zen_user_ids):
-    """Gets the full Zendesk user records for each user ID number in the passed
-    list.
-
-    Parameters:
-        api_access_data - The object that contains the current user's API
-                            access data necessary to access the users on their
-                            Zendesk account.  
-        zen_user_ids - A list of Zendesk user IDs whose full user records are 
-                        desired.
-
-    Returns a dictionary reference table with Zendesk user ID numbers as keys
-    and their cooresponding user names as values.
-    """
-    # Zendesk user email set up for API token authorization
-    zen_name_tk = api_access_data.zen_name + '/token'
-    zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
-                            # names by their ID number.
-    try:
-        for id_number in zen_user_ids:
-            request_zen_user = \
-                    requests.get(ZEN_USER_URL % \
-                                 {'subdomain': api_access_data.zen_url,
-                                  'user_id': id_number},
-                                 auth=(zen_name_tk, api_access_data.zen_token))
-            if request_zen_user.status_code != 200:
-                request_zen_user.raise_for_status()
-            zen_user_reference[id_number] = \
-                    request_zen_user.json['user']['name']
-
-   # Catches exceptions from requests.get() or raise_for_status()
-    except RequestException as e:
-        # Redefine the args attribute of the exception to contain both the
-        # original error message and the name of the API responsible for causing
-        # the exception.
-        e.args = (e.args[0], 'Zendesk')
-
-        # Raise the exception so it can be caught by the except in the home
-        # function for further processing.
-        raise
-    
-    return zen_user_reference
-
-def get_git_tickets(api_access_data, git_issue_numbers):
-    """Gets the full GitHub ticket records for each issue number in the passed
-    list.
-
-    Parameters:
-        api_access_data - The object that contains the current user's API
-                            access data necessary to access the tickets on their
-                            GitHub account.  
-        git_issue_numbers - A list of GitHub issue numbers whose full ticket
-                                records are desired.
-
-    Returns a list with a GitHub ticket record for each of the issue numbers
-    passed to the function.
-    """
-    git_tickets = []
-    
-    try:
-        for number in git_issue_numbers:
-            request_git_tickets = \
-                    requests.get(GIT_ISSUE_URL % \
-                                 {'organization': api_access_data.git_org,
-                                  'repository': api_access_data.git_repo,
-                                  'issue_number': number},
-                                 params={'access_token':
-                                         api_access_data.git_token}
-                                )
-            if request_git_tickets.status_code != 200:
-                request_git_tickets.raise_for_status()
-            git_tickets.append(request_git_tickets.json)
-
-    # Catches exceptions from requests.get() or raise_for_status()
-    except RequestException as e:
-        # Redefine the args attribute of the exception to contain both the
-        # original error message and the name of the API responsible for causing
-        # the exception.
-        e.args = (e.args[0], 'GitHub')
-
-        # Raise the exception so it can be caught by the except in the home
-        # function for further processing.
-        raise
-
-    return git_tickets
-
-def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
-                           zen_fieldid):
-    """Builds the enhancement tracking tables from the Zendesk and GitHub data.
-    
-    Parameters:
-        zen_tickets - A list of open Zendesk tickets to build the enhancement
-                        data from.
-        zen_user_reference - A dictionary reference that can be used to look up
-                                Zendesk user names by their ID number.
-        git_tickets - A list of GitHub tickets that cooresponds with the
-                        associated GitHub issue numbers of the Zendesk tickets
-                        in zen_tics.
-        zen_fieldid - The ID number of the custom field that holds the ticket
-                        association value for a given Zendesk ticket.
-        utc_offset - The UTC offset for the current user's time zone. Used to
-                        format the date and time values for each ticket to the
-                        current user's time zone.
-
-    Returns a dictionary of the built data with the following keys and values:
-        'tracking' - List of enhancements in the process of being worked on.
-        'need_attention' - List of enhancements where one half of the
-                            enhancement is completed, but the other is not.
-        'unassociated_enhancements' - List of Zendesk tickets requesting an 
-                                        enhancement that have no associated
-                                        external ticket.
-        'not_git_enhancements' - List of Zendesk tickets that have an associated
-                                    external ticket, but the ticket is not
-                                    labeled as being part of GitHub. (i.e. The
-                                    association string is not in the format
-                                    "gh-###").
-    """
-    tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
-    need_attention = [] # Enhancements with either a closed Zendesk ticket or
-                        # a closed GitHub ticket. Because one of these tickets
-                        # is closed, the other needs attention.
-    unassociated_enhancements = [] # Requested enhancements from Zendesk 
-                                   # tickets that have no associated external
-                                   # ticket assigned to them.
-    not_git_enhancements = [] # Requested enhancements from Zendesk that have an
-                              # associated external ticket, but the ticket is
-                              # not labeled as being part of GitHub.
-
-    # Iterate through the Zendesk tickets using their data to classify them
-    # as being tracked, needing attention, broken, or not being tracked.
-    for ticket in zen_tickets:
-
-        # Add Zendesk data to enhancement data object
-        association_data = ''
-        for field in ticket['fields']:
-            if field['id'] == zen_fieldid:
-                association_data = field['value']
-                break
-        if association_data:
-            split_association_data = association_data.split('-')
-
-        enhancement_data = {} # Enhancement data object
-        enhancement_data['zen_id'] = ticket['id']
-        enhancement_data['zen_requester'] = \
-                zen_user_reference[ticket['requester_id']]
-        enhancement_data['zen_subject'] = ticket['subject']
-        zen_datetime = datetime.strptime(ticket['updated_at'],
-                                       "%Y-%m-%dT%H:%M:%SZ")
-        enhancement_data['zen_datetime'] = zen_datetime
-        """
-        zen_datetime = zen_datetime + timedelta(hours=utc_offset)
-        enhancement_data['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
-        enhancement_data['zen_time'] = zen_datetime.strftime('%I:%M %p')
-        enhancement_data['zen_sortable_datetime'] = \
-                mktime(zen_datetime.timetuple())
-        """
-
-        # Check if the enhancement has no associated ticket
-        if not association_data:
-            unassociated_enhancements.append(enhancement_data)
-
-        # Check if the enhancement's associated ticket is not a GitHub ticket
-        elif len(split_association_data) != 2 or \
-                split_association_data[0] != 'gh' or \
-                not split_association_data[1].isdigit():
-            enhancement_data['non_git_association'] = association_data
-            not_git_enhancements.append(enhancement_data)
-        
-        # Add GitHub data to the enhancement data object
-        else:
-            git_issue = {}
-            for issue in git_tickets:
-                if issue['number'] == int(split_association_data[1]):
-                    git_issue = issue
-                    break
-            enhancement_data['git_id'] = git_issue['number']
-            enhancement_data['git_url'] = git_issue['html_url']
-            enhancement_data['git_status'] = git_issue['state']
-            git_datetime = datetime.strptime(git_issue['updated_at'],
-                                             "%Y-%m-%dT%H:%M:%SZ")
-            enhancement_data['git_datetime'] = git_datetime
-            """
-            git_datetime = git_datetime + timedelta(hours=utc_offset)
-            enhancement_data['git_date'] = git_datetime.strftime('%m/%d/%Y')
-            enhancement_data['git_time'] = git_datetime.strftime('%I:%M %p')
-            enhancement_data['git_sortable_datetime'] = \
-                    mktime(git_datetime.timetuple())
-            """
-            
-            # Check if the enhacement should be tracked (Both tickets are
-            # open).
-            if enhancement_data['git_status'] == 'open':
-                tracking.append(enhancement_data)
-            
-            # Check if the enhancement is in need of attention (The GitHub
-            # ticket is closed).
-            else:
-                need_attention.append(enhancement_data)
-
-    built_data = {
-        'tracking': tracking,
-        'need_attention': need_attention,
-        'unassociated_enhancements': unassociated_enhancements,
-        'not_git_enhancements': not_git_enhancements,
-    }
-
-    return built_data

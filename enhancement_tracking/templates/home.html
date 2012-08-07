@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}{{ product_name }} Home{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" 
@@ -104,7 +104,7 @@
 </div>
 <br/>
 
-<h2>Enhancement Tracking</h2>
+<h2>{{ product_name }} Enhancement Tracking</h2>
 {% if api_requests_successful %}
 
 <ul class="nav nav-tabs">
