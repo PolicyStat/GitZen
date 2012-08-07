@@ -41,26 +41,4 @@
 	</div>
 </form>
 
-<h2>Change Zendesk API Token</h2>
-<form class="well" method="post">{% csrf_token %}
-	{{ zen_token_change_form.as_p }}
-	<div class="actions">
-		<button name="zen_token_input" type="submit"
-			class="btn btn-primary">Submit Change</button>
-	</div>
-</form>
-
-<h2>Change GitHub Authorization</h2>
-<form class="well">
-	<p class="center" style="width:70%;">
-		If you want to revoke GitZen's access to GitHub, go under the
-		applications settings of the account settings of the GitHub user who
-		authorized the access and click the "revoke" button for GitZen. If you
-		want to authorize or renew authorization of GitZen's access to Github,
-		click the button bellow.
-	</p>
-	<button id="git_oauth_button" type="button" class="btn btn-primary"
-		>GitHub Authorization</button>
-</form>
-
 {% endblock %}

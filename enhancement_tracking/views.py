@@ -92,8 +92,7 @@ def group_creation_form_handler(request):
 @login_required
 def change_form_handler(request):
     """Processes the requests from the Change Account Data page. This includes
-    requests from the password change form, profile change form, and Zendesk API
-    token change form.
+    requests from the password change form and profile change form.
 
     Parameters:
         request - The request object that contains the POST data from one of the
@@ -110,40 +109,26 @@ def change_form_handler(request):
                 password_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
             profile_change_form = SecuredProfileChangeForm(instance=profile)
-            zen_token_change_form = ZendeskTokenChangeForm()
 
         # Process profile change form
         elif 'profile_input' in request.POST:
-            profile_change_form = SecuredProfileChangeForm(data=request.POST,
-                                                           instance=profile)
+            profile_change_form = UserProfileForm(data=request.POST,
+                                                  instance=profile)
             if profile_change_form.is_valid():
                 profile_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
             password_change_form = PasswordChangeForm(user=request.user)
-            zen_token_change_form = ZendeskTokenChangeForm()
-        
-        # Process Zendesk API Token change form
-        elif 'zen_token_input' in request.POST: 
-            zen_token_change_form = ZendeskTokenChangeForm(data=request.POST,
-                                                           instance=profile)
-            if zen_token_change_form.is_valid():
-                zen_token_change_form.save()
-                return HttpResponseRedirect(reverse('confirm_changes'))
-            password_change_form = PasswordChangeForm(user=request.user)
-            profile_change_form = SecuredProfileChangeForm(instance=profile)
         
         else:
             return HttpResponseRedirect(reverse('change_account_settings'))
+
     else:
         password_change_form = PasswordChangeForm(user=request.user)
-        profile_change_form = SecuredProfileChangeForm(instance=profile)
-        zen_token_change_form = ZendeskTokenChangeForm()
+        profile_change_form = UserProfileForm(instance=profile)
     
     return render_to_response('change_account_settings.html', 
                               {'password_change_form': password_change_form, 
-                               'profile_change_form': profile_change_form,
-                               'zen_token_change_form': zen_token_change_form,
-                               'auth_url': GIT_AUTH_URL},
+                               'profile_change_form': profile_change_form},
                               context_instance=RequestContext(request))
 
 @login_required
