@@ -78,6 +78,8 @@ def build_cache_index(api_access_data):
                                               git_tickets, zen_fieldid)
     cache_data = dict(cache_data.items() + enhancement_data.items())
 
+    # Subtract 10 minutes from the actual time to ensure that no updates are
+    # left out if they were made during the time the function was processing.
     cache_data['last_updated'] = datetime.utcnow() - timedelta(minutes=10)
     cache.set(api_access_data.id, cache_data)
 
@@ -392,16 +394,16 @@ def update_cache_index(api_access_data):
                                                         last_updated)
             updated_git_tickets = get_git_ticket_update(api_access_data,
                                                         last_updated)
-            zen_user_ids, git_issue_numbers = get_id_lists(updated_zen_tickets,
+            new_user_ids, new_issue_numbers = get_id_lists(updated_zen_tickets,
                                                            zen_fieldid)
 
             # Update the Zendesk user reference
-            for user_id in list(zen_user_ids):
+            for user_id in list(new_user_ids):
                 if user_id in cache_data['zen_user_reference']:
-                    zen_user_ids.remove(user_id)
-            if zen_user_ids:
+                    new_user_ids.remove(user_id)
+            if new_user_ids:
                 new_user_reference = get_zen_users(api_access_data,
-                                                   zen_user_ids)
+                                                   new_user_ids)
                 cache_data['zen_user_reference'] = dict(
                     cache_data['zen_user_reference'].items() + \
                     new_user_reference.items()
@@ -410,9 +412,9 @@ def update_cache_index(api_access_data):
             # Remove any GitHub tickets with no associations on Zendesk 
             for ticket in list(updated_git_tickets):
                 if ticket['number'] not in cache_data['git_issue_numbers']:
-                    if ticket['number'] in git_issue_numbers:
+                    if ticket['number'] in new_issue_numbers:
                         new_git_tickets.append(ticket)
-                        git_issue_numbers.remove(ticket['number'])
+                        new_issue_numbers.remove(ticket['number'])
                     else:
                         updated_git_tickets = _rm_from_diclist(
                             updated_git_tickets, 'number', ticket['number']
@@ -424,13 +426,13 @@ def update_cache_index(api_access_data):
                             cache_data['git_ticket'][i] = ticket
 
             # Get any GitHub tickets with new Zendesk associations
-            for issue_num in list(git_issue_numbers):
+            for issue_num in list(new_issue_numbers):
                 if issue_num in cache_data['git_issue_numbers']:
-                    git_issue_numbers.remove(issue_num)
-            if git_issue_numbers:
+                    new_issue_numbers.remove(issue_num)
+            if new_issue_numbers:
                 new_git_tickets.extend(get_git_tickets(api_access_data,
-                                                       git_issue_numbers))
-                cache_data['git_issue_numbers'].extend(git_issue_numbers)
+                                                       new_issue_numbers))
+                cache_data['git_issue_numbers'].extend(new_issue_numbers)
                 cache_data['git_tickets'].extend(new_git_tickets)
 
         except RequestException as e:
@@ -446,6 +448,8 @@ def update_cache_index(api_access_data):
         cache_data = update_zen_cache(cache_data, updated_zen_tickets,
                                       zen_fieldid)
         
+        # Subtract 10 minutes from the actual time to ensure that no updates are
+        # left out if they were made during the time the function was processing.
         cache_data['last_updated'] = datetime.utcnow() - timedelta(minutes=10)
         cache.set(api_access_data.id, cache_data)
 
@@ -691,20 +695,16 @@ def update_zen_cache(cache_data, updated_zen_tickets, zen_fieldid):
         # from the cache data entirely.
         if ticket['status'] == 'closed':
             cache_data['need_attention'] = _rm_from_diclist(
-                cache_data['need_attention'], 'zen_id',
-                enhancement['zen_id']
+                cache_data['need_attention'], 'zen_id', ticket['id']
             )
             cache_data['tracking'] = _rm_from_diclist(
-                cache_data['tracking'], 'zen_id',
-                enhancement['zen_id']
+                cache_data['tracking'], 'zen_id', ticket['id']
             )
             cache_data['unassociated_enhancements'] = _rm_from_diclist(
-                cache_data['unassociated_enhancements'], 'zen_id',
-                enhancement['zen_id']
+                cache_data['unassociated_enhancements'], 'zen_id', ticket['id']
             )
             cache_data['not_git_enhancements'] = _rm_from_diclist(
-                cache_data['not_git_enhancements'], 'zen_id',
-                enhancement['zen_id']
+                cache_data['not_git_enhancements'], 'zen_id', ticket['id']
             )
 
         else:
@@ -811,7 +811,7 @@ def _update_zen_no_association(cache_data, zen_ticket):
             )
             return (cache_data, True)
 
-    for enhancement in cache_data['unassociated_enhancments']:
+    for enhancement in cache_data['unassociated_enhancements']:
         if enhancement['zen_id'] == zen_ticket['id']:
             enahancement = _update_enhancement_zen_data(enhancement, zen_ticket,
                                                         zen_user_reference)
@@ -957,7 +957,7 @@ def _update_zen_tracking(cache_data, zen_ticket, association_data):
 
     return (cache_data, False)
 
-def _update_zen_tracking(cache_data, zen_ticket, association_data):
+def _update_zen_unassociated(cache_data, zen_ticket, association_data):
     """Updates the passed cache data with the data from the passed Zendesk
     ticket if the ticket is in the unassociated_enhancements table.
 
@@ -1000,7 +1000,7 @@ def _update_zen_tracking(cache_data, zen_ticket, association_data):
                         if git_ticket['state'] == 'closed':
                             cache_data['need_attention'].append(enhancement)
                         else:
-                            cache_data['tracking'].appened(enhancement)
+                            cache_data['tracking'].append(enhancement)
                         break
             cache_data['unassociated_enhancements'] = _rm_from_diclist(
                     cache_data['unassociated_enhancements'], 'zen_id',
@@ -1052,7 +1052,7 @@ def _update_zen_not_git(cache_data, zen_ticket, association_data):
                             if git_ticket['state'] == 'closed':
                                 cache_data['need_attention'].append(enhancement)
                             else:
-                                cache_data['tracking'].appened(enhancement)
+                                cache_data['tracking'].append(enhancement)
                             cache_data['not_git_enhancements'] = \
                                 _rm_from_diclist(
                                     cache_data['not_git_enhancements'], 'zen_id',
