@@ -24,7 +24,7 @@
 		var attention_table = $('#attention_table').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
 			"sPaginationType": "bootstrap",
-			"iDisplayLength": 5,
+			"iDisplayLength": 25,
 			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
 			"bAutoWidth": false,
 			"aoColumns": [
@@ -39,7 +39,7 @@
 		var tracking_table = $('#tracking_table').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
 			"sPaginationType": "bootstrap",
-			"iDisplayLength": 5,
+			"iDisplayLength": 25,
 			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
 			"bAutoWidth": false,
 			"aoColumns": [
@@ -54,7 +54,7 @@
 		var unassociated_table = $('#unassociated_table').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
 			"sPaginationType": "bootstrap",
-			"iDisplayLength": 5,
+			"iDisplayLength": 25,
 			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
 			"bAutoWidth": false,
 			"aoColumns": [
@@ -68,7 +68,7 @@
 		var broken_table = $('#not_git_table').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
 			"sPaginationType": "bootstrap",
-			"iDisplayLength": 5,
+			"iDisplayLength": 25,
 			"aLengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
 			"bAutoWidth": false,
 			"aoColumns": [
@@ -159,14 +159,14 @@
 			{% for enhancement in need_attention %}
 				<tr>
 					<td class="td-centered">
+						<a class="closed" target="_blank" 
+							href="{{ enhancement.git_url }}"
+							>G{{ enhancement.git_id }}</a>
+						<br/> 
 						<a class="open" target="_blank" 
 							href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
-						<br/> 
-						<a class="closed" target="_blank" 
-							href="{{ enhancement.git_url }}"
-							>G{{ enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
 					<td>{{ enhancement.zen_requester }}</td>
@@ -221,13 +221,13 @@
 				<tr>
 					<td class="td-centered">
 						<a class="open" target="_blank"
+						   	href="{{ enhancement.git_url }}"
+							>G{{enhancement.git_id }}</a>
+						<br/>
+						<a class="open" target="_blank"
 						   	href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
-						<br/>
-						<a class="open" target="_blank"
-						   	href="{{ enhancement.git_url }}"
-							>G{{enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
 					<td>{{ enhancement.zen_requester }}</td>
