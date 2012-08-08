@@ -6,7 +6,7 @@
 <script>
 	$(document).ready(function() {
 		$('#return_home_button').click(function() {
-			window.location.href='{% url home %}';
+			window.location.href='{% url superuser_home %}';
 		});
 	});
 </script>
@@ -14,7 +14,7 @@
 
 {% block body %}
 	<h2>Confirmation</h2>
-	<p>
+	<p class="confirm_paragraph">
 		The user {{ deactivated_username }} has been successfully deactivated.
 	</p>
 	<button id="return_home_button" type="button" class="btn"

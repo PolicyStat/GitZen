@@ -5,6 +5,13 @@ h1, h2, h3, p, a, div
 	text-align:center;
 }
 
+p.confirm_paragraph
+{
+	width:60%;
+	margin-left:auto;
+	margin-right:auto;
+}
+
 a:link, a:visited 
 {
 	color:blue;

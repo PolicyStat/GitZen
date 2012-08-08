@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}API Access Change Confirmation{% endblock %}
+
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#reset_cache_button').click(function() {
+			window.location.href='{% url confirm_cache_building is_reset=1 %}';
+		});
+	});
+</script>
+{% endblock %}
+
+{% block body %}
+	<h2>Confirmation</h2>
+	<p class="confirm_paragraph">
+		The API access settings for the {{ product_name }} product have been
+		successfully updated with the changes. The cache index for this product
+		must now be reset to update it with the changes.
+	</p>
+	<button id="reset_cache_button" type="button" class="btn"
+		>Reset Cache</button>
+{% endblock %}

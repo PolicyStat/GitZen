@@ -40,7 +40,7 @@ class BaseEncryptedField(models.Field):
                             [len(self.prefix):])).split('\0')[0]
         return value
  
-    def get_db_prep_value(self, value):
+    def get_db_prep_value(self, value, connection, prepared):
         if value is not None and not self._is_encrypted(value):
             padding = self._get_padding(value)
             if padding > 0:
@@ -60,5 +60,5 @@ class EncryptedCharField(BaseEncryptedField):
         defaults.update(kwargs)
         return super(EncryptedCharField, self).formfield(**defaults)
 
-add_introspection_rules([], ["^encryption\.BaseEncryptedField"])
-add_introspection_rules([], ["^encryption\.EncryptedCharField"])
+add_introspection_rules([], ["^customfields\.BaseEncryptedField"])
+add_introspection_rules([], ["^customfields\.EncryptedCharField"])

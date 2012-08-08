@@ -1,6 +1,7 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response
+from django.core.cache import cache
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -8,44 +9,46 @@ from django.contrib.auth.forms import (
     AuthenticationForm, PasswordChangeForm, SetPasswordForm
 )
 from django.core.urlresolvers import reverse
-import requests
 from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
-from settings import CLIENT_ID, CLIENT_SECRET
-from enhancement_tracking.forms import (
-    UserForm, UserProfileForm, SecuredProfileChangeForm, FullProfileChangeForm,
-    ZendeskTokenChangeForm, ActiveUserSelectionForm, InactiveUserSelectionForm
+from itertools import chain
+from settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
+from enhancement_tracking.models import UserProfile
+from enhancement_tracking.cache_actions import (
+    build_cache_index, update_cache_index
 )
-
-# Constant URL string for accessing the GitHub API. It requires a GitHub
-# organization/user, repository, and issue number for the string's formatting.
-GIT_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/' \
-                '%(repository)s/issues/%(issue_number)i'
+from enhancement_tracking.forms import (
+    NewUserForm, NewGroupSuperuserForm, NewAPIAccessDataForm,
+    ChangeAPIAccessDataForm, UserProfileForm, ActiveUserSelectionForm,
+    InactiveUserSelectionForm
+)
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
-                        redirect_uri='http://gitzen.herokuapp.com/' \
+                        redirect_uri='http://gitzen.policystat.com/' \
                                      'confirm_git_oauth',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
 
-# Constant URL string for searching for tickets through the Zendesk API. It
-# requires the custom URL subdomain of the specific company whose information
-# is being accessed for the string's formatting.
-ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
-
-# Constant search query used to access open Zendesk problem and incident tickets
-# form its API.
-ZEN_TICKET_SEARCH_QUERY = 'type:ticket tags:product_enhancement status:open'
-
-# Constant URL string for accessing Zendesk users through the Zendesk API. It
-# requires the custom URL subdomain for the specific company whose users are
-# being accessed and the ID number of the user being accessed for the string's
-# formatting.
-ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
+# Email message that is sent to new users after a group superuser has created a
+# user account for them in their group. The message prompts the user to change
+# the random password that was assigned to their account upon creation.
+NEW_USER_EMAIL_MESSAGE = \
+    "A user account has been created for you on GitZen for the product " \
+    "%(product_name)s. This account will allow you to track the progress of " \
+    "enhancments for this product as they move through different stages in " \
+    "GitHub and Zendesk.\n\n" \
+    "The username and password for your account are listed bellow. The " \
+    "password was automatically generated during your account's creation, " \
+    "so it is recommended that you change your password on the Change " \
+    "Account Settings page after logging into GitZen for the first time.\n\n" \
+    "Username: %(username)s\n" \
+    "Password: %(password)s\n\n" \
+    "You can now log into GitZen with this account at %(absolute_site_url)s " \
+    "and start tracking enhancements for %(product_name)s!"
 
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
@@ -66,43 +69,52 @@ def user_login_form_handler(request):
     return render_to_response('login.html', {'log_form': log_form}, 
                               context_instance=RequestContext(request))
 
-def user_creation_form_handler(request):
-    """Process the requests from the User Creation page.
+def group_creation_form_handler(request):
+    """Process the requests from the User Group Creation page.
     
-    If any of the fields in the submitted form are not completed properly, the
-    User Creation page will come up again with those fields marked as needing to
-    be properly filled.
-
     Parameters:
         request - The request object that contains the form data submitted from
-                    the User Creation page.
+                    the User Group Creation page.
     """
     if request.method == 'POST':
-        user_form = UserForm(data=request.POST)
-        profile_form = UserProfileForm(data=request.POST)
-        if user_form.is_valid() and profile_form.is_valid():
-            user = user_form.save()
-            profile = profile_form.save(commit=False)
-            profile.user = user
-            profile.save()
+        group_superuser_form = NewGroupSuperuserForm(data=request.POST)
+        user_profile_form = UserProfileForm(data=request.POST)
+        api_access_data_form = NewAPIAccessDataForm(data=request.POST)
+        if group_superuser_form.is_valid() and user_profile_form.is_valid() \
+        and api_access_data_form.is_valid():
+            group_superuser = group_superuser_form.save()
+            api_access_data = api_access_data_form.save()
+            
+            group_superuser_profile = user_profile_form.save(commit=False)
+            group_superuser_profile.user = group_superuser
+            group_superuser_profile.api_access_data = api_access_data
+            group_superuser_profile.is_group_superuser = True
+            group_superuser_profile.save()
 
-            # Store the profile in the session so the GitHub access token
-            # can be added to it through OAuth on the next pages.
-            request.session['new_profile'] = profile
-            return HttpResponseRedirect(reverse('confirm_user_creation'))
+            # Authenticate and login the newly created group superuser so a
+            # GitHub access token can be added to the group's API access model
+            # through OAuth on the next pages.
+            user = authenticate(
+                username=group_superuser_form.cleaned_data['username'],
+                password=group_superuser_form.cleaned_data['password1']
+            )
+            login(request, user)
+            return HttpResponseRedirect(reverse('confirm_group_creation'))
     else:
-        user_form = UserForm()
-        profile_form = UserProfileForm()
+        group_superuser_form = NewGroupSuperuserForm()
+        user_profile_form = UserProfileForm()
+        api_access_data_form = NewAPIAccessDataForm()
 
-    return render_to_response('user_creation.html', {'user_form': user_form,
-                              'profile_form': profile_form}, 
+    return render_to_response('group_creation.html',
+                              {'group_superuser_form': group_superuser_form,
+                               'user_profile_form': user_profile_form,
+                               'api_access_data_form': api_access_data_form}, 
                               context_instance=RequestContext(request))
 
 @login_required
 def change_form_handler(request):
     """Processes the requests from the Change Account Data page. This includes
-    requests from the password change form, profile change form, and Zendesk API
-    token change form.
+    requests from the password change form and profile change form.
 
     Parameters:
         request - The request object that contains the POST data from one of the
@@ -119,48 +131,34 @@ def change_form_handler(request):
                 password_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
             profile_change_form = SecuredProfileChangeForm(instance=profile)
-            zen_token_change_form = ZendeskTokenChangeForm()
 
         # Process profile change form
         elif 'profile_input' in request.POST:
-            profile_change_form = SecuredProfileChangeForm(data=request.POST,
-                                                           instance=profile)
+            profile_change_form = UserProfileForm(data=request.POST,
+                                                  instance=profile)
             if profile_change_form.is_valid():
                 profile_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
             password_change_form = PasswordChangeForm(user=request.user)
-            zen_token_change_form = ZendeskTokenChangeForm()
-        
-        # Process Zendesk API Token change form
-        elif 'zen_token_input' in request.POST: 
-            zen_token_change_form = ZendeskTokenChangeForm(data=request.POST,
-                                                           instance=profile)
-            if zen_token_change_form.is_valid():
-                zen_token_change_form.save()
-                return HttpResponseRedirect(reverse('confirm_changes'))
-            password_change_form = PasswordChangeForm(user=request.user)
-            profile_change_form = SecuredProfileChangeForm(instance=profile)
         
         else:
             return HttpResponseRedirect(reverse('change_account_settings'))
+
     else:
         password_change_form = PasswordChangeForm(user=request.user)
-        profile_change_form = SecuredProfileChangeForm(instance=profile)
-        zen_token_change_form = ZendeskTokenChangeForm()
+        profile_change_form = UserProfileForm(instance=profile)
     
     return render_to_response('change_account_settings.html', 
                               {'password_change_form': password_change_form, 
-                               'profile_change_form': profile_change_form,
-                               'zen_token_change_form': zen_token_change_form,
-                               'auth_url': GIT_AUTH_URL},
+                               'profile_change_form': profile_change_form},
                               context_instance=RequestContext(request))
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def superuser_change_form_handler(request, user_id):
-    """Process the requests from the superuser Change Account Data page for the
-    user selected on the superuser home page. This includes requests from the
-    profile change form and the set password form.
+    """Process the requests from the group superuser Change Account Settings
+    page for the user selected on the superuser home page. This includes
+    requests from the profile change form and the set password form.
 
     Parameters:
         request - The request object that contains the POST data from the froms.
@@ -173,8 +171,8 @@ def superuser_change_form_handler(request, user_id):
     if request.POST:
         # Process profile change form
         if 'profile_input' in request.POST:
-            profile_change_form = FullProfileChangeForm(data=request.POST,
-                                                    instance=changing_profile)
+            profile_change_form = UserProfileForm(data=request.POST,
+                                                  instance=changing_profile)
             if profile_change_form.is_valid():
                 profile_change_form.save()
                 return HttpResponseRedirect(
@@ -197,11 +195,14 @@ def superuser_change_form_handler(request, user_id):
                                     instance=changing_profile)
  
         else:
-            return HttpResponseRedirect(reverse('change_account_settings'))
+            return HttpResponseRedirect(
+                reverse('superuser_change_account_settings',
+                        kwargs={'user_id': user_id})
+            )
 
     else:
         set_password_form = SetPasswordForm(user=changing_user)
-        profile_change_form = FullProfileChangeForm(instance=changing_profile)
+        profile_change_form = UserProfileForm(instance=changing_profile)
     
     return render_to_response('superuser_change_account_settings.html', 
                               {'username': changing_user.username,
@@ -210,6 +211,7 @@ def superuser_change_form_handler(request, user_id):
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
 
+@login_required
 def user_logout(request):
     """Logs out the currently logged in user.
 
@@ -219,55 +221,6 @@ def user_logout(request):
     """
     logout(request)
     return HttpResponseRedirect(reverse('login'))
-
-def confirm_user_creation(request):
-    """Renders the confirmation page to confirm the successful creation of a new
-    user.
-
-    Parameters:
-        request - The request object sent with the call to the confirm page if a
-                    user was successfully created from the user creation form.
-    """
-    return render_to_response('confirm_user_creation.html',
-                              {'auth_url': GIT_AUTH_URL},
-                              context_instance=RequestContext(request))
-
-def confirm_git_oauth(request):
-    """Finishes the OAuth2 access web flow after the user goes to the
-    GIT_AUTH_URL in either the user login or change forms. Adds the access token
-    to the user profile. For a newly created user, their profile was added to
-    the session when the user was created. This data is deleted from the
-    session afterwards.
-
-    Parameters:
-        request - The request object that should contain the returned code from
-                    GitHub in its GET parameters in addition to the user profile
-                    that the access token should be added to.
-    """
-    if 'profile' in request.session: # Authorizing for a new user
-        profile = request.session['profile']
-        is_new_user = True
-    else: # Changing Authorization for an existing user
-        profile = request.user.get_profile()
-        is_new_user = False
-
-    if 'error' in request.GET:
-        profile.git_token = ''
-        access_granted = False
-    else:
-        code = request.GET['code']
-        response = OAUTH2_HANDLER.get_token(code)
-        profile.git_token = response['access_token'][0]
-        access_granted = True
-    
-    profile.save()
-    if is_new_user:
-        del request.session['profile']
-
-    return render_to_response('confirm_git_oauth.html', 
-                              {'access_granted': access_granted,
-                               'is_new_user': is_new_user},
-                              context_instance=RequestContext(request))
 
 @login_required
 def confirm_changes(request):
@@ -283,15 +236,16 @@ def confirm_changes(request):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_superuser_changes(request, user_id):
     """Renders the confirmation page to confirm the successful changes made to
-    the selected user's account settings by the superuser.
+    the selected user's account settings by the group superuser.
 
     Parameters:
         request - The request object sent with the call to the confirm page if
                     the requested changes were successfully made to the selected
                     user's account.
-        user_id - The ID of the user that was just modified by the superuser.
+        user_id - The ID of the user that was just modified.
     """
     username = User.objects.get(id=user_id).username
     return render_to_response('confirm_superuser_changes.html',
@@ -299,6 +253,104 @@ def confirm_superuser_changes(request, user_id):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_group_creation(request):
+    """Renders the confirmation page to confirm the successful creation of a new
+    user group.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if a
+                    group and group superuser were successfully created from the
+                    group creation page.
+    """
+    return render_to_response('confirm_group_creation.html',
+                              {'auth_url': GIT_AUTH_URL},
+                              context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_git_oauth(request):
+    """Finishes the OAuth2 access web flow after the user goes to the
+    GIT_AUTH_URL in either the group creation or change forms. Adds the access
+    token to the API access model for the group. For a newly created group,
+    their API access model was added to the session when the group was created.
+    This data is deleted from the session afterwards.
+
+    Parameters:
+        request - The request object that should contain the returned code from
+                    GitHub in its GET parameters in addition to the API access
+                    model that the access token should be added to.
+    """
+    api_access_data = request.user.get_profile().api_access_data
+    
+    if 'error' in request.GET:
+        api_access_data.git_token = ''
+        access_granted = False
+    else:
+        code = request.GET['code']
+        response = OAUTH2_HANDLER.get_token(code)
+        api_access_data.git_token = response['access_token'][0]
+        access_granted = True
+
+    api_access_data.save()
+    product_name = api_access_data.product_name
+    return render_to_response('confirm_git_oauth.html', 
+                              {'access_granted': access_granted,
+                               'product_name': product_name},
+                              context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_cache_building(request, is_reset):
+    """Calls the function to build and index the cache for the API access model
+    of the logged in group superuser and renders a page that tells if the
+    caching was successful or not.
+
+    Parameters:
+        request - The request object that should have a group superuser logged
+                    into it.
+    """
+    context = {
+        'is_reset': is_reset,
+        'product_name': request.user.get_profile().api_access_data.product_name
+    }
+
+    try:
+        build_cache_index(request.user.get_profile().api_access_data)
+    except RequestException as e:
+        context['caching_successful'] = False
+        context['error_message'] = "There was an error connecting to the " \
+                "%(API_name)s API: %(exception_message)s. Try adjusting the" \
+                " group's API access settings." % \
+                {'API_name': e.args[1], 'exception_message': e.args[0]}
+        return render_to_response('confirm_cache_building.html', context,
+                                  context_instance=RequestContext(request))
+    
+    context['caching_successful'] = True
+    return render_to_response('confirm_cache_building.html', context,
+                              context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_user_creation(request, user_id):
+    """Renders the confirmation page to confirm the successful creation of a new
+    user.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the user was created successfully.
+        user_id - The ID of the user that was just created.
+    """
+    user = User.objects.get(id=user_id)
+    username = user.username
+    product_name = user.get_profile().api_access_data.product_name
+    return render_to_response('confirm_user_creation.html',
+                              {'username': username,
+                               'product_name': product_name},
+                              context_instance=RequestContext(request))
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_user_deactivation(request, user_id):
     """Renders the confirmation page to confirm the successful deactivation of a
     user by the superuser.
@@ -314,6 +366,7 @@ def confirm_user_deactivation(request, user_id):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
 def confirm_user_activation(request, user_id):
     """Renders the confirmation page to confirm the successful activation of a
     previously deactivated user by the superuser.
@@ -329,55 +382,60 @@ def confirm_user_activation(request, user_id):
                               context_instance=RequestContext(request))
 
 @login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def confirm_api_access_changes(request):
+    """Renders the confirmation page to confirm the successful changes made to
+    the API access settings for the superuser's group.
+
+    Parameters:
+        request - The request object sent with the call to the confirm page if
+                    the requested changes were successfully made to the API
+                    access settings.
+    """
+    product_name = request.user.get_profile().api_access_data.product_name
+    return render_to_response('confirm_api_access_changes.html',
+                              {'product_name': product_name},
+                              context_instance=RequestContext(request))
+
+@login_required
 def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
     page of the app with this data. If the request for the page is from a
-    superuser, it gets redirected to the superuser_home function.
+    group superuser, it gets redirected to the group_superuser_home function.
     
     Parameters:
         request - The request object that contains the current user's data.
     """
-    # If the user is a superuser, render the superuser home page that allows for
-    # the editing of user account settings instead of the regular user home
-    # page.
-    if request.user.is_superuser:
-        return superuser_home(request)
-
-    profile = request.user.get_profile() # Current user profile
-    zen_fieldid = profile.zen_fieldid # The field ID for the custom field on
-                                      # Zendesk tickets that contains their 
-                                      # associated GitHub issue number.
-    utc_offset = profile.utc_offset # The UTC offset for the current user's time
-                                    # zone.
-    context = {} # Data to be used in the context of the home page
-
-    zen_tickets = [] # List of the open problem or incident tickets in Zendesk.
-    zen_user_reference = {} # Dictionary reference of the user IDs and 
-                            # user names associated with the Zendesk tickets in
-                            # zen_tickets.
-    git_tickets = [] # List of the GitHub tickets associated with the Zendesk
-                     # tickets in zen_tickets.
+    profile = request.user.get_profile() # Current user's profile
+    utc_offset = profile.utc_offset
+    api_access_data = profile.api_access_data
+    product_name = api_access_data.product_name
+    context = {}
+    context['is_group_superuser'] = profile.is_group_superuser
     
     try:
-        zen_tickets = get_zen_tickets(profile)
-        zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets, zen_fieldid)
-        zen_user_reference = get_zen_users(profile, zen_user_ids)
-        git_tickets = get_git_tickets(profile, git_issue_numbers)
+        update_cache_index(api_access_data)
     except RequestException as e:
         context['api_requests_successful'] = False
         context['error_message'] = 'There was an error connecting to ' \
-                'the %(API_name)s API: %(exception_message)s. Try adjusting ' \
-                'your account settings.' % {'API_name': e.args[1],
-                                            'exception_message': e.args[0]}
+                'the %(API_name)s API: %(exception_message)s. If the error ' \
+                'persists after refreshing the page, inform the superuser ' \
+                'for %(product_name)s that the API access settings may need ' \
+                'adjustment.' % {'API_name': e.args[1],
+                                 'exception_message': e.args[0],
+                                 'product_name': product_name}
         return render_to_response('home.html', context,
-                                    context_instance=RequestContext(request))
+                                  context_instance=RequestContext(request))
+    
+    # Account for the time zone offset and get the enhancement data
+    cache_data = cache.get(api_access_data.id)
+    enhancement_tables = _time_adjust_enhancement_data(cache_data, utc_offset)
+    context = dict(context.items() + enhancement_tables.items())
         
-    context = build_enhancement_data(zen_tickets, zen_user_reference,
-                                     git_tickets, zen_fieldid, utc_offset)
-
     # Add additional data to be used in the context of the home page
     context['api_requests_successful'] = True
-    context['zen_url'] = profile.zen_url
+    context['product_name'] = product_name
+    context['zen_url'] = api_access_data.zen_url
     if profile.view_type == 'ZEN':
         context['is_zendesk_user'] = True
     else:
@@ -387,36 +445,128 @@ def home(request):
     return render_to_response('home.html', context,
                               context_instance=RequestContext(request))
 
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
-def superuser_home(request):
-    """Processes the various form requests from the superuser home page. This
-    includes the forms to select a user to change their account, to select a
-    user to delete their account, and to change the password for the superuser.
+def _time_adjust_enhancement_data(cache_data, utc_offset):
+    """Adjusts the enhancement data from the cache so that all of the dates and
+    times are in the passed UTC time zone.
 
     Parameters:
-        request - The request object that contains the superuser data and the
-                    POST data from the various forms.
+        cache_data - A dictionary of enhancement data stored under a group index
+                        in the cache.
+        utc_offset - The numeric UTC offset for the time zone that the
+                        enhancement data should be converted to.
+
+    Returns the four enhancement tables (need_attention, tracking,
+    unassociated_enhancements, and not_git_enhancements) adjusted to the passed
+    time zone in a dictionary with the keys being the tables' names.
     """
+    offset_delta = timedelta(hours=utc_offset)
+
+    for enhancement in chain(cache_data['need_attention'],
+                             cache_data['tracking']):
+        zen_datetime = enhancement['zen_datetime'] + offset_delta
+        enhancement['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
+        enhancement['zen_time'] = zen_datetime.strftime('%I:%M %p')
+        enhancement['zen_sortable_datetime'] = \
+                mktime(zen_datetime.timetuple())
+        git_datetime = enhancement['git_datetime'] + offset_delta
+        enhancement['git_date'] = git_datetime.strftime('%m/%d/%Y')
+        enhancement['git_time'] = git_datetime.strftime('%I:%M %p')
+        enhancement['git_sortable_datetime'] = \
+                mktime(git_datetime.timetuple())
+
+    for enhancement in chain(cache_data['unassociated_enhancements'],
+                             cache_data['not_git_enhancements']):
+        zen_datetime = enhancement['zen_datetime'] + offset_delta
+        enhancement['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
+        enhancement['zen_time'] = zen_datetime.strftime('%I:%M %p')
+        enhancement['zen_sortable_datetime'] = \
+                mktime(zen_datetime.timetuple())
+
+    enhancement_tables = {
+        'need_attention': cache_data['need_attention'],
+        'tracking': cache_data['tracking'],
+        'unassociated_enhancements': cache_data['unassociated_enhancements'],
+        'not_git_enhancements': cache_data['not_git_enhancements']
+    }
+
+    return enhancement_tables
+
+@login_required
+@user_passes_test(lambda user: user.get_profile().is_group_superuser)
+def group_superuser_home(request):
+    """Processes the various form requests from the group superuser home page.
+    This includes the forms to create a new user, to deactivate or reactivate a
+    user, to change the group API access settings, and to change the password
+    for the superuser.
+
+    Parameters:
+        request - The request object that contains the group superuser data and
+                    the POST data from the various forms.
+    """
+    api_access_data = request.user.get_profile().api_access_data
+    product_name = api_access_data.product_name
+
     if request.POST:
-        # Process the user selection form for changing a user
-        if 'user_change_input' in request.POST:
-            user_change_form = ActiveUserSelectionForm(data=request.POST)
-            if user_change_form.is_valid():
-                user = user_change_form.cleaned_data['user']
+        # Process the new user form for getting the information needed to create
+        # a new user and add them to the group
+        if 'user_creation_input' in request.POST:
+            new_user_form = NewUserForm(data=request.POST)
+            user_profile_form = UserProfileForm(data=request.POST)
+            if new_user_form.is_valid() and user_profile_form.is_valid():
+                password = User.objects.make_random_password()
+                user = User.objects.create_user(
+                    new_user_form.cleaned_data['username'],
+                    new_user_form.cleaned_data['email'],
+                    password
+                )
+                user_profile = user_profile_form.save(commit=False)
+                user_profile.user = user
+                user_profile.api_access_data = api_access_data
+                user_profile.save()
+
+                # Email the new user to let them know an account has been
+                # created for them in this group and to tell them to change
+                # their temporary random password.
+                user.email_user(
+                    'New GitZen Account',
+                    NEW_USER_EMAIL_MESSAGE % {'product_name': product_name,
+                                        'username': user.username,
+                                        'password': password,
+                                        'absolute_site_url': ABSOLUTE_SITE_URL}
+                )
+                return HttpResponseRedirect(
+                    reverse('confirm_user_creation',
+                            kwargs={'user_id': user.id})
+                )            
+            user_select_form = ActiveUserSelectionForm(api_access_data)
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
+            api_access_change_form = \
+                    ChangeAPIAccessDataForm(instance=api_access_data)
+
+        # Process the user selection form for selecting a user to modify
+        elif 'user_select_input' in request.POST:
+            user_select_form = ActiveUserSelectionForm(api_access_data,
+                                                       data=request.POST)
+            if user_select_form.is_valid():
+                user = user_select_form.cleaned_data['profile'].user
                 return HttpResponseRedirect(
                     reverse('superuser_change_account_settings',
                             kwargs={'user_id': user.id})
                 )
-            user_deactivate_form = ActiveUserSelectionForm()
-            user_activate_form = InactiveUserSelectionForm()
-            password_change_form = PasswordChangeForm(user=request.user)
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
+            api_access_change_form = \
+                    ChangeAPIAccessDataForm(instance=api_access_data)
 
         # Process the user selection form for deactivating a user
         elif 'user_deactivate_input' in request.POST:
-            user_delete_form = ActiveUserSelectionForm(data=request.POST)
-            if user_delete_form.is_valid():
-                user = user_delete_form.cleaned_data['user']
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data,
+                                                           data=request.POST)
+            if user_deactivate_form.is_valid():
+                user = user_deactivate_form.cleaned_data['profile'].user
                 user.is_active = False
                 user.save()
 
@@ -424,15 +574,19 @@ def superuser_home(request):
                     reverse('confirm_user_deactivation',
                             kwargs={'user_id': user.id})
                 )
-            user_change_form = ActiveUserSelectionForm()
-            user_activate_form = InactiveUserSelectionForm()
-            password_change_form = PasswordChangeForm(user=request.user)
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
+            api_access_change_form = \
+                    ChangeAPIAccessDataForm(instance=api_access_data)
         
         # Process the user selection form for activating a user
         elif 'user_activate_input' in request.POST:
-            user_activate_form = InactiveUserSelectionForm(data=request.POST)
+            user_activate_form = InactiveUserSelectionForm(api_access_data,
+                                                           data=request.POST)
             if user_activate_form.is_valid():
-                user = user_activate_form.cleaned_data['user']
+                user = user_activate_form.cleaned_data['profile'].user
                 user.is_active = True
                 user.save()
                 
@@ -440,313 +594,51 @@ def superuser_home(request):
                     reverse('confirm_user_activation',
                             kwargs={'user_id': user.id})
                 )
-            user_change_form = ActiveUserSelectionForm()
-            user_deactivate_form = ActiveUserSelectionForm()
-            password_change_form = PasswordChangeForm(user=request.user)
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            api_access_change_form = \
+                    ChangeAPIAccessDataForm(instance=api_access_data)
 
-        # Process superuser password change form
-        elif 'password_change_input' in request.POST:
-            password_change_form = PasswordChangeForm(user=request.user,
-                                                      data=request.POST)
-            if password_change_form.is_valid():
-                password_change_form.save()
-                return HttpResponseRedirect(reverse('confirm_changes'))
-            user_change_form = ActiveUserSelectionForm()
-            user_deactivate_form = ActiveUserSelectionForm()
-            user_activate_form = InactiveUserSelectionForm()
+        # Process the API access data form for changing the API access data for
+        # the group.
+        elif 'api_access_change_input' in request.POST:
+            api_access_change_form = ChangeAPIAccessDataForm(data=request.POST,
+                                                      instance=api_access_data)
+            if api_access_change_form.is_valid():
+                api_access_change_form.save()
+                return HttpResponseRedirect(
+                    reverse('confirm_api_access_changes')
+                )
+            new_user_form = NewUserForm()
+            user_profile_form = UserProfileForm()
+            user_select_form = ActiveUserSelectionForm(api_access_data)
+            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+            user_activate_form = InactiveUserSelectionForm(api_access_data)
 
         else:
             return HttpResponseRedirect(reverse('home'))
     
     else:
-        user_change_form = ActiveUserSelectionForm()
-        user_deactivate_form = ActiveUserSelectionForm()
-        user_activate_form = InactiveUserSelectionForm()
-        password_change_form = PasswordChangeForm(user=request.user)
+        new_user_form = NewUserForm()
+        user_profile_form = UserProfileForm()
+        user_select_form = ActiveUserSelectionForm(api_access_data)
+        user_deactivate_form = ActiveUserSelectionForm(api_access_data)
+        user_activate_form = InactiveUserSelectionForm(api_access_data)
+        api_access_change_form = \
+                ChangeAPIAccessDataForm(instance=api_access_data)
 
-    return render_to_response('superuser_home.html',
-                              {'user_change_form': user_change_form,
-                               'user_deactivate_form': user_deactivate_form,
-                               'user_activate_form': user_activate_form,
-                               'password_change_form': password_change_form},
-                              context_instance=RequestContext(request))
-
-def get_zen_tickets(profile):
-    """Gets all of the open problem and incident Zendesk tickets using the
-    Zendesk API.
-
-    Parameters:
-        profile - The profile object that contains the current user's data 
-                    necessary to access the tickets on their Zendesk account.
-
-    Returns a gathered list of Zendesk tickets.
-    """
-    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
-                                              # API token authorization.
-    zen_tickets = []
-    page = 1
-    
-    try:
-        while True:
-            request_zen_tickets = requests.get(ZEN_SEARCH_URL % \
-                                               {'subdomain': profile.zen_url}, 
-                                    params={'query': ZEN_TICKET_SEARCH_QUERY,
-                                            'sort_by': 'updated_at',
-                                            'sort_order': 'desc',
-                                            'per_page': 100,
-                                            'page': page},
-                                    auth=(zen_name_tk, profile.zen_token))
-            if request_zen_tickets.status_code != 200:
-                request_zen_tickets.raise_for_status()
-            zen_tickets.extend(request_zen_tickets.json['results'])
-            if request_zen_tickets.json['next_page'] is not None:
-                page += 1
-            else:
-                break
-
-    # Catches exceptions from requests.get() or raise_for_status()
-    except RequestException as e:
-        # Redefines the args attribute of the exception to contain both the
-        # original error message and the name of the API responsible for causing
-        # the exception.
-        e.args = (e.args[0], 'Zendesk')
-
-        # Raise the exception so it can be caught by the except in the home
-        # function for further processing.
-        raise
-
-    return zen_tickets
-
-def get_id_lists(zen_tickets, zen_fieldid):
-    """Gets lists of the Zendesk user IDs and the GitHub issue numbers that are
-    associated with the passed list of Zendesk tickets.
-
-    Parameters:
-        zen_tickets - A list of Zendesk tickets whose associated GitHub issue
-                    numbers and Zendesk user IDs are desired.
-        zen_fieldid - The ID number of the custom field in Zendesk tickets that
-                        holds its associated GitHub issue number.
-
-    Returns a tuple of two value with the first being the gathered list of
-    associated Zendesk user IDs and with the second being the gathered list
-    of associated GitHub issue numbers.
-    """
-    
-    # Get Zendesk user IDs that are associated with Zendesk tickets.
-    zen_user_ids = []
-    for ticket in zen_tickets:
-        zen_user_ids.append(ticket['requester_id'])
-    zen_user_ids = set(zen_user_ids) # Remove duplicates
-    
-    # Get GitHub issue numbers that are associated with the Zendesk tickets.
-    git_issue_numbers = []
-    for ticket in zen_tickets:
-        association_data = ''
-        for field in ticket['fields']:
-            if field['id'] == zen_fieldid:
-                if field['value'] is not None:
-                    association_data = field['value'].split('-')
-                break
-        if association_data and association_data[0] == 'gh':
-            git_issue_numbers.append(int(association_data[1]))
-    git_issue_numbers = set(git_issue_numbers) # Remove duplicates
-
-    return (zen_user_ids, git_issue_numbers)
-
-def get_zen_users(profile, zen_user_ids):
-    """Gets the full Zendesk user records for each user ID number in the passed
-    list.
-
-    Parameters:
-        profile - The profile object that contains the current user's data
-                    necessary to access the users on their Zendesk account.  
-        zen_user_ids - A list of Zendesk user IDs whose full user records are 
-                        desired.
-
-    Returns a dictionary reference table with Zendesk user ID numbers as keys
-    and their cooresponding user names as values.
-    """
-    zen_name_tk = profile.zen_name + '/token' # Zendesk user email set up for 
-                                              # API token authorization.
-    zen_user_reference = {} # Dictionary that allows the look up of Zendesk user
-                            # names by their ID number.
-    try:
-        for id_number in zen_user_ids:
-            request_zen_user = requests.get(ZEN_USER_URL % \
-                                            {'subdomain': profile.zen_url,
-                                             'user_id': id_number},
-                                    auth=(zen_name_tk, profile.zen_token))
-            if request_zen_user.status_code != 200:
-                request_zen_user.raise_for_status()
-            zen_user_reference[id_number] = \
-                    request_zen_user.json['user']['name']
-
-   # Catches exceptions from requests.get() or raise_for_status()
-    except RequestException as e:
-        # Redefine the args attribute of the exception to contain both the
-        # original error message and the name of the API responsible for causing
-        # the exception.
-        e.args = (e.args[0], 'Zendesk')
-
-        # Raise the exception so it can be caught by the except in the home
-        # function for further processing.
-        raise
-    
-    return zen_user_reference
-
-def get_git_tickets(profile, git_issue_numbers):
-    """Gets the full GitHub ticket records for each issue number in the passed
-    list.
-
-    Parameters:
-        profile - The profile object that contains the current user's data
-                    necessary to access the tickets on their GitHub account.  
-        git_issue_numbers - A list of GitHub issue numbers whose full ticket
-                                records are desired.
-
-    Returns a list with a GitHub ticket record for each of the issue numbers
-    passed to the function.
-    """
-    git_tickets = []
-    
-    try:
-        for number in git_issue_numbers:
-            request_git_tickets = requests.get(GIT_ISSUE_URL % \
-                                               {'organization': profile.git_org,
-                                                'repository': profile.git_repo,
-                                                'issue_number': number}, 
-                                               params={'access_token':
-                                                       profile.git_token}
-                                              )
-            if request_git_tickets.status_code != 200:
-                request_git_tickets.raise_for_status()
-            git_tickets.append(request_git_tickets.json)
-
-    # Catches exceptions from requests.get() or raise_for_status()
-    except RequestException as e:
-        # Redefine the args attribute of the exception to contain both the
-        # original error message and the name of the API responsible for causing
-        # the exception.
-        e.args = (e.args[0], 'GitHub')
-
-        # Raise the exception so it can be caught by the except in the home
-        # function for further processing.
-        raise
-
-    return git_tickets
-
-def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
-                           zen_fieldid, utc_offset):
-    """Builds the enhancement tracking tables from the Zendesk and GitHub data.
-    
-    Parameters:
-        zen_tickets - A list of open Zendesk tickets to build the enhancement
-                        data from.
-        zen_user_reference - A dictionary reference that can be used to look up
-                                Zendesk user names by their ID number.
-        git_tickets - A list of GitHub tickets that cooresponds with the
-                        associated GitHub issue numbers of the Zendesk tickets
-                        in zen_tics.
-        zen_fieldid - The ID number of the custom field that holds the ticket
-                        association value for a given Zendesk ticket.
-        utc_offset - The UTC offset for the current user's time zone. Used to
-                        format the date and time values for each ticket to the
-                        current user's time zone.
-
-    Returns a dictionary of the built data with the following keys and values:
-        'tracking' - List of enhancements in the process of being worked on.
-        'need_attention' - List of enhancements where one half of the
-                            enhancement is completed, but the other is not.
-        'unassociated_enhancements' - List of Zendesk tickets requesting an 
-                                        enhancement that have no associated
-                                        external ticket.
-        'not_git_enhancements' - List of Zendesk tickets that have an associated
-                                    external ticket, but the ticket is not
-                                    labeled as being part of GitHub. (i.e. The
-                                    association string is not in the format
-                                    "gh-###").
-    """
-    tracking = [] # Enhancements whose Zendesk and GitHub tickets are both open.
-    need_attention = [] # Enhancements with either a closed Zendesk ticket or
-                        # a closed GitHub ticket. Because one of these tickets
-                        # is closed, the other needs attention.
-    unassociated_enhancements = [] # Requested enhancements from Zendesk 
-                                   # tickets that have no associated external
-                                   # ticket assigned to them.
-    not_git_enhancements = [] # Requested enhancements from Zendesk that have an
-                              # associated external ticket, but the ticket is
-                              # not labeled as being part of GitHub.
-
-    # Iterate through the Zendesk tickets using their data to classify them
-    # as being tracked, needing attention, broken, or not being tracked.
-    for ticket in zen_tickets:
-
-        # Add Zendesk data to enhancement data object
-        association_data = ''
-        for field in ticket['fields']:
-            if field['id'] == zen_fieldid:
-                association_data = field['value']
-                break
-        if association_data:
-            split_association_data = association_data.split('-')
-
-        enhancement_data = {} # Enhancement data object
-        enhancement_data['zen_id'] = ticket['id']
-        enhancement_data['zen_requester'] = \
-                zen_user_reference[ticket['requester_id']]
-        enhancement_data['zen_subject'] = ticket['subject']
-        zen_datetime = datetime.strptime(ticket['updated_at'],
-                                       "%Y-%m-%dT%H:%M:%SZ")
-        zen_datetime = zen_datetime + timedelta(hours=utc_offset)
-        enhancement_data['zen_date'] = zen_datetime.strftime('%m/%d/%Y')
-        enhancement_data['zen_time'] = zen_datetime.strftime('%I:%M %p')
-        enhancement_data['zen_sortable_datetime'] = \
-                mktime(zen_datetime.timetuple())
-        
-        # Check if the enhancement has no associated ticket
-        if not association_data:
-            unassociated_enhancements.append(enhancement_data)
-
-        # Check if the enhancement's associated ticket is not a GitHub ticket
-        elif len(split_association_data) != 2 or \
-                split_association_data[0] != 'gh' or \
-                not split_association_data[1].isdigit():
-            enhancement_data['non_git_association'] = association_data
-            not_git_enhancements.append(enhancement_data)
-        
-        # Add GitHub data to the enhancement data object
-        else:
-            git_issue = {}
-            for issue in git_tickets:
-                if issue['number'] == int(split_association_data[1]):
-                    git_issue = issue
-                    break
-            enhancement_data['git_id'] = git_issue['number']
-            enhancement_data['git_url'] = git_issue['html_url']
-            enhancement_data['git_status'] = git_issue['state']
-            git_datetime = datetime.strptime(git_issue['updated_at'],
-                                             "%Y-%m-%dT%H:%M:%SZ")
-            git_datetime = git_datetime + timedelta(hours=utc_offset)
-            enhancement_data['git_date'] = git_datetime.strftime('%m/%d/%Y')
-            enhancement_data['git_time'] = git_datetime.strftime('%I:%M %p')
-            enhancement_data['git_sortable_datetime'] = \
-                    mktime(git_datetime.timetuple())
-            
-            # Check if the enhacement should be tracked (Both tickets are
-            # open).
-            if enhancement_data['git_status'] == 'open':
-                tracking.append(enhancement_data)
-            
-            # Check if the enhancement is in need of attention (The GitHub
-            # ticket is closed).
-            else:
-                need_attention.append(enhancement_data)
-
-    built_data = {
-        'tracking': tracking,
-        'need_attention': need_attention,
-        'unassociated_enhancements': unassociated_enhancements,
-        'not_git_enhancements': not_git_enhancements,
+    context = {
+        'new_user_form': new_user_form,
+        'user_profile_form': user_profile_form,
+        'user_select_form': user_select_form,
+        'user_deactivate_form': user_deactivate_form,
+        'user_activate_form': user_activate_form,
+        'api_access_change_form': api_access_change_form,
+        'product_name': product_name,
+        'auth_url': GIT_AUTH_URL
     }
 
-    return built_data
+    return render_to_response('superuser_home.html', context,
+                              context_instance=RequestContext(request))

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}
+	{% if is_reset == "1" %}
+		Cache Reset Confirmation
+	{% else %}
+		Cache Building Confirmation
+	{% endif %}
+{% endblock %}
+
+{% block extra_javascript %}
+<script>
+	$(document).ready(function() {
+		$('#goto_home_button').click(function() {
+			window.location.href='{% url superuser_home %}'
+		});
+	});
+</script>
+{% endblock %}
+
+{% block body %}
+	{% if caching_successful %}
+		<h2>Confirmation</h2>
+
+		<p class="confirm_paragraph">
+		{% if is_reset == "1" %}
+			The cache for the {{ product_name }} group was successfully reset.
+		{% else %}
+			The cache for the {{ product_name }} group was successfully built
+			and indexed. You can now add users to the group from the group
+			superuser home page.
+		{% endif %}
+		</p>
+	{% else %}
+		<h2>Error in API Access</h2>
+
+		<p class="confirm_paragraph">{{ error_message }}</p>
+	{% endif %}
+	<button id="goto_home_button" type="button" class="btn">
+		{% if is_reset == "1" %}
+			Return to Home
+		{% else %}
+			Go to Superuser Home
+		{% endif %}
+	</button>
+{% endblock %}

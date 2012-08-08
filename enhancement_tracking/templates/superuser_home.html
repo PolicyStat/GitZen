@@ -7,8 +7,23 @@
 	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
 <script>
 	$(document).ready(function() {
+		$('#normal_view_button').click(function() {
+			window.location.href='{% url home %}';
+		});
+	});
+	$(document).ready(function() {
+		$('#reset_cache_button').click(function() {
+			window.location.href='{% url confirm_cache_building is_reset=1 %}';
+		});
+	});
+	$(document).ready(function() {
 		$('#logout_button').click(function() {
 			window.location.href='{% url logout %}';
+		});
+	});
+	$(document).ready(function() {
+		$('#git_oauth_button').click(function() {
+			window.location.href='{{ auth_url }}';
 		});
 	});
 </script>
@@ -18,37 +33,52 @@
 
 <h1>GitZen</h1>
 <div class="actions">
+	<button id="normal_view_button" type="button" class="btn"
+		>Return to Normal View</button>
+	<button id="reset_cache_button" type="button" class="btn"
+		>Reset Cache</button>
 	<button id="logout_button" type="button" class="btn">Logout</button>
 </div>
 <br/>
 
-<h2>Superuser Actions</h2>
+<h2>{{ product_name }} Superuser Actions</h2>
 <ul class="nav nav-tabs">
-	<li class="active"><a href="#user_change_tab" data-toggle="tab"
-		>Change User Settings</a></li>
-	<li><a href="#user_delete_tab" data-toggle="tab"
-		>Deactivate/Activate User</a></li>
-	<li><a href="#superuser_change_tab" data-toggle="tab"
-		>Change Superuser Settings</a></li>
+	<li class="active"><a href="#user_creation_tab" data-toggle="tab"
+		>User Creation and Modification</a></li>
+	<li><a href="#user_activation_tab" data-toggle="tab"
+		>User Deactivation/Activation</a></li>
+	<li><a href="#api_access_settings_tab" data-toggle="tab"
+		>API Access Settings</a></li>
 </ul>
 
 <div class="tab-content">
 
-<div class="tab-pane active" id="user_change_tab">
+<div class="tab-pane active" id="user_creation_tab">
 <div class="row">
 <div class="span8 offset2">
+	<h2>Create New User</h2>
 	<form class="well" method="post">{% csrf_token %}
-		{{ user_change_form.as_p }}
+		{{ new_user_form.as_p }}
+		{{ user_profile_form.as_p }}
 		<div class="actions">
-			<button name="user_change_input" type="submit"
-				class="btn btn-primary">Change Account Settings</button>
+			<button name="user_creation_input" type="submit"
+				class="btn btn-primary">Create User</button>
+		</div>
+	</form>
+	<br/>
+	<h2>Modify Active User</h2>
+	<form class="well" method="post">{% csrf_token %}
+		{{ user_select_form.as_p }}
+		<div class="actions">
+			<button name="user_select_input" type="submit"
+				class="btn btn-primary">Modify User</button>
 		</div>
 	</form>
 </div>
 </div>
 </div>
 
-<div class="tab-pane" id="user_delete_tab">
+<div class="tab-pane" id="user_activation_tab">
 <div class="row">
 <div class="span8 offset2">
 	<h2>Deactivate User</h2>
@@ -72,16 +102,28 @@
 </div>
 </div>
 
-<div class="tab-pane" id="superuser_change_tab">
+<div class="tab-pane" id="api_access_settings_tab">
 <div class="row">
-<div class="span8 offset2">
-	<h2>Change Password</h2>
+<div class="span10 offset1">
+	<h2>Change {{ product_name }} API Access Settings</h2>
 	<form class="well" method="post">{% csrf_token %}
-		{{ password_change_form.as_p }}
+		{{ api_access_change_form.as_p }}
 		<div class="actions">
-			<button name="password_change_input" type="submit"
-				class="btn btn-primary">Submit Change</button>
+			<button name="api_access_change_input" type="submit"
+				class="btn btn-primary">Submit Changes</button>
 		</div>
+	</form>
+	<h2>Change GitHub Authorization</h2>
+	<form class="well">
+		<p class="center" style="width:70%;">
+			If you want to revoke GitZen's access to GitHub, go under the
+			applications settings of the account settings of the GitHub user who
+			authorized the access and click the "revoke" button for GitZen. If
+			you want to authorize or renew authorization of GitZen's access to
+			Github, click the button bellow.
+		</p>
+		<button id="git_oauth_button" type="button" class="btn btn-primary"
+			>GitHub Authorization</button>
 	</form>
 </div>
 </div>

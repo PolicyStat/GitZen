@@ -5,8 +5,8 @@
 {% block extra_javascript %}
 <script>
 	$(document).ready(function() {
-		$('#git_oauth_button').click(function() {
-			window.location.href='{{ auth_url }}';
+		$('#return_home_button').click(function() {
+			window.location.href='{% url superuser_home %}';
 		});
 	});
 </script>
@@ -14,19 +14,13 @@
 
 {% block body %}
 	<h2>Confirmation</h2>
-
-	<p class="center" style="width:50%;">
-		Your account was successfully created, but you must authorize GitZen
-		on GitHub on the linked page to allow the application to access your
-		repository data. 
+	<p class="confirm_paragraph">
+		The user {{ username }} has been created and added to the 
+		{{ product_name }} group. The user was also sent an email with their
+		username and a temporary password in addition to a prompt to login to
+		GitZen with this information and to change their password to something
+		else.
 	</p>
-	<p class="center" style="width:50%;">
-		If you have already authorized GitZen on your GitHub account for a
-		previous GitZen user, GitHub will automatically authorize the user
-		just created to access your account after clicking the following
-		link if you are logged into GitHub, and you should be redirected
-		straight to the confirmation page.
-	</p>
-	<button id="git_oauth_button" type="button" class="btn btn-primary"
-		>GitHub Authorization</button>
+	<button id="return_home_button" type="button" class="btn"
+		>Return to Home</button>
 {% endblock %}

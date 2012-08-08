@@ -2,16 +2,6 @@
 
 {% block title %}Change Account Settings{% endblock %}
 
-{% block extra_javascript %}
-<script>
-	$(document).ready(function() {
-		$('#git_oauth_button').click(function() {
-			window.location.href='{{ auth_url }}';
-		});
-	});
-</script>
-{% endblock %}
-
 {% block body %}
 
 <h1>Change Account Settings</h1>
@@ -19,7 +9,7 @@
 	These are the account settings for the user {{ username }}. All fields are
 	optional.
 	<br/>
-	<a href="{% url home %}">Return to Home</a>
+	<a href="{% url superuser_home %}">Return to Home</a>
 </p>
 
 <h2>Set Password</h2>
@@ -39,19 +29,6 @@
 		<button name="profile_input" type="submit"
 			class="btn btn-primary">Submit Changes</button>
 	</div>
-</form>
-
-<h2>Change GitHub Authorization</h2>
-<form class="well">
-	<p class="center" style="width:70%;">
-		If you want to revoke GitZen's access to GitHub, go under the
-		applications settings of the account settings of the GitHub user who
-		authorized the access and click the "revoke" button for GitZen. If you
-		want to authorize or renew authorization of GitZen's access to Github,
-		click the button bellow.
-	</p>
-	<button id="git_oauth_button" type="button" class="btn btn-primary"
-		>GitHub Authorization</button>
 </form>
 
 {% endblock %}

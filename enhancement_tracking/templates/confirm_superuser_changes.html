@@ -6,7 +6,7 @@
 <script>
 	$(document).ready(function() {
 		$('#return_home_button').click(function() {
-			window.location.href='{% url home %}';
+			window.location.href='{% url superuser_home %}';
 		});
 	});
 </script>
@@ -20,3 +20,5 @@
 	<button id="return_home_button" type="button" class="btn"
 		>Return to Home</button>
 {% endblock %}
+
+
