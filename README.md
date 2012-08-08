@@ -156,7 +156,7 @@ Token" field in the form.
 11. For the "Zendesk URL Subdomain" field in the form, enter in the unique URL
 subdomian that comes up after logging into the Zendesk account associated with
 the desired ticket information (The URL will most likely be in the format
-"{yourcompanyname\}.zendesk.com").
+"\{subdomain\}.zendesk.com").
 
 12. For the "Zendesk Ticket Association Field ID" field in the form, the ID
 number of the field that holds the external ticket association data for each

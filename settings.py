@@ -54,7 +54,7 @@ USE_L10N = True
 LOGIN_URL = '/'
 
 # The absolute URL of the website for the application.
-ABSOLUTE_SITE_URL = 'http://gitzen.herokuapp.com'
+ABSOLUTE_SITE_URL = 'http://gitzen.policystat.com'
 
 # The default email address to use when sending out emails from GitZen.
 DEFAULT_FROM_EMAIL = 'development@policystat.com'

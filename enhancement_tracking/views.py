@@ -27,7 +27,7 @@ from enhancement_tracking.forms import (
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
-                        redirect_uri='http://gitzen.herokuapp.com/' \
+                        redirect_uri='http://gitzen.policystat.com/' \
                                      'confirm_git_oauth',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
@@ -411,6 +411,7 @@ def home(request):
     api_access_data = profile.api_access_data
     product_name = api_access_data.product_name
     context = {}
+    context['is_group_superuser'] = profile.is_group_superuser
     
     try:
         update_cache_index(api_access_data)
@@ -433,7 +434,6 @@ def home(request):
         
     # Add additional data to be used in the context of the home page
     context['api_requests_successful'] = True
-    context['is_group_superuser'] = profile.is_group_superuser
     context['product_name'] = product_name
     context['zen_url'] = api_access_data.zen_url
     if profile.view_type == 'ZEN':
