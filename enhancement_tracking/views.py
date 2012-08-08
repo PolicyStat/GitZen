@@ -425,12 +425,12 @@ def home(request):
                                  'exception_message': e.args[0],
                                  'product_name': product_name}
         return render_to_response('home.html', context,
-                                    context_instance=RequestContext(request))
+                                  context_instance=RequestContext(request))
     
     # Account for the time zone offset and get the enhancement data
     cache_data = cache.get(api_access_data.id)
     enhancement_tables = _time_adjust_enhancement_data(cache_data, utc_offset)
-    context = enhancement_tables
+    context = dict(context.items() + enhancement_tables.items())
         
     # Add additional data to be used in the context of the home page
     context['api_requests_successful'] = True
