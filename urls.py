@@ -16,6 +16,7 @@ urlpatterns = patterns('enhancement_tracking.views',
 
 # URL patterns only used by group superusers
 urlpatterns += patterns('enhancement_tracking.views',
+    url(r'^superuser_home/$', 'group_superuser_home', name='superuser_home'),
     url(r'^superuser_change_account_settings/(?P<user_id>\d+)/$',
         'superuser_change_form_handler',
         name='superuser_change_account_settings'),

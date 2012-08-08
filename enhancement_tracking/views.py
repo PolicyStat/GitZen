@@ -78,14 +78,17 @@ def group_creation_form_handler(request):
     """
     if request.method == 'POST':
         group_superuser_form = NewGroupSuperuserForm(data=request.POST)
+        user_profile_form = UserProfileForm(data=request.POST)
         api_access_data_form = NewAPIAccessDataForm(data=request.POST)
-        if group_superuser_form.is_valid() and api_access_data_form.is_valid():
+        if group_superuser_form.is_valid() and user_profile_form.is_valid() \
+        and api_access_data_form.is_valid():
             group_superuser = group_superuser_form.save()
             api_access_data = api_access_data_form.save()
-            group_superuser_profile = \
-                    UserProfile(user=group_superuser,
-                                api_access_data=api_access_data,
-                                is_group_superuser=True)
+            
+            group_superuser_profile = user_profile_form.save(commit=False)
+            group_superuser_profile.user = group_superuser
+            group_superuser_profile.api_access_data = api_access_data
+            group_superuser_profile.is_group_superuser = True
             group_superuser_profile.save()
 
             # Authenticate and login the newly created group superuser so a
@@ -99,11 +102,13 @@ def group_creation_form_handler(request):
             return HttpResponseRedirect(reverse('confirm_group_creation'))
     else:
         group_superuser_form = NewGroupSuperuserForm()
+        user_profile_form = UserProfileForm()
         api_access_data_form = NewAPIAccessDataForm()
 
     return render_to_response('group_creation.html',
                               {'group_superuser_form': group_superuser_form,
-                              'api_access_data_form': api_access_data_form}, 
+                               'user_profile_form': user_profile_form,
+                               'api_access_data_form': api_access_data_form}, 
                               context_instance=RequestContext(request))
 
 @login_required
@@ -405,12 +410,6 @@ def home(request):
     Parameters:
         request - The request object that contains the current user's data.
     """
-    # If the user is a group superuser, render the group superuser home page
-    # that allows for group superuser actions instead of the regular user home
-    # page.
-    if request.user.get_profile().is_group_superuser:
-        return group_superuser_home(request)
-
     profile = request.user.get_profile() # Current user's profile
     utc_offset = profile.utc_offset
     api_access_data = profile.api_access_data
@@ -438,6 +437,7 @@ def home(request):
         
     # Add additional data to be used in the context of the home page
     context['api_requests_successful'] = True
+    context['is_group_superuser'] = profile.is_group_superuser
     context['product_name'] = product_name
     context['zen_url'] = api_access_data.zen_url
     if profile.view_type == 'ZEN':
@@ -547,7 +547,6 @@ def group_superuser_home(request):
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = \
                     ChangeAPIAccessDataForm(instance=api_access_data)
-            password_change_form = PasswordChangeForm(user=request.user)
 
         # Process the user selection form for selecting a user to modify
         elif 'user_select_input' in request.POST:
@@ -565,7 +564,6 @@ def group_superuser_home(request):
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = \
                     ChangeAPIAccessDataForm(instance=api_access_data)
-            password_change_form = PasswordChangeForm(user=request.user)
 
         # Process the user selection form for deactivating a user
         elif 'user_deactivate_input' in request.POST:
@@ -586,7 +584,6 @@ def group_superuser_home(request):
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = \
                     ChangeAPIAccessDataForm(instance=api_access_data)
-            password_change_form = PasswordChangeForm(user=request.user)
         
         # Process the user selection form for activating a user
         elif 'user_activate_input' in request.POST:
@@ -607,7 +604,6 @@ def group_superuser_home(request):
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             api_access_change_form = \
                     ChangeAPIAccessDataForm(instance=api_access_data)
-            password_change_form = PasswordChangeForm(user=request.user)
 
         # Process the API access data form for changing the API access data for
         # the group.
@@ -624,22 +620,6 @@ def group_superuser_home(request):
             user_select_form = ActiveUserSelectionForm(api_access_data)
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
-            password_change_form = PasswordChangeForm(user=request.user)
-
-        # Process superuser password change form
-        elif 'password_change_input' in request.POST:
-            password_change_form = PasswordChangeForm(user=request.user,
-                                                      data=request.POST)
-            if password_change_form.is_valid():
-                password_change_form.save()
-                return HttpResponseRedirect(reverse('confirm_changes'))
-            new_user_form = NewUserForm()
-            user_profile_form = UserProfileForm()
-            user_select_form = ActiveUserSelectionForm(api_access_data)
-            user_deactivate_form = ActiveUserSelectionForm(api_access_data)
-            user_activate_form = InactiveUserSelectionForm(api_access_data)
-            api_access_change_form = \
-                    ChangeAPIAccessDataForm(instance=api_access_data)
 
         else:
             return HttpResponseRedirect(reverse('home'))
@@ -652,7 +632,6 @@ def group_superuser_home(request):
         user_activate_form = InactiveUserSelectionForm(api_access_data)
         api_access_change_form = \
                 ChangeAPIAccessDataForm(instance=api_access_data)
-        password_change_form = PasswordChangeForm(user=request.user)
 
     context = {
         'new_user_form': new_user_form,
@@ -661,7 +640,6 @@ def group_superuser_home(request):
         'user_deactivate_form': user_deactivate_form,
         'user_activate_form': user_activate_form,
         'api_access_change_form': api_access_change_form,
-        'password_change_form': password_change_form,
         'product_name': product_name,
         'auth_url': GIT_AUTH_URL
     }

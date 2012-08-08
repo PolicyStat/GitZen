@@ -7,6 +7,11 @@
 	src="{{ STATIC_URL }}js/bootstrap-tab.js"></script>
 <script>
 	$(document).ready(function() {
+		$('#normal_view_button').click(function() {
+			window.location.href='{% url home %}';
+		});
+	});
+	$(document).ready(function() {
 		$('#reset_cache_button').click(function() {
 			window.location.href='{% url confirm_cache_building is_reset=1 %}';
 		});
@@ -28,6 +33,8 @@
 
 <h1>GitZen</h1>
 <div class="actions">
+	<button id="normal_view_button" type="button" class="btn"
+		>Return to Normal View</button>
 	<button id="reset_cache_button" type="button" class="btn"
 		>Reset Cache</button>
 	<button id="logout_button" type="button" class="btn">Logout</button>
@@ -42,8 +49,6 @@
 		>User Deactivation/Activation</a></li>
 	<li><a href="#api_access_settings_tab" data-toggle="tab"
 		>API Access Settings</a></li>
-	<li><a href="#superuser_settings_tab" data-toggle="tab"
-		>Superuser Settings</a></li>
 </ul>
 
 <div class="tab-content">
@@ -119,21 +124,6 @@
 		</p>
 		<button id="git_oauth_button" type="button" class="btn btn-primary"
 			>GitHub Authorization</button>
-	</form>
-</div>
-</div>
-</div>
-
-<div class="tab-pane" id="superuser_settings_tab">
-<div class="row">
-<div class="span8 offset2">
-	<h2>Change Password</h2>
-	<form class="well" method="post">{% csrf_token %}
-		{{ password_change_form.as_p }}
-		<div class="actions">
-			<button name="password_change_input" type="submit"
-				class="btn btn-primary">Submit Change</button>
-		</div>
 	</form>
 </div>
 </div>

@@ -18,7 +18,7 @@ GIT_INDIVIDUAL_ISSUE_URL = 'https://api.github.com/repos/%(organization)s/' \
 # Constant URL string for searching for tickets through the Zendesk API. It
 # requires the custom URL subdomain of the specific company whose information
 # is being accessed for the string's formatting.
-ZEN_SEARCH_URL = '%(subdomain)s/api/v2/search.json'
+ZEN_SEARCH_URL = 'https://%(subdomain)s/api/v2/search.json'
 
 # Constant search query used to access all open Zendesk tickets with the
 # product_enhancement tag form its API.
@@ -34,7 +34,7 @@ ZEN_TICKET_UPDATE_SEARCH_QUERY = 'type:ticket tags:product_enhancement ' \
 # requires the custom URL subdomain for the specific company whose users are
 # being accessed and the ID number of the user being accessed for the string's
 # formatting.
-ZEN_USER_URL = '%(subdomain)s/api/v2/users/%(user_id)i.json'
+ZEN_USER_URL = 'https://%(subdomain)s/api/v2/users/%(user_id)i.json'
 
 def build_cache_index(api_access_data):
     """Builds and indexes the cache data necessary for the application for the

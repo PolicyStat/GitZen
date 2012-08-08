@@ -91,6 +91,13 @@
 			window.location.href='{% url logout %}';
 		});
 	});
+	{% if is_group_superuser %}
+		$(document).ready(function() {
+			$('#superuser_view_button').click(function() {
+				window.location.href='{% url superuser_home %}';
+			});
+		});
+	{% endif %}
 </script>
 {% endblock %}
 
@@ -98,6 +105,10 @@
 
 <h1>GitZen</h1>
 <div class="actions">
+	{% if is_group_superuser %}
+		<button id="superuser_view_button" type="button" class="btn"
+			>Go to Superuser View</button>
+	{% endif %}
 	<button id="goto_change_settings_button" type="button" class="btn"
 		>Change Account Settings</button>
 	<button id="logout_button" type="button" class="btn">Logout</button>
@@ -159,6 +170,16 @@
 			{% for enhancement in need_attention %}
 				<tr>
 					<td class="td-centered">
+					{% if is_zendesk_user %}
+						<a class="open" target="_blank" 
+							href="{{ zen_url }}/tickets/
+							{{ enhancement.zen_id }}"
+							>Z{{ enhancement.zen_id }}</a>
+						<br/> 
+						<a class="closed" target="_blank" 
+							href="{{ enhancement.git_url }}"
+							>G{{ enhancement.git_id }}</a>
+					{% else %} <!-- is_github_user == True -->
 						<a class="closed" target="_blank" 
 							href="{{ enhancement.git_url }}"
 							>G{{ enhancement.git_id }}</a>
@@ -166,7 +187,8 @@
 						<a class="open" target="_blank" 
 							href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
-							>Z{{ enhancement.zen_id }}</a> 
+							>Z{{ enhancement.zen_id }}</a>
+					{% endif %}
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
 					<td>{{ enhancement.zen_requester }}</td>
@@ -220,14 +242,25 @@
 			{% for enhancement in tracking %}
 				<tr>
 					<td class="td-centered">
-						<a class="open" target="_blank"
-						   	href="{{ enhancement.git_url }}"
-							>G{{enhancement.git_id }}</a>
-						<br/>
-						<a class="open" target="_blank"
-						   	href="{{ zen_url }}/tickets/
+					{% if is_zendesk_user %}
+						<a class="open" target="_blank" 
+							href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
-							>Z{{ enhancement.zen_id }}</a> 
+							>Z{{ enhancement.zen_id }}</a>
+						<br/> 
+						<a class="open" target="_blank" 
+							href="{{ enhancement.git_url }}"
+							>G{{ enhancement.git_id }}</a>
+					{% else %} <!-- is_github_user == True -->
+						<a class="open" target="_blank" 
+							href="{{ enhancement.git_url }}"
+							>G{{ enhancement.git_id }}</a>
+						<br/> 
+						<a class="open" target="_blank" 
+							href="{{ zen_url }}/tickets/
+							{{ enhancement.zen_id }}"
+							>Z{{ enhancement.zen_id }}</a>
+					{% endif %}
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
 					<td>{{ enhancement.zen_requester }}</td>

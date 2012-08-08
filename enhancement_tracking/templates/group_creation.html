@@ -20,7 +20,12 @@ group along with the superuser account for that group.</p>
 <br/>
 
 <form class="well" method="post">{% csrf_token %}
+	<h2>Group Superuser</h2>
 	{{ group_superuser_form.as_p }}
+	{{ user_profile_form.as_p }}
+	<br/>
+
+	<h2>Group API Access Settings</h2>
 	{{ api_access_data_form.as_p }}
 	<div class="actions">
 		<button name="new_group_input" type="submit" class="btn btn-primary"
