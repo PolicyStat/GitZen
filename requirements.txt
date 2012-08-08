@@ -4,3 +4,4 @@ dj-database-url==0.2.0
 requests==0.13.0
 requests-oauth2==0.2.0
 pycrypto==2.6
+South==0.7.5

@@ -65,7 +65,7 @@
 			]
 		} );
 
-		var broken_table = $('#broken_table').dataTable( {
+		var broken_table = $('#not_git_table').dataTable( {
 			"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
 			"sPaginationType": "bootstrap",
 			"iDisplayLength": 5,
@@ -106,7 +106,9 @@
 
 <h2>Enhancement Tracking</h2>
 {% if api_requests_successful %}
+
 <ul class="nav nav-tabs">
+{% if is_zendesk_user %}
 	<li class="active"><a href="#attention_tab" data-toggle="tab"
 		>Need Attention ({{ need_attention|length }})</a></li>
 	<li><a href="#tracking_tab" data-toggle="tab"
@@ -114,16 +116,27 @@
 	<li><a href="#unassociated_tab" data-toggle="tab"
 		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
 	</li>
-	<li><a href="#broken_tab" data-toggle="tab"
-		{%if broken_enhancements %}
-			class="attention"
-		{% endif %}
-		>Broken Enhancements ({{ broken_enhancements|length }})</a></li>
+	<li><a href="#not_git_tab" data-toggle="tab"
+		>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
+	</li>
+{% else %} <!-- is_github_user == True -->
+	<li class="active"><a href="#unassociated_tab" data-toggle="tab"
+		>Unassociated Enhancements ({{ unassociated_enhancements|length }})</a>
+	</li>
+	<li><a href="#tracking_tab" data-toggle="tab"
+		>Currently Tracking ({{ tracking|length }})</a></li>
+	<li><a href="#attention_tab" data-toggle="tab"
+		>Awaiting Finalization ({{ need_attention|length }})</a></li>
+	<li><a href="#not_git_tab" data-toggle="tab"
+		>Non-GitHub Enhancements ({{ not_git_enhancements|length }})</a>
+	</li>
+{% endif %}
 </ul>
 
 <div class="tab-content">
 
-<div class="tab-pane active" id="attention_tab">
+<div class="tab-pane {% if is_zendesk_user %}active{% endif %}" 
+	id="attention_tab">
 <div class="row">
 <div class="span12">
 	<p>Requested enhancements whose GitHub ticket has been closed, but the
@@ -146,11 +159,13 @@
 			{% for enhancement in need_attention %}
 				<tr>
 					<td class="td-centered">
-						<a class="open" href="{{ zen_url }}/tickets/
+						<a class="open" target="_blank" 
+							href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
 						<br/> 
-						<a class="closed" href="{{ enhancement.git_url }}"
+						<a class="closed" target="_blank" 
+							href="{{ enhancement.git_url }}"
 							>G{{ enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
@@ -205,11 +220,13 @@
 			{% for enhancement in tracking %}
 				<tr>
 					<td class="td-centered">
-						<a class="open" href="{{ zen_url }}/tickets/
+						<a class="open" target="_blank"
+						   	href="{{ zen_url }}/tickets/
 							{{ enhancement.zen_id }}"
 							>Z{{ enhancement.zen_id }}</a> 
 						<br/>
-						<a class="open" href="{{ enhancement.git_url }}"
+						<a class="open" target="_blank"
+						   	href="{{ enhancement.git_url }}"
 							>G{{enhancement.git_id }}</a>
 					</td>
 					<td>{{ enhancement.zen_subject }}</td>
@@ -241,7 +258,8 @@
 </div>
 </div>
 
-<div class="tab-pane" id="unassociated_tab">
+<div class="tab-pane {% if is_github_user %}active{% endif %}"
+	id="unassociated_tab">
 <div class="row">
 <div class="span12">		
 	<p>Zendesk tickets requesting an enhancement that has no associated GitHub
@@ -263,8 +281,9 @@
 		{% for enhancement in unassociated_enhancements %}
 			<tr>
 				<td class="td-centered">
-					<a class="open" href="{{ zen_url }}/tickets/
-					{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
+					<a class="open" target="_blank" 
+						href="{{ zen_url }}/tickets/{{ enhancement.zen_id }}"
+						>Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
 				<td>{{ enhancement.zen_requester }}</td>
@@ -288,17 +307,18 @@
 </div>
 </div>
 
-<div class="tab-pane" id="broken_tab">
+<div class="tab-pane" id="not_git_tab">
 <div class="row">
 <div class="span12">
-{% if broken_enhancements %}
-	<p>The listing in the GitHub Association field should be in the format
-	"gh-###" where the "###" is the GitHub issue number of the associated
-	issue.</p>
+{% if not_git_enhancements %}
+	<p>Zendesk tickets requesting an enhancement whose external association is
+	not labeled as a GitHub issue. An external association to a GitHub issue
+	should be in the format "gh-###" where the "###" is the GitHub issue number
+	of the associated issue.</p>
 	<br/>
 
 	<table class="table table-striped table-bordered span12
-		dataTable table-center" id="broken_table">
+		dataTable table-center" id="not_git_table">
 		<thead>
 			<tr>
 				<th class="th-centered">Zendesk Ticket</th>
@@ -309,11 +329,12 @@
 			</tr>
 		</thead>
 		<tbody>
-		{% for enhancement in broken_enhancements %}
+		{% for enhancement in not_git_enhancements %}
 			<tr>
 				<td class="td-centered">
-					<a class="open" href="{{ zen_url }}/tickets/
-						{{ enhancement.zen_id }}">Z{{ enhancement.zen_id }}</a>
+					<a class="open" target="_blank" 
+						href="{{ zen_url }}/tickets/{{ enhancement.zen_id }}"
+						>Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
 				<td>{{ enhancement.zen_requester }}</td>
@@ -325,13 +346,16 @@
 					<br/>
 					{{ enhancement.zen_time }}
 				</td>
-				<td class="td-centered">{{ enhancement.broken_assoc }}</td>
+				<td class="td-centered">
+					{{ enhancement.non_git_association }}
+				</td>
 			</tr>
 		{% endfor %}
 		</tbody>
 	</table>
 {% else %}
-	<p>There are currently no broken enhancements.</p>
+	<p>There are currently no enhancements with non-GitHub external
+	associations.</p>
 {% endif %}
 </div>
 </div>
