@@ -283,7 +283,6 @@ def confirm_git_oauth(request):
     """
     api_access_data = request.user.get_profile().api_access_data
     
-    """
     if 'error' in request.GET:
         api_access_data.git_token = ''
         access_granted = False
@@ -292,11 +291,8 @@ def confirm_git_oauth(request):
         response = OAUTH2_HANDLER.get_token(code)
         api_access_data.git_token = response['access_token'][0]
         access_granted = True
+
     api_access_data.save()
-    """
-    api_access_data.git_token = '147a87738db7ac19c865845e19652b8134ad0099'
-    api_access_data.save()
-    access_granted = True
     product_name = api_access_data.product_name
     return render_to_response('confirm_git_oauth.html', 
                               {'access_granted': access_granted,
