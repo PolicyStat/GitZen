@@ -1,6 +1,6 @@
 # Django settings for gitzen project.
 
-import os.path
+import os
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -53,6 +53,24 @@ USE_L10N = True
 # The relative URL of the login page for the application.
 LOGIN_URL = '/'
 
+# The absolute URL of the website for the application.
+ABSOLUTE_SITE_URL = 'http://gitzen.herokuapp.com'
+
+# The default email address to use when sending out emails from GitZen.
+DEFAULT_FROM_EMAIL = 'development@policystat.com'
+
+# The following five constants are used to access a SMTP host to send out emails
+# for GitZen.
+EMAIL_HOST = 'email-smtp.us-east-1.amazonaws.com'
+
+EMAIL_PORT = 25
+
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = os.environ['SMTP_USER']
+
+EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD']
+
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
 MEDIA_ROOT = ''
@@ -94,13 +112,13 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 't+q0zevyft2x6p+essiv1!^v=-pya$pbklctl4+k^vs=s)^28x'
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # Consumer key for OAuth access of the GitHub API
-CLIENT_ID = 'ad0c98cf08bdab86a19c'
+CLIENT_ID = os.environ['CLIENT_ID']
 
 # Consumer secret for OAuth access of the GitHub API
-CLIENT_SECRET = '2b6b020652e02ab5880d6f34b26047efb15ac220'
+CLIENT_SECRET = os.environ['CLIENT_SECRET']
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (

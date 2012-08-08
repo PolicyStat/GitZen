@@ -14,7 +14,7 @@ from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
 from itertools import chain
-from settings import CLIENT_ID, CLIENT_SECRET
+from settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
 from enhancement_tracking.models import UserProfile
 from enhancement_tracking.cache_actions import (
     build_cache_index, update_cache_index
@@ -32,6 +32,23 @@ OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
+
+# Email message that is sent to new users after a group superuser has created a
+# user account for them in their group. The message prompts the user to change
+# the random password that was assigned to their account upon creation.
+NEW_USER_EMAIL_MESSAGE = \
+    "A user account has been created for you on GitZen for the product " \
+    "%(product_name)s. This account will allow you to track the progress of " \
+    "enhancments for this product as they move through different stages in " \
+    "GitHub and Zendesk.\n\n" \
+    "The username and password for your account are listed bellow. The " \
+    "password was automatically generated during your account's creation, " \
+    "so it is recommended that you change your password on the Change " \
+    "Account Settings page after logging into GitZen for the first time.\n\n" \
+    "Username: %(username)s\n" \
+    "Password: %(password)s\n\n" \
+    "You can now log into GitZen with this account at %(absolute_site_url)s " \
+    "and start tracking enhancements for %(product_name)s!"
 
 def user_login_form_handler(request):
     """Processes the requests from the login page and authenticates the login of
@@ -500,16 +517,31 @@ def group_superuser_home(request):
             new_user_form = NewUserForm(data=request.POST)
             user_profile_form = UserProfileForm(data=request.POST)
             if new_user_form.is_valid() and user_profile_form.is_valid():
-                user = new_user_form.save()
+                password = User.objects.make_random_password()
+                user = User.objects.create_user(
+                    new_user_form.cleaned_data['username'],
+                    new_user_form.cleaned_data['email'],
+                    password
+                )
                 user_profile = user_profile_form.save(commit=False)
                 user_profile.user = user
                 user_profile.api_access_data = api_access_data
                 user_profile.save()
 
-                return HttpResponseRedirect(
-                    reverse('confirm_user_creation', 
-                            kwargs={'user_id': user.id})
+                # Email the new user to let them know an account has been
+                # created for them in this group and to tell them to change
+                # their temporary random password.
+                user.email_user(
+                    'New GitZen Account',
+                    NEW_USER_EMAIL_MESSAGE % {'product_name': product_name,
+                                        'username': user.username,
+                                        'password': password,
+                                        'absolute_site_url': ABSOLUTE_SITE_URL}
                 )
+                return HttpResponseRedirect(
+                    reverse('confirm_user_creation',
+                            kwargs={'user_id': user.id})
+                )            
             user_select_form = ActiveUserSelectionForm(api_access_data)
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
