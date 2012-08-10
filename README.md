@@ -7,15 +7,57 @@ easier developer management.
 
 ## Deploying GitZen to Heroku
 
-### Create your app
+[Heroku](http://www.heroku.com/) is a slick little platform
+that allows you to painlessly deploy your applications
+to their cloud-like-thing.
+They also offer a nice free tier for low-usage and non-production apps,
+so we're going to start by assuming you're deploying there.
+If you want to deploy somewhere else,
+then you must already know what you're doing,
+so just skip this section.
 
-Create the app on the Heroku Cedar stack by running the command
-	>`heroku create --stack cedar`
 
-### Deploy the GitZen code
+### Heroku all the things!!!
 
-Deploy the app with the command
-	>`git push heroku master`
+Since we're using Heroku, we'll need to create an account there
+and then setup the Heroku command line interface.
+
+1. Make a Heroku account on their [website](http://www.heroku.com/).
+  If you want to use the addons we recommend,
+  you'll need to enter credit card info
+  (which won't be charged if you stay within the free tier).
+
+2. Install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-command)
+  by following those instructions.
+
+### Get the GitZen source
+
+Clone the GitZen repo using git
+
+	$ git clone git://github.com/PolicyStat/GitZen.git
+
+### Create your Heroku app and enable the required addons
+
+Navigate to your newly-cloned repo and
+then tell heroku to create your app on the Heroku Cedar stack.
+
+	$ heroku create --stack cedar
+
+Now add the PostgreSQL and Memcached heroku addons.
+Note: You'll need to have setup a credit card with your Heroku account,
+even if you stay within the free usage tier.
+
+We're going to use [JustOneDB](https://addons.heroku.com/justonedb)
+instead of the basic [Heroku Postgres](https://addons.heroku.com/heroku-postgresql)
+because it has a larger free tier and because I think it's kind of cool.
+
+	$ heroku addons:add justonedb:lambda
+
+Next, we're going to use [MemCachier](https://addons.heroku.com/memcachier)
+over the basic [Memcache](https://addons.heroku.com/memcache) for the same
+reason.
+
+	$ heroku addons:add memcachier:dev
 
 ### Configure the required environment variables
 
@@ -24,7 +66,8 @@ All of the configuration is controlled via environment variables,
 which are manipulated in Heroku using the `heroku config` command.
 
 The following configurations will need to be set, using `heroku config:add` eg.
-	>`heroku config:add SECRET_KEY=BIGSECRETOMG`
+
+	$ heroku config:add SECRET_KEY=BIGSECRETOMG
 
 * GZ_SECRET_KEY
 * GZ_GITHUB_CLIENT_ID
@@ -38,11 +81,19 @@ The following configurations will need to be set, using `heroku config:add` eg.
 
 ### Create the Database Schema
 
-Create your project's DB schema on Heroku and then create the appropriate cache
-table.
+Create your project's DB schema on Heroku.
 
 	$ heroku run python manage.py syncdb
-	$ heroku run python manage.py createcachetable enhancement_cache
+
+### Deploy the GitZen code
+
+From your GitZen repo, it's time to actually deploy the code to heroku:
+
+	$ git push heroku master
+
+Sweet! It's that easy to push code.
+If all of your configuration happened correctly, you're now GitZen-ready.
+
 
 ### Tips
 
@@ -181,24 +232,11 @@ application to view the enhancement tracking data for the group.
 
 ## Development Instructions
 
-1. Make a Heroku account on their [website](http://www.heroku.com/).
-
-2. Install the Heroku toolbet using the command
-	>`wget -qO- https://toolbelt.heroku.com/install.sh | sh`
-
-3. Login to Heroku by running the command
-	>`heroku login`
-
-	and filling out the requested credentials.
-
 4. Install python and virtualenv. (A guide for this can be found
 [here](http://docs.python-guide.org/en/latest/starting/install/linux/))
 
 5. Install a version of Postgres from
 [here](http://www.postgresql.org/download/) so testing can be done locally.
-
-6. Clone the GitZen repo with the command
-	>`git clone git://github.com/PolicyStat/GitZen.git`
 
 7. Change directories to the newly cloned GitZen directory and setup a virualenv
 using the command
