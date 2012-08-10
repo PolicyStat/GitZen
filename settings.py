@@ -2,7 +2,7 @@
 
 import os
 
-DEBUG = os.environ.get('DJANGO_DEBUG', False)
+DEBUG = os.environ.get('GZ_DEBUG', False)
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -60,9 +60,9 @@ EMAIL_PORT = os.environ.get('GZ_EMAIL_PORT', 25)
 
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.environ.get('SMTP_USER', '')
+EMAIL_HOST_USER = os.environ.get('GZ_SMTP_USER', '')
 
-EMAIL_HOST_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+EMAIL_HOST_PASSWORD = os.environ.get('GZ_SMTP_PASSWORD', '')
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"

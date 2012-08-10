@@ -67,7 +67,7 @@ which are manipulated in Heroku using the `heroku config` command.
 
 The following configurations will need to be set, using `heroku config:add` eg.
 
-	$ heroku config:add SECRET_KEY=BIGSECRETOMG
+	$ heroku config:add GZ_SECRET_KEY=BIGSECRETOMG
 
 * GZ_SECRET_KEY
 * GZ_GITHUB_CLIENT_ID
@@ -78,6 +78,11 @@ The following configurations will need to be set, using `heroku config:add` eg.
 * GZ_SMTP_USER
 * GZ_SMTP_PASSWORD
 *
+
+The following configurations are optional:
+
+* GZ_DEBUG
+* GZ_EMAIL_PORT
 
 ### Create the Database Schema
 
@@ -231,6 +236,8 @@ will be emailed their login information and will be able to login to the
 application to view the enhancement tracking data for the group.
 
 ## Development Instructions
+
+Note: Documentation in progress
 
 4. Install python and virtualenv. (A guide for this can be found
 [here](http://docs.python-guide.org/en/latest/starting/install/linux/))
