@@ -13,13 +13,10 @@ MANAGERS = ADMINS
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'enhancement_cache',
-        'TIMEOUT': 60*60*24*365
-    }
-}
+from memcacheify import memcacheify
+
+CACHES = memcacheify()
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -104,19 +101,18 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = os.environ['SECRET_KEY']
+SECRET_KEY = os.environ['GZ_SECRET_KEY']
 
 # Consumer key for OAuth access of the GitHub API
-CLIENT_ID = os.environ['CLIENT_ID']
+CLIENT_ID = os.environ['GZ_GITHUB_CLIENT_ID']
 
 # Consumer secret for OAuth access of the GitHub API
-CLIENT_SECRET = os.environ['CLIENT_SECRET']
+CLIENT_SECRET = os.environ['GZ_GITHUB_CLIENT_SECRET']
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
 )
 
 MIDDLEWARE_CLASSES = (

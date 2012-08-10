@@ -5,3 +5,6 @@ requests==0.13.0
 requests-oauth2==0.2.0
 pycrypto==2.6
 South==0.7.5
+pylibmc==1.2.2
+django-pylibmc-sasl==0.2.4
+django-heroku-memcacheify==0.3
