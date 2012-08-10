@@ -1,8 +1,6 @@
 from django.conf.urls.defaults import patterns, include, url
 
 # Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
-# admin.autodiscover()
 
 # URL patterns for all users
 urlpatterns = patterns('enhancement_tracking.views',

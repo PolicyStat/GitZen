@@ -2,7 +2,7 @@
 
 import os
 
-DEBUG = False
+DEBUG = os.environ.get('DJANGO_DEBUG', False)
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -12,13 +12,6 @@ ADMINS = (
 MANAGERS = ADMINS
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(PROJECT_ROOT, '..', 'gitzen.db')
-    }
-}
 
 CACHES = {
     'default': {
@@ -54,22 +47,25 @@ USE_L10N = True
 LOGIN_URL = '/'
 
 # The absolute URL of the website for the application.
-ABSOLUTE_SITE_URL = 'http://gitzen.policystat.com'
+ABSOLUTE_SITE_URL = os.environ.get(
+    'GZ_ABSOLUTE_SITE_URL', 'http://gitzen.policystat.com')
 
 # The default email address to use when sending out emails from GitZen.
-DEFAULT_FROM_EMAIL = 'development@policystat.com'
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'GZ_DEFAULT_FROM_EMAIL', 'development@policystat.com')
 
 # The following five constants are used to access a SMTP host to send out emails
 # for GitZen.
-EMAIL_HOST = 'email-smtp.us-east-1.amazonaws.com'
+EMAIL_HOST = os.environ.get(
+    'GZ_EMAIL_HOST', 'email-smtp.us-east-1.amazonaws.com')
 
-EMAIL_PORT = 25
+EMAIL_PORT = os.environ.get('GZ_EMAIL_PORT', 25)
 
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.environ['SMTP_USER']
+EMAIL_HOST_USER = os.environ.get('SMTP_USER', '')
 
-EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD']
+EMAIL_HOST_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
@@ -97,9 +93,6 @@ ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
     os.path.join(PROJECT_ROOT, 'statics'),
 )
 
@@ -108,7 +101,6 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # Make this unique, and don't share it with anybody.
@@ -151,10 +143,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'enhancement_tracking',
     'south'
-    # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
 )
 
 AUTH_PROFILE_MODULE = 'enhancement_tracking.UserProfile'
@@ -182,7 +170,18 @@ LOGGING = {
     }
 }
 
+# Allow an environment DATABASE_URL for configuration
 import dj_database_url
 DATABASES = {
     'default': dj_database_url.config(default='postgres://localhost')
-    }
+}
+
+# If you'd like to override any settings for local development, put them in a
+# settings_local.py in the same directory as settings.py
+try:
+    import settings_local
+    for k, v in settings_local.__dict__.items():
+        if not k.startswith('__'):
+            globals()[k] = v
+except ImportError:
+    pass
