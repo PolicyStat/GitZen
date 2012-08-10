@@ -4,91 +4,65 @@ This is a web application built using Django that links Zendesk and Github for
 easier developer management.
 
 
-### Setting up the environment for Heroku deployment (on Ubuntu)
 
-1. Make a Heroku account on their [website](http://www.heroku.com/).
+## Deploying GitZen to Heroku
 
-2. Install the Heroku toolbet using the command
-	>`wget -qO- https://toolbelt.heroku.com/install.sh | sh`
+### Create your app
 
-3. Login to Heroku by running the command
-	>`heroku login`
-
-	and filling out the requested credentials.
-
-4. Install python and virtualenv. (A guide for this can be found
-[here](http://docs.python-guide.org/en/latest/starting/install/linux/))
-
-5. Install a version of Postgres from
-[here](http://www.postgresql.org/download/) so testing can be done locally.
-
-6. Clone the GitZen repo with the command
-	>`git clone git://github.com/PolicyStat/GitZen.git`
-
-7. Change directories to the newly cloned GitZen directory and setup a virualenv
-using the command
-	>`virtualenv venv --distribute`
-
-8. Activate the virtualenv with the command
-	>`source venv/bin/activate`
-		
-	You must source the virtualenv environment for each terminal session where
-you wish to run your app.
-
-9. Run the command
-	>`sudo apt-get install libpq-dev python-dev`
-
-	to install the necessary packages that allow for the installation of
-psycopg2 (Postgresql support for python) in the following step.
-
-10. Install the required packages for GitZen and Heroku with pip by using the
-command
-	>`pip install -r requirements.txt` 
-
-
-### Deploying the application to Heroku (on Ubuntu)
-
-1. Create the app on the Heroku Cedar stack by running the command
+Create the app on the Heroku Cedar stack by running the command
 	>`heroku create --stack cedar`
 
-2. Deploy the app with the command
+### Deploy the GitZen code
+
+Deploy the app with the command
 	>`git push heroku master`
 
-3. Using the command
-	>`heroku config:add`
+### Configure the required environment variables
 
-	add the configuration constants for the Django secret key for the GitZen
-project, the GitHub OAuth client ID and client secret for GitZen, and the SMTP
-host username and password for the Amazon SMTP server. These must be defined
-under the variable names `SECRET_KEY`, `CLIENT_ID`, `CLIENT_SECRET`,
-`SMTP_USER`, and `SMTP_PASSWORD` respectively.
+There are several configuration options that you'll need to set to use GitZen.
+All of the configuration is controlled via environment variables,
+which are manipulated in Heroku using the `heroku config` command.
 
-4. Sync the database for Django on Heroku by runing the command
-	>`heroku run python manage.py syncdb`
+The following configurations will need to be set, using `heroku config:add` eg.
+	>`heroku config:add SECRET_KEY=BIGSECRETOMG`
 
-	and then use the command
-	>`heroku run python manage.py createcachetable enhancement_cache`
+* GZ_SECRET_KEY
+* GZ_GITHUB_CLIENT_ID
+* GZ_GITHUB_CLIENT_SECRET
+* GZ_ABSOLUTE_SITE_URL
+* GZ_DEFAULT_FROM_EMAIL
+* GZ_EMAIL_HOST
+* GZ_SMTP_USER
+* GZ_SMTP_PASSWORD
+*
 
-	to create the database table used for the cache in the application.
+### Create the Database Schema
 
-5. The command
-	>`heroku logs`
+Create your project's DB schema on Heroku and then create the appropriate cache
+table.
 
-	can be used to view the logs of the app if desired, and the command
-	>`heroku open`
+	$ heroku run python manage.py syncdb
+	$ heroku run python manage.py createcachetable enhancement_cache
 
-	can be used to visit the app on the web.
+### Tips
 
-6. In order to conduct one-off admin processes for the app in Django, preface
-the commands with
-	>`heroku run`
+You'll want to become familiar with the
+[Heroku CLI](https://devcenter.heroku.com/categories/command-line) quickly.
+Their documentation is awesome.
+Specifically for debugging problems, using:
 
-	An example of this would be opening the Django shell on Heroku by using the
-command
-	>`heroku run python manage.py shell`
+	$ heroku logs
 
+and
 
-### Configuration Instructions
+	$ heroku run python manage.py shell
+
+are very useful.
+
+## Configuring your GitZen instance
+
+Now that we have GitZen up and running,
+it's time to create users and link up our Zendesk account information.
 
 GitZen works by creating groups of users that share the same API access data for
 GitHub and Zendesk. Each one of these groups has one group superuser that is
@@ -118,7 +92,7 @@ indicated whether the offset is ahead or behind UTC time (i.e. "-4" or "+9").
 be presented from a GitHub-centered or Zendesk-centered user perspective for the
 superuser. By selecting one of these options, the home page will be set up to
 provide information in a more useful way depending on whether a GitZen user is
-using the application from a GitHub perspective or a Zendesk perspective. 
+using the application from a GitHub perspective or a Zendesk perspective.
 
 6. Now, you can begin filling out the fields under the "Group API Access Settings"
 header to set up the API access settings that will be used by every user in the
@@ -204,3 +178,45 @@ the "Reset Cache" button at the top to completely flush and reset the cache
 index for the group. Once you have created a user from this interface, that user
 will be emailed their login information and will be able to login to the
 application to view the enhancement tracking data for the group.
+
+## Development Instructions
+
+1. Make a Heroku account on their [website](http://www.heroku.com/).
+
+2. Install the Heroku toolbet using the command
+	>`wget -qO- https://toolbelt.heroku.com/install.sh | sh`
+
+3. Login to Heroku by running the command
+	>`heroku login`
+
+	and filling out the requested credentials.
+
+4. Install python and virtualenv. (A guide for this can be found
+[here](http://docs.python-guide.org/en/latest/starting/install/linux/))
+
+5. Install a version of Postgres from
+[here](http://www.postgresql.org/download/) so testing can be done locally.
+
+6. Clone the GitZen repo with the command
+	>`git clone git://github.com/PolicyStat/GitZen.git`
+
+7. Change directories to the newly cloned GitZen directory and setup a virualenv
+using the command
+	>`virtualenv venv --distribute`
+
+8. Activate the virtualenv with the command
+	>`source venv/bin/activate`
+
+	You must source the virtualenv environment for each terminal session where
+you wish to run your app.
+
+9. Run the command
+	>`sudo apt-get install libpq-dev python-dev`
+
+	to install the necessary packages that allow for the installation of
+psycopg2 (Postgresql support for python) in the following step.
+
+10. Install the required packages for GitZen and Heroku with pip by using the
+command
+	>`pip install -r requirements.txt`
+
