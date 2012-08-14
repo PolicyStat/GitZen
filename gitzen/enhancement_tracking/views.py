@@ -5,6 +5,7 @@ from itertools import chain
 from requests.exceptions import RequestException
 from requests_oauth2 import OAuth2
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import (
@@ -33,10 +34,9 @@ from gitzen.enhancement_tracking.forms import (
     InactiveUserSelectionForm
 )
 from gitzen.enhancement_tracking.models import UserProfile
-from gitzen.settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
-OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
+OAUTH2_HANDLER = OAuth2(settings.CLIENT_ID, settings.CLIENT_SECRET, site='https://github.com/',
                         redirect_uri='http://gitzen.policystat.com/' \
                                      'confirm_git_oauth',
                         authorization_url='login/oauth/authorize',
@@ -542,7 +542,7 @@ def group_superuser_home(request):
                     NEW_USER_EMAIL_MESSAGE % {'product_name': product_name,
                                         'username': user.username,
                                         'password': password,
-                                        'absolute_site_url': ABSOLUTE_SITE_URL}
+                                        'absolute_site_url': settings.ABSOLUTE_SITE_URL}
                 )
                 return HttpResponseRedirect(
                     reverse('confirm_user_creation',
