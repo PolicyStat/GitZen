@@ -73,7 +73,7 @@ the appropriate environment variables so that you can develop locally.
 
 The following configurations will need to be set, using `heroku config:add` eg.
 
-	$ heroku config:add GITZEN_SECRET_KEY=BIGSECRETOMG
+	$ heroku config:add GITZEN_DJANGO_SECRET_KEY="SOMETHINGSECRET!"
 
 * GITZEN_DJANGO_SECRET_KEY
 * GITZEN_GITHUB_CLIENT_ID
