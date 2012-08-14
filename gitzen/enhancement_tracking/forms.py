@@ -8,7 +8,7 @@ from django.forms import (
     IntegerField,
     ModelChoiceField,
     ModelForm,
-    PasswordInput
+    PasswordInput,
     RegexField,
 )
 

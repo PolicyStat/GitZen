@@ -1,6 +1,6 @@
+from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
-
-# Uncomment the next two lines to enable the admin:
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 # URL patterns for all users
 urlpatterns = patterns('gitzen.enhancement_tracking.views',
@@ -35,3 +35,7 @@ urlpatterns += patterns('gitzen.enhancement_tracking.views',
     url(r'^confirm_api_access_changes/$',
         'confirm_api_access_changes', name='confirm_api_access_changes'),
 )
+
+if settings.DEBUG:  # This is implicit, but make it explicit
+    urlpatterns += staticfiles_urlpatterns()
+
