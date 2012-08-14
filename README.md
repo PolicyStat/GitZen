@@ -94,7 +94,7 @@ The following configurations are optional:
 
 Create your project's DB schema on Heroku.
 
-	$ heroku run python manage.py syncdb
+	$ heroku run python manage.py syncdb --noinput
 
 ### Deploy the GitZen code
 

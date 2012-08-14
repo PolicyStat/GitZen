@@ -152,7 +152,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'gitzen.enhancement_tracking',
-    'south'
 )
 
 AUTH_PROFILE_MODULE = 'gitzen.enhancement_tracking.UserProfile'
