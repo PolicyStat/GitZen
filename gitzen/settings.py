@@ -70,31 +70,41 @@ EMAIL_HOST_PASSWORD = os.environ.get('GITZEN_SMTP_PASSWORD', '')
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = os.environ.get('GITZEN_MEDIA_ROOT', '')
+if not MEDIA_ROOT:
+    MEDIA_ROOT = os.path.abspath(
+        os.path.join(PROJECT_ROOT, '..', 'upload'))
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_ROOT = os.environ.get('GITZEN_MEDIA_URL', '')
+if not MEDIA_ROOT:
+    MEDIA_URL = ABSOLUTE_SITE_URL + '/upload/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = ''
+STATIC_ROOT = os.environ.get('GITZEN_STATIC_ROOT', '')
+if not STATIC_ROOT:
+    STATIC_ROOT = os.path.abspath(
+        os.path.join(PROJECT_ROOT, '..', 'static'))
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
-STATIC_URL = '/static/'
+STATIC_URL = os.environ.get('GITZEN_STATIC_URL', '')
+if not STATIC_URL:
+    STATIC_URL = ABSOLUTE_SITE_URL + '/static/'
 
 # URL prefix for admin static files -- CSS, JavaScript and images.
 # Make sure to use a trailing slash.
 # Examples: "http://foo.com/static/admin/", "/static/admin/".
-ADMIN_MEDIA_PREFIX = '/static/admin/'
+ADMIN_MEDIA_PREFIX = STATIC_URL + 'static/admin/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
-    os.path.join(PROJECT_ROOT, 'statics'),
+    os.path.join(PROJECT_ROOT, 'media'),
 )
 
 # List of finder classes that know how to find static files in
@@ -105,7 +115,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = os.environ['GITZEN_SECRET_KEY']
+SECRET_KEY = os.environ['GITZEN_DJANGO_SECRET_KEY']
 
 # Consumer key for OAuth access of the GitHub API
 CLIENT_ID = os.environ['GITZEN_GITHUB_CLIENT_ID']

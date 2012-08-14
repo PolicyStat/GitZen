@@ -75,7 +75,7 @@ The following configurations will need to be set, using `heroku config:add` eg.
 
 	$ heroku config:add GITZEN_SECRET_KEY=BIGSECRETOMG
 
-* GITZEN_SECRET_KEY
+* GITZEN_DJANGO_SECRET_KEY
 * GITZEN_GITHUB_CLIENT_ID
 * GITZEN_GITHUB_CLIENT_SECRET
 * GITZEN_ABSOLUTE_SITE_URL
