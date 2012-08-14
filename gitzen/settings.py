@@ -80,7 +80,7 @@ if not MEDIA_ROOT:
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
 MEDIA_ROOT = os.environ.get('GITZEN_MEDIA_URL', '')
 if not MEDIA_ROOT:
-    MEDIA_URL = ABSOLUTE_SITE_URL + '/upload/'
+    MEDIA_URL = '/upload/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -95,7 +95,7 @@ if not STATIC_ROOT:
 # Example: "http://media.lawrence.com/static/"
 STATIC_URL = os.environ.get('GITZEN_STATIC_URL', '')
 if not STATIC_URL:
-    STATIC_URL = ABSOLUTE_SITE_URL + '/static/'
+    STATIC_URL = '/static/'
 
 # URL prefix for admin static files -- CSS, JavaScript and images.
 # Make sure to use a trailing slash.
@@ -138,7 +138,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.gzip.GZipMiddleware',
 )
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = 'gitzen.urls'
 
 TEMPLATE_DIRS = (
     os.path.join(PROJECT_ROOT, 'templates'),

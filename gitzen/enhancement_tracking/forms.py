@@ -12,7 +12,7 @@ from django.forms import (
     RegexField,
 )
 
-from enhancement_tracking.models import UserProfile, APIAccessData
+from gitzen.enhancement_tracking.models import UserProfile, APIAccessData
 
 class NewUserForm(Form):
     """Form for getting a username and email for the creation of a new user.
