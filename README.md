@@ -51,13 +51,13 @@ We're going to use [JustOneDB](https://addons.heroku.com/justonedb)
 instead of the basic [Heroku Postgres](https://addons.heroku.com/heroku-postgresql)
 because it has a larger free tier and because I think it's kind of cool.
 
-	$ heroku addons:add justonedb:lambda
+	$ heroku addons:add justonedb
 
 Next, we're going to use [MemCachier](https://addons.heroku.com/memcachier)
 over the basic [Memcache](https://addons.heroku.com/memcache) for the same
 reason.
 
-	$ heroku addons:add memcachier:dev
+	$ heroku addons:add memcachier
 
 ### Configure the required environment variables
 
@@ -65,24 +65,30 @@ There are several configuration options that you'll need to set to use GitZen.
 All of the configuration is controlled via environment variables,
 which are manipulated in Heroku using the `heroku config` command.
 
+For local development,
+you can copy `env/example` to something like `env/development`
+and fill in your development values.
+From there, running `$ source env/development` will configure
+the appropriate environment variables so that you can develop locally.
+
 The following configurations will need to be set, using `heroku config:add` eg.
 
-	$ heroku config:add GZ_SECRET_KEY=BIGSECRETOMG
+	$ heroku config:add GITZEN_SECRET_KEY=BIGSECRETOMG
 
-* GZ_SECRET_KEY
-* GZ_GITHUB_CLIENT_ID
-* GZ_GITHUB_CLIENT_SECRET
-* GZ_ABSOLUTE_SITE_URL
-* GZ_DEFAULT_FROM_EMAIL
-* GZ_EMAIL_HOST
-* GZ_SMTP_USER
-* GZ_SMTP_PASSWORD
+* GITZEN_SECRET_KEY
+* GITZEN_GITHUB_CLIENT_ID
+* GITZEN_GITHUB_CLIENT_SECRET
+* GITZEN_ABSOLUTE_SITE_URL
+* GITZEN_DEFAULT_FROM_EMAIL
+* GITZEN_EMAIL_HOST
+* GITZEN_SMTP_USER
+* GITZEN_SMTP_PASSWORD
 *
 
 The following configurations are optional:
 
-* GZ_DEBUG
-* GZ_EMAIL_PORT
+* GITZEN_DEBUG
+* GITZEN_EMAIL_PORT
 
 ### Create the Database Schema
 

@@ -1,0 +1,12 @@
+#!/usr/env bash
+
+export GITZEN_SECRET_KEY="SOMETHINGSECRET"
+export GITZEN_GITHUB_CLIENT_ID="YOUR_OAUTH2_ID"
+export GITZEN_GITHUB_CLIENT_SECRET="YOUR_OAUTH2_SECRET"
+export GITZEN_ABSOLUTE_SITE_URL="http://example.herokuapp.com"
+export GITZEN_DEFAULT_FROM_EMAIL="notifications@example.com"
+export GITZEN_EMAIL_HOST="smtp.example.com"
+export GITZEN_SMTP_USER="exampleUser"
+export GITZEN_SMTP_PASSWORD="SOMETHINGSECRET"
+export GITZEN_DEBUG="False"
+export GITZEN_EMAIL_PORT="25"

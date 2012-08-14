@@ -2,7 +2,11 @@
 
 import os
 
-DEBUG = os.environ.get('GZ_DEBUG', False)
+# Environment variables are Strings, not booleans
+DEBUG = False
+env_debug = os.environ.get('GITZEN_DEBUG', 'False')
+if not env_debug == 'False':
+    DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -45,24 +49,24 @@ LOGIN_URL = '/'
 
 # The absolute URL of the website for the application.
 ABSOLUTE_SITE_URL = os.environ.get(
-    'GZ_ABSOLUTE_SITE_URL', 'http://gitzen.policystat.com')
+    'GITZEN_ABSOLUTE_SITE_URL', 'http://gitzen.policystat.com')
 
 # The default email address to use when sending out emails from GitZen.
 DEFAULT_FROM_EMAIL = os.environ.get(
-    'GZ_DEFAULT_FROM_EMAIL', 'development@policystat.com')
+    'GITZEN_DEFAULT_FROM_EMAIL', 'development@policystat.com')
 
 # The following five constants are used to access a SMTP host to send out emails
 # for GitZen.
 EMAIL_HOST = os.environ.get(
-    'GZ_EMAIL_HOST', 'email-smtp.us-east-1.amazonaws.com')
+    'GITZEN_EMAIL_HOST', 'email-smtp.us-east-1.amazonaws.com')
 
-EMAIL_PORT = os.environ.get('GZ_EMAIL_PORT', 25)
+EMAIL_PORT = os.environ.get('GITZEN_EMAIL_PORT', 25)
 
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.environ.get('GZ_SMTP_USER', '')
+EMAIL_HOST_USER = os.environ.get('GITZEN_SMTP_USER', '')
 
-EMAIL_HOST_PASSWORD = os.environ.get('GZ_SMTP_PASSWORD', '')
+EMAIL_HOST_PASSWORD = os.environ.get('GITZEN_SMTP_PASSWORD', '')
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
@@ -101,13 +105,13 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = os.environ['GZ_SECRET_KEY']
+SECRET_KEY = os.environ['GITZEN_SECRET_KEY']
 
 # Consumer key for OAuth access of the GitHub API
-CLIENT_ID = os.environ['GZ_GITHUB_CLIENT_ID']
+CLIENT_ID = os.environ['GITZEN_GITHUB_CLIENT_ID']
 
 # Consumer secret for OAuth access of the GitHub API
-CLIENT_SECRET = os.environ['GZ_GITHUB_CLIENT_SECRET']
+CLIENT_SECRET = os.environ['GITZEN_GITHUB_CLIENT_SECRET']
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
