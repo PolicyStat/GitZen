@@ -183,7 +183,7 @@ LOGGING = {
 # Grab the JUSTONEDB_DBI_URL and use it for the DATABASE_URL if it exists
 justonedb_dbi_url = os.environ.get('JUSTONEDB_DBI_URL', None)
 if justonedb_dbi_url:
-    os.environ['JUSTONEDB_DBI_URL'] = justonedb_dbi_url
+    os.environ['DATABASE_URL'] = justonedb_dbi_url
 
 # Allow an environment DATABASE_URL for configuration
 import dj_database_url
