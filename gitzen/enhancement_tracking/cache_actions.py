@@ -1,7 +1,9 @@
-from django.core.cache import cache
+from datetime import datetime, timedelta
+
 import requests
 from requests.exceptions import RequestException
-from datetime import datetime, timedelta
+
+from django.core.cache import cache
 
 # Constant URL string for accessing GitHub issues through the GitHub API. It
 # requires a GitHub organization/user and repository for the string's
@@ -53,13 +55,13 @@ def build_cache_index(api_access_data):
                     # model.
     zen_tickets = [] # List of the open tickets in Zendesk with the API access
                      # model's specified tags.
-    zen_user_reference = {} # Dictionary reference of the user IDs and 
+    zen_user_reference = {} # Dictionary reference of the user IDs and
                             # user names associated with the Zendesk tickets in
                             # zen_tickets.
     git_tickets = [] # List of the GitHub tickets associated with the Zendesk
                      # tickets in zen_tickets.
     zen_fieldid = api_access_data.zen_fieldid
-    
+
     try:
         zen_tickets = get_zen_tickets(api_access_data)
         zen_user_ids, git_issue_numbers = get_id_lists(zen_tickets,
@@ -73,7 +75,7 @@ def build_cache_index(api_access_data):
         # Raise RequestExceptions so they can be properly handled by whatever
         # view function call the build_cache_index function.
         raise
-        
+
     enhancement_data = build_enhancement_data(zen_tickets, zen_user_reference,
                                               git_tickets, zen_fieldid)
     cache_data = dict(cache_data.items() + enhancement_data.items())
@@ -98,7 +100,7 @@ def get_zen_tickets(api_access_data):
     zen_name_tk = api_access_data.zen_name + '/token'
     zen_tickets = []
     page = 1
-    
+
     try:
         while True:
             request_zen_tickets = requests.get(
@@ -143,13 +145,13 @@ def get_id_lists(zen_tickets, zen_fieldid):
     associated Zendesk user IDs and with the second being the gathered list
     of associated GitHub issue numbers.
     """
-    
+
     # Get Zendesk user IDs that are associated with Zendesk tickets.
     zen_user_ids = []
     for ticket in zen_tickets:
         zen_user_ids.append(ticket['requester_id'])
     zen_user_ids = set(zen_user_ids) # Remove duplicates
-    
+
     # Get GitHub issue numbers that are associated with the Zendesk tickets.
     git_issue_numbers = []
     for ticket in zen_tickets:
@@ -172,8 +174,8 @@ def get_zen_users(api_access_data, zen_user_ids):
     Parameters:
         api_access_data - The object that contains the current user's API
                             access data necessary to access the users on their
-                            Zendesk account.  
-        zen_user_ids - A list of Zendesk user IDs whose full user records are 
+                            Zendesk account.
+        zen_user_ids - A list of Zendesk user IDs whose full user records are
                         desired.
 
     Returns a dictionary reference table with Zendesk user ID numbers as keys
@@ -205,7 +207,7 @@ def get_zen_users(api_access_data, zen_user_ids):
         # Raise the exception so it can be caught by the except in the calling
         # function for further processing.
         raise
-    
+
     return zen_user_reference
 
 def get_git_tickets(api_access_data, git_issue_numbers):
@@ -215,7 +217,7 @@ def get_git_tickets(api_access_data, git_issue_numbers):
     Parameters:
         api_access_data - The object that contains the current user's API
                             access data necessary to access the tickets on their
-                            GitHub account.  
+                            GitHub account.
         git_issue_numbers - A list of GitHub issue numbers whose full ticket
                                 records are desired.
 
@@ -223,7 +225,7 @@ def get_git_tickets(api_access_data, git_issue_numbers):
     passed to the function.
     """
     git_tickets = []
-    
+
     try:
         for number in git_issue_numbers:
             request_git_tickets = requests.get(
@@ -253,7 +255,7 @@ def get_git_tickets(api_access_data, git_issue_numbers):
 def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                            zen_fieldid):
     """Builds the enhancement tracking tables from the Zendesk and GitHub data.
-    
+
     Parameters:
         zen_tickets - A list of open Zendesk tickets to build the enhancement
                         data from.
@@ -272,7 +274,7 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
         'tracking' - List of enhancements in the process of being worked on.
         'need_attention' - List of enhancements where one half of the
                             enhancement is completed, but the other is not.
-        'unassociated_enhancements' - List of Zendesk tickets requesting an 
+        'unassociated_enhancements' - List of Zendesk tickets requesting an
                                         enhancement that have no associated
                                         external ticket.
         'not_git_enhancements' - List of Zendesk tickets that have an associated
@@ -285,7 +287,7 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
     need_attention = [] # Enhancements with either a closed Zendesk ticket or
                         # a closed GitHub ticket. Because one of these tickets
                         # is closed, the other needs attention.
-    unassociated_enhancements = [] # Requested enhancements from Zendesk 
+    unassociated_enhancements = [] # Requested enhancements from Zendesk
                                    # tickets that have no associated external
                                    # ticket assigned to them.
     not_git_enhancements = [] # Requested enhancements from Zendesk that have an
@@ -320,7 +322,7 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
                 not split_association_data[1].isdigit():
             enhancement_data['non_git_association'] = association_data
             not_git_enhancements.append(enhancement_data)
-        
+
         # Add GitHub data to the enhancement data object
         else:
             for issue in git_tickets:
@@ -330,12 +332,12 @@ def build_enhancement_data(zen_tickets, zen_user_reference, git_tickets,
             enhancement_data['git_id'] = git_ticket['number']
             enhancement_data = _update_enhancement_git_data(enhancement_data,
                                                             git_ticket)
-            
+
             # Check if the enhacement should be tracked (Both tickets are
             # open).
             if enhancement_data['git_status'] == 'open':
                 tracking.append(enhancement_data)
-            
+
             # Check if the enhancement is in need of attention (The GitHub
             # ticket is closed).
             else:
@@ -364,12 +366,12 @@ def update_cache_index(api_access_data):
     the calling view function.
     """
     cache_data = cache.get(api_access_data.id)
-    
+
     # If the cache data isn't in the cache, build it
-    if cache_data is None:  
+    if cache_data is None:
         build_cache_index(api_access_data)
-    
-    # The cache data is in the cache, so update it  
+
+    # The cache data is in the cache, so update it
     else:
         updated_zen_tickets = [] # A list of Zendesk tickets that have been
                                  # updated since the last time the cache was
@@ -388,7 +390,7 @@ def update_cache_index(api_access_data):
 
         last_updated = cache_data['last_updated']
         zen_fieldid = api_access_data.zen_fieldid
-        
+
         try:
             updated_zen_tickets = get_zen_ticket_update(api_access_data,
                                                         last_updated)
@@ -408,8 +410,8 @@ def update_cache_index(api_access_data):
                     cache_data['zen_user_reference'].items() + \
                     new_user_reference.items()
                 )
-            
-            # Remove any GitHub tickets with no associations on Zendesk 
+
+            # Remove any GitHub tickets with no associations on Zendesk
             for ticket in list(updated_git_tickets):
                 if ticket['number'] not in cache_data['git_issue_numbers']:
                     if ticket['number'] in new_issue_numbers:
@@ -439,15 +441,15 @@ def update_cache_index(api_access_data):
             # Raise RequestExceptions so they can be properly handled by
             # whatever view function call the build_cache_index function.
             raise
-            
+
         # Update the cache with the updated GitHub data
         cache_data = update_git_cache(cache_data, updated_git_tickets)
-        
-        
+
+
         # Update the cache with the updated Zendesk data
         cache_data = update_zen_cache(cache_data, updated_zen_tickets,
                                       zen_fieldid)
-        
+
         # Subtract 10 minutes from the actual time to ensure that no updates are
         # left out if they were made during the time the function was processing.
         cache_data['last_updated'] = datetime.utcnow() - timedelta(minutes=10)
@@ -471,7 +473,7 @@ def get_zen_ticket_update(api_access_data, last_updated):
     updated_str = datetime.strftime(last_updated, '%Y-%m-%d')
     zen_tickets = []
     page = 1
-    
+
     try:
         while True:
             request_zen_tickets = requests.get(
@@ -518,7 +520,7 @@ def get_git_ticket_update(api_access_data, last_updated):
     git_tickets = []
     updated_str = datetime.strftime(last_updated, '%Y-%m-%dT%H:%M:%SZ')
     page = 1
-    
+
     try:
         while True:
             request_open_git_tickets = requests.get(
@@ -618,7 +620,7 @@ def update_git_cache(cache_data, updated_git_tickets):
         for enhancement in cache_data['tracking']:
             if enhancement['git_id'] == ticket['number']:
                 enhancement = _update_enhancement_git_data(enhancement, ticket)
-                
+
                 if ticket['state'] == 'closed':
                     cache_data['need_attention'].append(enhancement)
                     cache_data['tracking'] = _rm_from_diclist(
@@ -629,11 +631,11 @@ def update_git_cache(cache_data, updated_git_tickets):
                 break
         if ticket_found:
             continue
-        
+
         for enhancement in cache_data['need_attention']:
             if enhancement['git_id'] == ticket['number']:
                 enhancement = _update_enhancement_git_data(enhancement, ticket)
-                
+
                 if ticket['state'] == 'open':
                     cache_data['tracking'].append(enhancement)
                     cache_data['need_attention'] = _rm_from_diclist(
@@ -678,18 +680,18 @@ def update_zen_cache(cache_data, updated_zen_tickets, zen_fieldid):
         zen_fieldid - The ID number of the field on Zendesk tickets that holds
                         the string value of the ticket's external association.
 
-                        
+
     Returns the cache_data object passed to the function updated with ticket
     data from the passed list of updated Zendesk tickets.
     """
     not_on_gitzen = [] # A list of the Zendesk tickets in updated_zen_tickets
-                       # that were not in the cache. 
+                       # that were not in the cache.
 
     for ticket in updated_zen_tickets:
         # Will be changed to True if the ticket is found in the
         # enhancement data in the cache. If it stays False, it means the
         # ticket has not had an enhancement object created for it yet.
-        on_gitzen = False 
+        on_gitzen = False
 
         # If the ticket has been closed, it's enhancement can be removed
         # from the cache data entirely.
@@ -715,9 +717,9 @@ def update_zen_cache(cache_data, updated_zen_tickets, zen_fieldid):
                     break
 
             if not association_data:
-                cache_data, on_gitzen = _update_zen_no_association(cache_data, 
+                cache_data, on_gitzen = _update_zen_no_association(cache_data,
                                                                    ticket)
-            
+
             else:
                 cache_data, on_gitzen = _update_zen_need_attention(cache_data,
                                                         ticket, association_data)
@@ -733,7 +735,7 @@ def update_zen_cache(cache_data, updated_zen_tickets, zen_fieldid):
                     continue
                 cache_data, on_gitzen = _update_zen_not_git(cache_data, ticket,
                                                             association_data)
-        
+
         # Check if the ticket is a new Zendesk ticket not being tracked by
         # GitZen.
         if not on_gitzen:
@@ -799,7 +801,7 @@ def _update_zen_no_association(cache_data, zen_ticket):
                 cache_data['need_attention'], 'zen_id', enhancement['zen_id']
             )
             return (cache_data, True)
-    
+
     for enhancement in cache_data['tracking']:
         if enhancement['zen_id'] == zen_ticket['id']:
             enhancement = _update_enhancement_zen_data(enhancement, zen_ticket,
@@ -824,7 +826,7 @@ def _update_zen_no_association(cache_data, zen_ticket):
             del enhancement['non_git_association']
             cache_data['unassociated_enhancements'].append(enhancement)
             cache_data['not_git_enhancements'] =  _rm_from_diclist(
-                cache_data['not_git_enhancements'], 'zen_id', 
+                cache_data['not_git_enhancements'], 'zen_id',
                 enhancement['zen_id']
             )
             return (cache_data, True)
@@ -882,7 +884,7 @@ def _update_zen_need_attention(cache_data, zen_ticket, association_data):
                 cache_data['need_attention'] = _rm_from_diclist(
                     cache_data['need_attention'], 'zen_id', enhancement['zen_id']
                 )
-             
+
             # Check if the enhancement's GitHub association has changed.
             if enhancement['git_id'] != int(split_association_data[1]):
                 enhancement['git_id'] = int(split_association_data[1])
@@ -891,7 +893,7 @@ def _update_zen_need_attention(cache_data, zen_ticket, association_data):
                     if enhancement['git_id'] == git_ticket['number']:
                         enhancement = _update_enhancement_git_data(enhancement,
                                                                    git_ticket)
-                        
+
                         if git_ticket['state'] == 'open':
                             cache_data['tracking'].append(enhancement)
                             cache_data['need_attention'] = _rm_from_diclist(
@@ -936,7 +938,7 @@ def _update_zen_tracking(cache_data, zen_ticket, association_data):
                 cache_data['tracking'] = _rm_from_diclist(
                     cache_data['tracking'], 'zen_id', enhancement['zen_id']
                 )
-             
+
             # Check if the enhancement's GitHub association has changed.
             if enhancement['git_id'] != int(split_association_data[1]):
                 enhancement['git_id'] = int(split_association_data[1])
@@ -945,7 +947,7 @@ def _update_zen_tracking(cache_data, zen_ticket, association_data):
                     if enhancement['git_id'] == git_ticket['number']:
                         enhancement = _update_enhancement_git_data(enhancement,
                                                                    git_ticket)
-                        
+
                         if git_ticket['state'] == 'closed':
                             cache_data['need_attention'].append(enhancement)
                             cache_data['tracking'] = _rm_from_diclist(
@@ -973,7 +975,7 @@ def _update_zen_unassociated(cache_data, zen_ticket, association_data):
     """
     zen_user_reference = cache_data['zen_user_reference']
     split_association_data = association_data.split('-')
-    
+
     for enhancement in cache_data['unassociated_enhancements']:
         if enhancement['zen_id'] == zen_ticket['id']:
             enhancement = _update_enhancement_zen_data(enhancement, zen_ticket,
@@ -987,7 +989,7 @@ def _update_zen_unassociated(cache_data, zen_ticket, association_data):
             not split_association_data[1].isdigit():
                 enhancement['non_git_association'] = association_data
                 cache_data['not_git_enhancements'].append(enhancement)
-             
+
             # Add the data for the enhancement's new GitHub association.
             else:
                 enhancement['git_id'] = int(split_association_data[1])

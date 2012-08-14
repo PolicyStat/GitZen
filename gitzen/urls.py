@@ -3,7 +3,7 @@ from django.conf.urls.defaults import patterns, include, url
 # Uncomment the next two lines to enable the admin:
 
 # URL patterns for all users
-urlpatterns = patterns('enhancement_tracking.views',
+urlpatterns = patterns('gitzen.enhancement_tracking.views',
     url(r'^$', 'user_login_form_handler', name='login'),
     url(r'^logout/$', 'user_logout', name='logout'),
     url(r'^create/$', 'group_creation_form_handler', name='group_creation'),
@@ -13,7 +13,7 @@ urlpatterns = patterns('enhancement_tracking.views',
 )
 
 # URL patterns only used by group superusers
-urlpatterns += patterns('enhancement_tracking.views',
+urlpatterns += patterns('gitzen.enhancement_tracking.views',
     url(r'^superuser_home/$', 'group_superuser_home', name='superuser_home'),
     url(r'^superuser_change_account_settings/(?P<user_id>\d+)/$',
         'superuser_change_form_handler',

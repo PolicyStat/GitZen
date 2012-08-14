@@ -1,9 +1,17 @@
-from django.forms import (
-    Form, ModelForm, CharField, IntegerField, ModelChoiceField, RegexField,
-    EmailField, PasswordInput
-)
-from django.contrib.auth.models import User
+
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.forms import (
+    CharField,
+    EmailField,
+    Form,
+    IntegerField,
+    ModelChoiceField,
+    ModelForm,
+    PasswordInput
+    RegexField,
+)
+
 from enhancement_tracking.models import UserProfile, APIAccessData
 
 class NewUserForm(Form):
@@ -87,7 +95,7 @@ class ActiveUserSelectionForm(Form):
     """Form for selecting a specific GitZen user's profile. Filters the
     UserProfile list down to just the users in the group that use the passed
     API access model, and then excludes the group superuser and users who are
-    set as inactive.""" 
+    set as inactive."""
     def __init__(self, api_access_model, *args, **kwargs):
         super(ActiveUserSelectionForm, self).__init__(*args, **kwargs)
         self.fields['profile'] = \
@@ -101,7 +109,7 @@ class InactiveUserSelectionForm(Form):
     """Form for selecting a specific GitZen user's profile. Filters the
     UserProfile list down to just the users in the group that use the passed
     API access model, and then excludes the group superuser and users who are
-    set as active.""" 
+    set as active."""
     def __init__(self, api_access_model, *args, **kwargs):
         super(InactiveUserSelectionForm, self).__init__(*args, **kwargs)
         self.fields['profile'] = \

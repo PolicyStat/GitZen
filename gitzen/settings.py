@@ -151,11 +151,11 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'enhancement_tracking',
+    'gitzen.enhancement_tracking',
     'south'
 )
 
-AUTH_PROFILE_MODULE = 'enhancement_tracking.UserProfile'
+AUTH_PROFILE_MODULE = 'gitzen.enhancement_tracking.UserProfile'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

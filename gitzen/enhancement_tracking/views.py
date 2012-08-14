@@ -1,29 +1,39 @@
-from django.http import HttpResponse, HttpResponseRedirect
-from django.template import RequestContext
-from django.shortcuts import render_to_response
-from django.core.cache import cache
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.forms import (
-    AuthenticationForm, PasswordChangeForm, SetPasswordForm
-)
-from django.core.urlresolvers import reverse
-from requests.exceptions import RequestException
-from requests_oauth2 import OAuth2
 from datetime import datetime, timedelta
 from time import mktime
 from itertools import chain
-from settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
-from enhancement_tracking.models import UserProfile
-from enhancement_tracking.cache_actions import (
-    build_cache_index, update_cache_index
+
+from requests.exceptions import RequestException
+from requests_oauth2 import OAuth2
+
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    SetPasswordForm
 )
-from enhancement_tracking.forms import (
-    NewUserForm, NewGroupSuperuserForm, NewAPIAccessDataForm,
-    ChangeAPIAccessDataForm, UserProfileForm, ActiveUserSelectionForm,
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.core.urlresolvers import reverse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+
+from gitzen.enhancement_tracking.cache_actions import (
+    build_cache_index,
+    update_cache_index
+)
+from gitzen.enhancement_tracking.forms import (
+    NewUserForm,
+    NewGroupSuperuserForm,
+    NewAPIAccessDataForm,
+    ChangeAPIAccessDataForm,
+    UserProfileForm,
+    ActiveUserSelectionForm,
     InactiveUserSelectionForm
 )
+from gitzen.enhancement_tracking.models import UserProfile
+from gitzen.settings import CLIENT_ID, CLIENT_SECRET, ABSOLUTE_SITE_URL
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(CLIENT_ID, CLIENT_SECRET, site='https://github.com/',
@@ -57,7 +67,7 @@ def user_login_form_handler(request):
     Parameters:
         request - The request object that contains the POST data from the login
                     forms.
-    """ 
+    """
     if request.method == 'POST':
         log_form = AuthenticationForm(data=request.POST)
         if log_form.is_valid():
@@ -66,12 +76,12 @@ def user_login_form_handler(request):
     else:
         log_form = AuthenticationForm()
 
-    return render_to_response('login.html', {'log_form': log_form}, 
+    return render_to_response('login.html', {'log_form': log_form},
                               context_instance=RequestContext(request))
 
 def group_creation_form_handler(request):
     """Process the requests from the User Group Creation page.
-    
+
     Parameters:
         request - The request object that contains the form data submitted from
                     the User Group Creation page.
@@ -84,7 +94,7 @@ def group_creation_form_handler(request):
         and api_access_data_form.is_valid():
             group_superuser = group_superuser_form.save()
             api_access_data = api_access_data_form.save()
-            
+
             group_superuser_profile = user_profile_form.save(commit=False)
             group_superuser_profile.user = group_superuser
             group_superuser_profile.api_access_data = api_access_data
@@ -108,7 +118,7 @@ def group_creation_form_handler(request):
     return render_to_response('group_creation.html',
                               {'group_superuser_form': group_superuser_form,
                                'user_profile_form': user_profile_form,
-                               'api_access_data_form': api_access_data_form}, 
+                               'api_access_data_form': api_access_data_form},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -140,16 +150,16 @@ def change_form_handler(request):
                 profile_change_form.save()
                 return HttpResponseRedirect(reverse('confirm_changes'))
             password_change_form = PasswordChangeForm(user=request.user)
-        
+
         else:
             return HttpResponseRedirect(reverse('change_account_settings'))
 
     else:
         password_change_form = PasswordChangeForm(user=request.user)
         profile_change_form = UserProfileForm(instance=profile)
-    
-    return render_to_response('change_account_settings.html', 
-                              {'password_change_form': password_change_form, 
+
+    return render_to_response('change_account_settings.html',
+                              {'password_change_form': password_change_form,
                                'profile_change_form': profile_change_form},
                               context_instance=RequestContext(request))
 
@@ -180,7 +190,7 @@ def superuser_change_form_handler(request, user_id):
                             kwargs={'user_id': user_id})
                 )
             set_password_form = SetPasswordForm(user=changing_user)
-        
+
         # Process password change form
         elif 'password_input' in request.POST:
             set_password_form = SetPasswordForm(user=changing_user,
@@ -193,7 +203,7 @@ def superuser_change_form_handler(request, user_id):
                 )
             profile_change_form = FullProfileChangeForm(
                                     instance=changing_profile)
- 
+
         else:
             return HttpResponseRedirect(
                 reverse('superuser_change_account_settings',
@@ -203,10 +213,10 @@ def superuser_change_form_handler(request, user_id):
     else:
         set_password_form = SetPasswordForm(user=changing_user)
         profile_change_form = UserProfileForm(instance=changing_profile)
-    
-    return render_to_response('superuser_change_account_settings.html', 
+
+    return render_to_response('superuser_change_account_settings.html',
                               {'username': changing_user.username,
-                               'set_password_form': set_password_form, 
+                               'set_password_form': set_password_form,
                                'profile_change_form': profile_change_form,
                                'auth_url': GIT_AUTH_URL},
                               context_instance=RequestContext(request))
@@ -282,7 +292,7 @@ def confirm_git_oauth(request):
                     model that the access token should be added to.
     """
     api_access_data = request.user.get_profile().api_access_data
-    
+
     if 'error' in request.GET:
         api_access_data.git_token = ''
         access_granted = False
@@ -294,7 +304,7 @@ def confirm_git_oauth(request):
 
     api_access_data.save()
     product_name = api_access_data.product_name
-    return render_to_response('confirm_git_oauth.html', 
+    return render_to_response('confirm_git_oauth.html',
                               {'access_granted': access_granted,
                                'product_name': product_name},
                               context_instance=RequestContext(request))
@@ -325,7 +335,7 @@ def confirm_cache_building(request, is_reset):
                 {'API_name': e.args[1], 'exception_message': e.args[0]}
         return render_to_response('confirm_cache_building.html', context,
                                   context_instance=RequestContext(request))
-    
+
     context['caching_successful'] = True
     return render_to_response('confirm_cache_building.html', context,
                               context_instance=RequestContext(request))
@@ -402,7 +412,7 @@ def home(request):
     """Gathers and builds the enhancement tracking data and renders the home
     page of the app with this data. If the request for the page is from a
     group superuser, it gets redirected to the group_superuser_home function.
-    
+
     Parameters:
         request - The request object that contains the current user's data.
     """
@@ -412,7 +422,7 @@ def home(request):
     product_name = api_access_data.product_name
     context = {}
     context['is_group_superuser'] = profile.is_group_superuser
-    
+
     try:
         update_cache_index(api_access_data)
     except RequestException as e:
@@ -426,12 +436,12 @@ def home(request):
                                  'product_name': product_name}
         return render_to_response('home.html', context,
                                   context_instance=RequestContext(request))
-    
+
     # Account for the time zone offset and get the enhancement data
     cache_data = cache.get(api_access_data.id)
     enhancement_tables = _time_adjust_enhancement_data(cache_data, utc_offset)
     context = dict(context.items() + enhancement_tables.items())
-        
+
     # Add additional data to be used in the context of the home page
     context['api_requests_successful'] = True
     context['product_name'] = product_name
@@ -441,7 +451,7 @@ def home(request):
     else:
         context['is_zendesk_user'] = False
     context['is_github_user'] = not context['is_zendesk_user']
-    
+
     return render_to_response('home.html', context,
                               context_instance=RequestContext(request))
 
@@ -537,7 +547,7 @@ def group_superuser_home(request):
                 return HttpResponseRedirect(
                     reverse('confirm_user_creation',
                             kwargs={'user_id': user.id})
-                )            
+                )
             user_select_form = ActiveUserSelectionForm(api_access_data)
             user_deactivate_form = ActiveUserSelectionForm(api_access_data)
             user_activate_form = InactiveUserSelectionForm(api_access_data)
@@ -580,7 +590,7 @@ def group_superuser_home(request):
             user_activate_form = InactiveUserSelectionForm(api_access_data)
             api_access_change_form = \
                     ChangeAPIAccessDataForm(instance=api_access_data)
-        
+
         # Process the user selection form for activating a user
         elif 'user_activate_input' in request.POST:
             user_activate_form = InactiveUserSelectionForm(api_access_data,
@@ -589,7 +599,7 @@ def group_superuser_home(request):
                 user = user_activate_form.cleaned_data['profile'].user
                 user.is_active = True
                 user.save()
-                
+
                 return HttpResponseRedirect(
                     reverse('confirm_user_activation',
                             kwargs={'user_id': user.id})
@@ -619,7 +629,7 @@ def group_superuser_home(request):
 
         else:
             return HttpResponseRedirect(reverse('home'))
-    
+
     else:
         new_user_form = NewUserForm()
         user_profile_form = UserProfileForm()
