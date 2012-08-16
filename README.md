@@ -47,11 +47,11 @@ Now add the PostgreSQL and Memcached heroku addons.
 Note: You'll need to have setup a credit card with your Heroku account,
 even if you stay within the free usage tier.
 
-We're going to use [JustOneDB](https://addons.heroku.com/justonedb)
-instead of the basic [Heroku Postgres](https://addons.heroku.com/heroku-postgresql)
-because it has a larger free tier and because I think it's kind of cool.
+We're going to use the basic
+[Heroku Postgres](https://addons.heroku.com/heroku-postgresql)
+db.
 
-	$ heroku addons:add justonedb
+	$ heroku addons:add heroku-postgresql
 
 Next, we're going to use [MemCachier](https://addons.heroku.com/memcachier)
 over the basic [Memcache](https://addons.heroku.com/memcache) for the same
