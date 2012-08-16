@@ -163,7 +163,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.messages.context_processors.messages',
 )
 
-AUTH_PROFILE_MODULE = 'gitzen.enhancement_tracking.UserProfile'
+AUTH_PROFILE_MODULE = 'enhancement_tracking.UserProfile'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
