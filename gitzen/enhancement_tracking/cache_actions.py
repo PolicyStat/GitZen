@@ -762,12 +762,19 @@ def _update_enhancement_zen_data(enhancement, zen_ticket, zen_user_reference):
         enhancement - A dictionary of enhancement data.
         zen_ticket - A dictionary of ticket data for a Zendesk ticket that will
                         be used to update the passed enhancement dictionary.
+        zen_user_reference - A dictionary reference for Zendesk usernames
+                                with the keys being the users' IDs.
 
     Returns the enhancement dictionary with it's base Zendesk fields updated with
     the data from the passed Zendesk ticket.
     """
     enhancement['zen_subject'] = zen_ticket['subject']
     enhancement['zen_requester'] = zen_user_reference[zen_ticket['requester_id']]
+
+    zen_subdomain = zen_ticket['url'].split('//')[1].split('.')[0]
+    enhancement['zen_url'] = 'http://%s.zendesk.com/tickets/%s' % \
+            (zen_subdomain, zen_ticket['id'])
+
     zen_datetime = datetime.strptime(
         zen_ticket['updated_at'], "%Y-%m-%dT%H:%M:%SZ"
     )
@@ -791,10 +798,12 @@ def _update_zen_no_association(cache_data, zen_ticket):
     the cache.
     """
     zen_user_reference = cache_data['zen_user_reference']
+
     for enhancement in cache_data['need_attention']:
         if enhancement['zen_id'] == zen_ticket['id']:
             enhancement = _update_enhancement_zen_data(enhancement, zen_ticket,
                                                        zen_user_reference)
+
             enhancement = _delete_enhancement_git_data(enhancement)
             cache_data['unassociated_enhancements'].append(enhancement)
             cache_data['need_attention'] = _rm_from_diclist(
@@ -806,6 +815,7 @@ def _update_zen_no_association(cache_data, zen_ticket):
         if enhancement['zen_id'] == zen_ticket['id']:
             enhancement = _update_enhancement_zen_data(enhancement, zen_ticket,
                                                        zen_user_reference)
+
             enhancement = _delete_enhancement_git_data(enhancement)
             cache_data['unassociated_enhancements'].append(enhancement)
             cache_data['tracking'] = _rm_from_diclist(
@@ -823,6 +833,7 @@ def _update_zen_no_association(cache_data, zen_ticket):
         if enhancement['zen_id'] == zen_ticket['id']:
             enhancement = _update_enhancement_zen_data(enhancement, zen_ticket,
                                                        zen_user_reference)
+
             del enhancement['non_git_association']
             cache_data['unassociated_enhancements'].append(enhancement)
             cache_data['not_git_enhancements'] =  _rm_from_diclist(

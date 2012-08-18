@@ -172,8 +172,7 @@
 					<td class="td-centered">
 					{% if is_zendesk_user %}
 						<a class="open" target="_blank" 
-							href="{{ zen_url }}/tickets/
-							{{ enhancement.zen_id }}"
+							href="{{ enhancement.zen_url }}"
 							>Z{{ enhancement.zen_id }}</a>
 						<br/> 
 						<a class="closed" target="_blank" 
@@ -185,8 +184,7 @@
 							>G{{ enhancement.git_id }}</a>
 						<br/> 
 						<a class="open" target="_blank" 
-							href="{{ zen_url }}/tickets/
-							{{ enhancement.zen_id }}"
+							href="{{ enhancement.zen_url }}"
 							>Z{{ enhancement.zen_id }}</a>
 					{% endif %}
 					</td>
@@ -244,8 +242,7 @@
 					<td class="td-centered">
 					{% if is_zendesk_user %}
 						<a class="open" target="_blank" 
-							href="{{ zen_url }}/tickets/
-							{{ enhancement.zen_id }}"
+							href="{{ enhancement.zen_url }}"
 							>Z{{ enhancement.zen_id }}</a>
 						<br/> 
 						<a class="open" target="_blank" 
@@ -257,8 +254,7 @@
 							>G{{ enhancement.git_id }}</a>
 						<br/> 
 						<a class="open" target="_blank" 
-							href="{{ zen_url }}/tickets/
-							{{ enhancement.zen_id }}"
+							href="{{ enhancement.zen_url }}"
 							>Z{{ enhancement.zen_id }}</a>
 					{% endif %}
 					</td>
@@ -315,7 +311,7 @@
 			<tr>
 				<td class="td-centered">
 					<a class="open" target="_blank" 
-						href="{{ zen_url }}/tickets/{{ enhancement.zen_id }}"
+						href="{{ enhancement.zen_url }}"
 						>Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
@@ -366,7 +362,7 @@
 			<tr>
 				<td class="td-centered">
 					<a class="open" target="_blank" 
-						href="{{ zen_url }}/tickets/{{ enhancement.zen_id }}"
+						href="{{ enhancement.zen_url }}"
 						>Z{{ enhancement.zen_id }}</a>
 				</td>
 				<td>{{ enhancement.zen_subject }}</td>
