@@ -292,14 +292,14 @@ def confirm_git_oauth(request):
     """
     api_access_data = request.user.get_profile().api_access_data
 
-    if 'error' in request.GET:
-        api_access_data.git_token = ''
-        access_granted = False
-    else:
+    if 'code' in request.GET:
         code = request.GET['code']
         response = OAUTH2_HANDLER.get_token(code)
         api_access_data.git_token = response['access_token'][0]
         access_granted = True
+    else:
+        api_access_data.git_token = ''
+        access_granted = False
 
     api_access_data.save()
     product_name = api_access_data.product_name

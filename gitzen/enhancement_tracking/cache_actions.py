@@ -422,7 +422,7 @@ def update_cache_index(api_access_data):
                             updated_git_tickets, 'number', ticket['number']
                         )
                 else:
-                    for i in range(len(cache_data['git_tickets'])):
+                    for i in xrange(len(cache_data['git_tickets'])):
                         if cache_data['git_tickets'][i]['number'] == \
                         ticket['number']:
                             cache_data['git_ticket'][i] = ticket
@@ -593,7 +593,7 @@ def _rm_from_diclist(diclist, key_to_check, value_to_check):
     Returns the diclist passed to the function with an entry removed if its
     value of the key_to_check matched the value_to_check.
     """
-    for i in range(len(diclist)):
+    for i in xrange(len(diclist)):
         if diclist[i][key_to_check] == value_to_check:
             diclist.pop(i)
             break
@@ -772,7 +772,7 @@ def _update_enhancement_zen_data(enhancement, zen_ticket, zen_user_reference):
     enhancement['zen_requester'] = zen_user_reference[zen_ticket['requester_id']]
 
     zen_subdomain = zen_ticket['url'].split('//')[1].split('.')[0]
-    enhancement['zen_url'] = 'http://%s.zendesk.com/tickets/%s' % \
+    enhancement['zen_url'] = 'https://%s.zendesk.com/tickets/%s' % \
             (zen_subdomain, zen_ticket['id'])
 
     zen_datetime = datetime.strptime(
