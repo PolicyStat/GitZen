@@ -37,8 +37,7 @@ from gitzen.enhancement_tracking.models import UserProfile
 
 # Constant OAuth handler and authorization URL for access to GitHub's OAuth.
 OAUTH2_HANDLER = OAuth2(settings.CLIENT_ID, settings.CLIENT_SECRET, site='https://github.com/',
-                        redirect_uri='http://gitzen.policystat.com/' \
-                                     'confirm_git_oauth',
+                        redirect_uri='%s/confirm_git_oauth' % settings.ABSOLUTE_SITE_URL,
                         authorization_url='login/oauth/authorize',
                         token_url='login/oauth/access_token')
 GIT_AUTH_URL = OAUTH2_HANDLER.authorize_url('repo')
