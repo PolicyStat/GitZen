@@ -1,9 +1,21 @@
 # GitZen
 
-This is a web application built using Django that links Zendesk and Github for
-easier developer management.
+Your development team uses Github for issue tracking, but your customer support
+team uses Zendesk for ticket management. They're both awesome at what they do,
+but this means you have two sets of people (development and support) using two
+different tools. This communication burden is no bueno, as both groups miss out
+on valuable information. GitZen to the rescue!
 
+GitZen is your one-stop dashboard for viewing and managing associations between
+Zendesk tickets (user-facing and probably linked to specific customers who requested
+the change) and Github Issues (developer-facing and generally technical).
+Simply add a custom field in Zendesk with the Github ticket number plus a
+`product_enhancement` tag, and you can quickly see the status of all tickets
+and their associated Github issue. Fundamentally, GitZen is a communication
+tool between your support team, your development team and your customers.
 
+GitZen is designed to be quickly and cheaply (free) deployed on Heroku, so why
+not give it a spin?
 
 ## Deploying GitZen to Heroku
 
@@ -196,7 +208,12 @@ the desired ticket information (The URL will most likely be in the format
 
 12. For the "Zendesk Ticket Association Field ID" field in the form, the ID
 number of the field that holds the external ticket association data for each
-Zendesk ticket must be found. In order to find this ID number, first look up the
+Zendesk ticket must be found.
+
+Step 1 is actually creating a custom field in Zendesk and then adding
+associations (eg. ``gh-201`` to link a ticket to github issue #201).
+
+In order to find this ID number, first look up the
 ID number of a Zendesk ticket from the desired account that has this ticket
 association field on it. Then open up a command terminal and enter in the
 following command, substituting the parameters surrounded by braces with the
@@ -243,7 +260,8 @@ application to view the enhancement tracking data for the group.
 
 ## Development Instructions
 
-Note: Documentation in progress
+Note: Development documentation in progress. Honestly, you can probably figure
+it out though.
 
 4. Install python and virtualenv. (A guide for this can be found
 [here](http://docs.python-guide.org/en/latest/starting/install/linux/))
