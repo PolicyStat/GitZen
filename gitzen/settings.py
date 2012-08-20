@@ -196,7 +196,9 @@ if justonedb_dbi_url:
 # Allow an environment DATABASE_URL for configuration
 import dj_database_url
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ['GITZEN_DATABASE_URL'])
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', 'postgres://localhost')
+    ),
 }
 
 # If you'd like to override any settings for local development, put them in a
