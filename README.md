@@ -289,3 +289,10 @@ psycopg2 (Postgresql support for python) in the following step.
 command
 	>`pip install -r requirements.txt`
 
+## About GitZen
+
+The GitZen project isn't affiliated with Github or Zendesk at all. This is a
+tool developed internally at [PolicyStat](http://www.policystat.com) (largely
+by Nick McLaughlin during a summer internship) to solve a need we have. We're
+open-sourcing it in the hopes that it will be useful to other people in a
+similar situation. We like it.
