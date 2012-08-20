@@ -66,8 +66,9 @@ db.
 	$ heroku addons:add heroku-postgresql
 
 Next, we're going to use [MemCachier](https://addons.heroku.com/memcachier)
-over the basic [Memcache](https://addons.heroku.com/memcache) for the same
-reason.
+over the basic [Memcache](https://addons.heroku.com/memcache) because it's kind
+of cool and has a bit more storage. Feel free to use memcache instead if you
+prefer.
 
 	$ heroku addons:add memcachier
 
