@@ -150,7 +150,7 @@ def get_id_lists(zen_tickets, zen_fieldid):
     zen_user_ids = []
     for ticket in zen_tickets:
         zen_user_ids.append(ticket['requester_id'])
-    zen_user_ids = set(zen_user_ids) # Remove duplicates
+    zen_user_ids = list(set(zen_user_ids)) # Remove duplicates
 
     # Get GitHub issue numbers that are associated with the Zendesk tickets.
     git_issue_numbers = []
@@ -163,7 +163,7 @@ def get_id_lists(zen_tickets, zen_fieldid):
                 break
         if association_data and association_data[0] == 'gh':
             git_issue_numbers.append(int(association_data[1]))
-    git_issue_numbers = set(git_issue_numbers) # Remove duplicates
+    git_issue_numbers = list(set(git_issue_numbers)) # Remove duplicates
 
     return (zen_user_ids, git_issue_numbers)
 
